@@ -15,16 +15,30 @@ class Scene(bpy.types.PropertyGroup):
 
 
 class Armature(bpy.types.PropertyGroup):
+    hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
+    constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
+    root_body: bpy.props.PointerProperty(type=bpy.types.Object)
+
     enabled: bpy.props.BoolProperty(
-        name="Enabled",
+        name="Enable rigid bodies",
         description="Enable rigid body physics for armature",
         default=True,
         update=armature.update,
     )
 
-    hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
-    constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
-    root_body: bpy.props.PointerProperty(type=bpy.types.Object)
+    hide_active_bones: bpy.props.BoolProperty(
+        name="Hide active bones",
+        description="Hide bones which have an Active hitbox",
+        default=True,
+        update=armature.update,
+    )
+
+    hide_hitboxes: bpy.props.BoolProperty(
+        name="Hide hitboxes",
+        description="Hide bone hitboxes",
+        default=False,
+        update=armature.update,
+    )
 
     @classmethod
     def register(cls):
@@ -36,10 +50,14 @@ class Armature(bpy.types.PropertyGroup):
 
 
 class EditBone(bpy.types.PropertyGroup):
+    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
+    hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
+
     enabled: bpy.props.BoolProperty(
         name="Enable Rigid Body",
         description="Enable rigid body hitbox for bone",
         default=False,
+        options=set(),
         update=bone.update,
     )
 
@@ -47,45 +65,48 @@ class EditBone(bpy.types.PropertyGroup):
         name="Type",
         description="Behavior of the hitbox",
         default='PASSIVE',
+        options=set(),
         items=[
             ('PASSIVE', "Passive", "Hitbox follows the bone", 0),
             ('ACTIVE', "Active", "Bone follows the hitbox", 1),
         ],
     )
 
-    x: bpy.props.FloatProperty(
-        name="",
-        description="Width of the hitbox",
-        default=0.0,
-        min=0.0,
+    location: bpy.props.FloatVectorProperty(
+        name="Location",
+        description="Location of the hitbox relative to the bone",
+        size=3,
+        default=(0.0, 0.0, 0.0),
         precision=5,
         step=1,
-        subtype='DISTANCE',
+        subtype='XYZ',
         unit='LENGTH',
+        options=set(),
         update=bone.update,
     )
 
-    y: bpy.props.FloatProperty(
-        name="",
-        description="Height of the hitbox",
-        default=0.0,
-        min=0.0,
-        precision=5,
-        step=1,
-        subtype='DISTANCE',
-        unit='LENGTH',
+    rotation: bpy.props.FloatVectorProperty(
+        name="Rotation",
+        description="Rotation of the hitbox relative to the center of the bone",
+        size=3,
+        default=(0.0, 0.0, 0.0),
+        precision=3,
+        step=10,
+        subtype='EULER',
+        unit='ROTATION',
+        options=set(),
         update=bone.update,
     )
 
-    z: bpy.props.FloatProperty(
-        name="",
-        description="Length of the hitbox",
-        default=0.0,
-        min=0.0,
-        precision=5,
+    scale: bpy.props.FloatVectorProperty(
+        name="Scale",
+        description="Scale of the hitbox relative to the bone",
+        size=3,
+        default=(1.0, 1.0, 1.0),
+        precision=3,
         step=1,
-        subtype='DISTANCE',
-        unit='LENGTH',
+        subtype='XYZ',
+        options=set(),
         update=bone.update,
     )
 
@@ -97,6 +118,7 @@ class EditBone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         unit='MASS',
+        options=set(),
         update=bone.update,
     )
 
@@ -104,6 +126,7 @@ class EditBone(bpy.types.PropertyGroup):
         name="Collision Shape",
         description="Collision Shape of hitbox in Rigid Body Simulations",
         default='CAPSULE',
+        options=set(),
         items=[
             ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
             ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
@@ -119,6 +142,7 @@ class EditBone(bpy.types.PropertyGroup):
         min=0.0,
         soft_max=1.0,
         precision=3,
+        options=set(),
         update=bone.update,
     )
 
@@ -129,6 +153,7 @@ class EditBone(bpy.types.PropertyGroup):
         min=0.0,
         soft_max=1.0,
         precision=3,
+        options=set(),
         update=bone.update,
     )
 
@@ -139,6 +164,7 @@ class EditBone(bpy.types.PropertyGroup):
         min=0.0,
         max=1.0,
         precision=3,
+        options=set(),
         update=bone.update,
     )
 
@@ -149,6 +175,7 @@ class EditBone(bpy.types.PropertyGroup):
         min=0.0,
         max=1.0,
         precision=3,
+        options=set(),
         update=bone.update,
     )
 
@@ -156,6 +183,7 @@ class EditBone(bpy.types.PropertyGroup):
         name="Collision Margin",
         description="Use custom collision margin",
         default=False,
+        options=set(),
         update=bone.update,
     )
 
@@ -169,6 +197,7 @@ class EditBone(bpy.types.PropertyGroup):
         precision=3,
         subtype='DISTANCE',
         unit='LENGTH',
+        options=set(),
         update=bone.update,
     )
 
@@ -181,6 +210,7 @@ class EditBone(bpy.types.PropertyGroup):
         ),
         subtype='LAYER_MEMBER',
         size=20,
+        options=set(),
         update=bone.update,
     )
 
@@ -188,6 +218,7 @@ class EditBone(bpy.types.PropertyGroup):
         name="Enable Deactivation",
         description="Enable deactivation of resting hitbox (increases performance and stability but can cause glitches)",
         default=False,
+        options=set(),
         update=bone.update,
     )
 
@@ -195,6 +226,7 @@ class EditBone(bpy.types.PropertyGroup):
         name="Start Deactivated",
         description="Deactivate hitbox at the start of the simulation",
         default=False,
+        options=set(),
         update=bone.update,
     )
 
@@ -207,6 +239,7 @@ class EditBone(bpy.types.PropertyGroup):
         precision=3,
         # TODO use subtype ?
         unit='VELOCITY',
+        options=set(),
         update=bone.update,
     )
 
@@ -219,6 +252,7 @@ class EditBone(bpy.types.PropertyGroup):
         precision=3,
         # TODO use subtype ?
         unit='VELOCITY',
+        options=set(),
         update=bone.update,
     )
 
@@ -226,6 +260,7 @@ class EditBone(bpy.types.PropertyGroup):
         name="Enable Constraint",
         description="Enable constraint for hitbox",
         default=False,
+        options=set(),
         update=bone.update,
     )
 

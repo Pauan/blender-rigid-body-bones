@@ -1,4 +1,7 @@
 import bpy
+import bmesh
+from math import radians
+from mathutils import Vector, Euler, Matrix
 
 
 def log(obj):
@@ -7,19 +10,17 @@ def log(obj):
 
 
 class Selectable:
-    def __init__(self, scene, data):
-        self.scene = scene
-        self.data = data
+    def __init__(self, collection):
+        self.collection = collection
+        self.hidden = False
 
     def __enter__(self):
-        self.scene.rigid_body_bones.collection.hide_select = False
-        self.data.constraints.hide_select = False
-        self.data.hitboxes.hide_select = False
+        self.hidden = self.collection.hide_select
+        self.collection.hide_select = False
+        return self.collection
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.scene.rigid_body_bones.collection.hide_select = True
-        self.data.constraints.hide_select = True
-        self.data.hitboxes.hide_select = True
+        self.collection.hide_select = self.hidden
         return False
 
 
@@ -99,9 +100,16 @@ def select(context, objs):
     view_layer.objects.active = objs[-1]
 
 
-def parent(context, child, parent):
-    select(context, [child, parent])
-    bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
+def set_parent(context, child, parent):
+    with Selected(context):
+        select(context, [child, parent])
+        bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
+
+
+def set_parent_relative(context, child, parent):
+    with Selected(context):
+        select(context, [child, parent])
+        bpy.ops.object.parent_no_inverse_set()
 
 
 def make_collection(name, parent):
@@ -115,11 +123,52 @@ def remove_object(object):
     bpy.data.objects.remove(object)
 
 
-def remove_collection(collection):
+def remove_collection(collection, recursive=False):
     for child in collection.objects:
         remove_object(child)
 
+    if recursive:
+        for child in collection.children:
+            remove_collection(child, recursive)
+
     bpy.data.collections.remove(collection)
+
+
+def root_collection(context):
+    scene = context.scene
+
+    root = scene.rigid_body_bones.collection
+
+    if not root:
+        root = make_collection("RigidBodyBones", scene.collection)
+        root.hide_select = True
+        root.hide_render = True
+        scene.rigid_body_bones.collection = root
+
+    return root
+
+
+def constraints_collection(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if not data.constraints:
+        parent = hitboxes_collection(context, armature)
+        data.constraints = make_collection(armature.name + " [Constraints]", parent)
+        data.constraints.hide_render = True
+        data.constraints.hide_viewport = True
+
+    return data.constraints
+
+
+def hitboxes_collection(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if not data.hitboxes:
+        parent = root_collection(context)
+        data.hitboxes = make_collection(armature.name + " [Hitboxes]", parent)
+        data.hitboxes.hide_render = True
+
+    return data.hitboxes
 
 
 def init_hitbox(object):
@@ -132,46 +181,100 @@ def init_hitbox(object):
     object.rigid_body.collision_shape = 'BOX'
 
 
-def make_empty_rigid_body(context, name, collection, location):
+def make_empty_rigid_body(context, name, collection, parent):
     mesh = bpy.data.meshes.new(name=name)
-    body = bpy.data.objects.new(mesh.name, mesh)
+    body = bpy.data.objects.new(name, mesh)
     collection.objects.link(body)
-    body.location = location
-    select(context, [body])
-    bpy.ops.rigidbody.object_add(type='PASSIVE')
-    body.rigid_body.kinematic = True
-    body.rigid_body.collision_collections[0] = False
-    body.hide_select = True
-    body.hide_viewport = True
-    init_hitbox(body)
-    return body
+    set_parent_relative(context, body, parent)
 
-
-def make_hitbox(context, name, collection, location, rotation, dimensions, active):
-    bpy.ops.mesh.primitive_cube_add(
-        size=1.0,
-        calc_uvs=False,
-        enter_editmode=False,
-        align='WORLD',
-        location=location,
-        rotation=rotation,
-    )
-
-    context.active_object.scale = dimensions
-
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
-    # TODO is active_object correct ?
-    body = context.active_object
-    body.name = name
-    collection.objects.link(body)
-    context.collection.objects.unlink(body)
-
-    if active:
-        bpy.ops.rigidbody.object_add(type='ACTIVE')
-    else:
+    with Selected(context):
+        select(context, [body])
         bpy.ops.rigidbody.object_add(type='PASSIVE')
         body.rigid_body.kinematic = True
+        body.rigid_body.collision_collections[0] = False
+        body.hide_select = True
+        body.hide_viewport = True
+        init_hitbox(body)
 
-    init_hitbox(body)
     return body
+
+
+def make_cube(name, dimensions, collection):
+    mesh = bpy.data.meshes.new(name=name)
+
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0, calc_uvs=False)
+    bmesh.ops.scale(bm, vec=dimensions, verts=bm.verts)
+    bm.to_mesh(mesh)
+    bm.free()
+
+    cube = bpy.data.objects.new(name, mesh)
+    collection.objects.link(cube)
+    return cube
+
+
+def bone_to_object_space(vector):
+    vector.rotate(Euler((radians(90.0), 0.0, 0.0)))
+
+def hitbox_dimensions(bone):
+    length = bone.length
+    dimensions = Vector((length * 0.2, length, length * 0.2)) * bone.rigid_body_bones.scale
+    bone_to_object_space(dimensions)
+    return dimensions
+
+
+def make_active_hitbox(context, armature, bone):
+    hitbox = make_cube(
+        name=bone.name + " [Hitbox]",
+        dimensions=hitbox_dimensions(bone),
+        collection=hitboxes_collection(context, armature),
+    )
+
+    hitbox.parent = armature
+    hitbox.parent_type = 'OBJECT'
+
+    location = bone.rigid_body_bones.location.copy()
+    bone_to_object_space(location)
+    location += bone.center
+
+    rotation = bone.rigid_body_bones.rotation.copy()
+    rotation.rotate(bone.matrix.to_euler())
+    rotation.rotate_axis('X', radians(90.0))
+
+    hitbox.rotation_euler = rotation
+    hitbox.location = location
+
+    with Selected(context):
+        select(context, [hitbox])
+        bpy.ops.rigidbody.object_add(type='ACTIVE')
+        init_hitbox(hitbox)
+
+    return hitbox
+
+
+def make_passive_hitbox(context, armature, bone):
+    hitbox = make_cube(
+        name=bone.name + " [Hitbox]",
+        dimensions=hitbox_dimensions(bone),
+        collection=hitboxes_collection(context, armature),
+    )
+
+    hitbox.parent = armature
+    hitbox.parent_type = 'BONE'
+    hitbox.parent_bone = bone.name
+
+    rotation = Euler((radians(90.0), 0.0, 0.0))
+    rotation.rotate(bone.rigid_body_bones.rotation)
+
+    location = Vector((0.0, bone.length * -0.5, 0.0)) + bone.rigid_body_bones.location
+
+    hitbox.rotation_euler = rotation
+    hitbox.location = location
+
+    with Selected(context):
+        select(context, [hitbox])
+        bpy.ops.rigidbody.object_add(type='PASSIVE')
+        hitbox.rigid_body.kinematic = True
+        init_hitbox(hitbox)
+
+    return hitbox

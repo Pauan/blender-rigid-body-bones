@@ -10,6 +10,8 @@ bl_info = {
     "category": "Physics",
 }
 
+import faulthandler
+
 from . import properties
 from . import armature
 from . import bone
@@ -33,10 +35,11 @@ classes = (
     properties.Scene,
     properties.Armature,
     properties.EditBone,
-    armature.ResetDimensionsXOperator,
-    armature.ResetDimensionsYOperator,
-    armature.ResetDimensionsZOperator,
+    armature.AlignHitbox,
+    armature.SelectInvalidBones,
+    armature.AlignAllHitboxes,
     armature.Panel,
+    armature.SettingsPanel,
     armature.BonePanel,
     armature.HitboxPanel,
     armature.ConstraintPanel,
@@ -50,6 +53,7 @@ classes = (
 
 def register():
     print("REGISTERING")
+    faulthandler.enable()
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)

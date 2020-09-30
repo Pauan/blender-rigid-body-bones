@@ -1,88 +1,98 @@
 import bpy
-from math import radians
-from mathutils import Vector, Euler
 from . import utils
 
 
-def make_collection(context):
-    scene = context.scene
-
-    root = scene.rigid_body_bones.collection
-
-    if not root:
-        root = utils.make_collection("RigidBodyBones", scene.collection)
-        root.hide_select = True
-        root.hide_render = True
-        scene.rigid_body_bones.collection = root
-
-    return root
-
-def make_constraints(context, object, data):
-    if not data.constraints:
-        data.constraints = utils.make_collection(object.name + " [Constraints]", data.hitboxes)
-        data.constraints.hide_render = True
-        data.constraints.hide_viewport = True
-
-def make_hitboxes(context, object, data):
-    if not data.hitboxes:
-        root = make_collection(context)
-        data.hitboxes = utils.make_collection(object.name + " [Hitboxes]", root)
-        data.hitboxes.hide_render = True
+def is_edit_mode(context):
+    return (
+        (context.active_bone is not None) and
+        (context.mode == 'EDIT_ARMATURE')
+    )
 
 
-def make_root_body(context, object, data):
+def make_root_body(context, armature, data):
     if not data.root_body:
-        with utils.Mode(context, 'OBJECT'), utils.Selectable(context.scene, data), utils.Selected(context):
-        #with Selected(context):
+        with utils.Mode(context, 'EDIT'):
             #bpy.context.space_data.context = 'PHYSICS'
-
-            #bpy.ops.mesh.primitive_cube_add(size=1.0, calc_uvs=False, enter_editmode=False)
-            #root_body = context.active_object
-            #root_body.name = object.name + " [Root]"
 
             #bpy.ops.screen.space_type_set_or_cycle(space_type='PROPERTIES')
 
             #with Tab(context, 'PHYSICS'):
                 #log(local["area"].type)
 
-            #bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            #root_body = utils.make_empty_rigid_body(
+                #context,
+                #name=armature.name + " [Root]",
+                #collection=hitboxes_collection(context, armature),
+                #location=armature.location,
+            #)
 
-            root_body = utils.make_empty_rigid_body(
+            #with utils.Mode(context, 'EDIT'):
+
+            #hitboxes = [hitbox_data(bone) for bone in armature.data.edit_bones]
+
+            for bone in armature.data.edit_bones:
+                print(bone)
+                make_hitbox(context, armature, bone)
+                    #utils.log(bone.name)
+
+                    #empty = utils.make_empty_rigid_body(
+                        #context,
+                        #name=bone.name + " [Empty]",
+                        #collection=data.hitboxes,
+                        #location=Vector(bone.head) + Vector(armature.location),
+                        #rotation=hitbox_rotation(bone),
+                    #)
+
+            #data.root_body = root_body
+
+
+def make_hitbox(context, armature, bone):
+    data = bone.rigid_body_bones
+
+    if not data.hitbox:
+        with utils.Selectable(root_collection(context)):
+            empty = utils.make_empty_rigid_body(
                 context,
-                name=object.name + " [Root]",
-                collection=data.hitboxes,
-                location=object.location,
+                name=bone.name + " [Empty]",
+                collection=hitboxes_collection(context, armature),
+                parent=armature,
             )
 
-            utils.parent(context, root_body, object)
+            hitbox = utils.make_active_hitbox(context, armature, bone)
+            hitbox = utils.make_passive_hitbox(context, armature, bone)
 
-            with utils.Mode(context, 'EDIT'):
-                for bone in object.data.edit_bones:
-                    utils.log(bone.name)
-                    rotation = bone.matrix.to_euler()
-                    rotation.rotate_axis('X', radians(90.0))
+            return
 
-                    other = utils.make_hitbox(
-                        context,
-                        name=bone.name + " [Hitbox]",
-                        collection=data.hitboxes,
-                        # TODO does this need 2 vectors ?
-                        # TODO better way to normalize this ?
-                        location=Vector(bone.center) + Vector(object.location),
-                        rotation=rotation,
-                        dimensions=(bone.length * 0.2, bone.length * 0.2, bone.length),
-                        active=False,
-                    )
+            data.hitbox = hitbox
 
-            data.root_body = root_body
+    return data.hitbox
 
 
-def fix_bones(object):
-    pass
+def align_hitbox(context, armature, bone):
+    data = bone.rigid_body_bones
+    hitbox = data.hitbox
+
+    if hitbox:
+        utils.select(context, [hitbox])
+        hitbox.location = hitbox_location(armature, bone)
+        hitbox.rotation = hitbox_rotation(bone)
+        hitbox.dimensions = hitbox_dimensions(bone)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+    if data.constraint:
+        pass
 
 
-def remove_collection(context, object, data):
-    fix_bones(object)
+def cleanup_bone(bone):
+    data = bone.rigid_body_bones
+    data.constraint = None
+    data.hitbox = None
+
+
+def remove_collection(context, armature, data):
+    with utils.Mode(context, 'EDIT'):
+        for bone in armature.data.edit_bones:
+            cleanup_bone(bone)
 
     if data.constraints:
         utils.remove_collection(data.constraints)
@@ -105,82 +115,116 @@ def update(self, context):
     print("UPDATING")
 
     # TODO is context.active_object correct ?
-    object = context.active_object
-    armature = object.data
+    armature = context.active_object
+    data = armature.data.rigid_body_bones
 
-    if armature.rigid_body_bones.enabled:
-        data = armature.rigid_body_bones
-
-        make_hitboxes(context, object, data)
-        make_constraints(context, object, data)
-        make_root_body(context, object, data)
+    if data.enabled:
+        make_root_body(context, armature, data)
 
     else:
-        remove_collection(context, object, armature.rigid_body_bones)
+        remove_collection(context, armature, data)
 
 
-class ResetDimensionsXOperator(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.reset_dimensions_x"
-    bl_label = "Reset X dimension"
-    bl_description = "Reset the X dimension to the width of the bone"
+class AlignHitbox(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.align_hitbox"
+    bl_label = "Align to bone"
+    bl_description = "Aligns the hitbox to the bone"
     bl_options = {'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return is_edit_mode(context)
+
+    def execute(self, context):
+        armature = context.active_object
+        data = armature.data.rigid_body_bones
+
+        with utils.Selectable(context.scene, data), utils.Selected(context):
+            align_hitbox(context, armature, context.active_bone)
+
+        return {'FINISHED'}
+
+
+class SelectInvalidBones(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.select_invalid_bones"
+    bl_label = "Select invalid bones"
+    bl_description = "Selects bones which have invalid properties (such as Parent)"
+    bl_options = {'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return is_edit_mode(context)
 
     def execute(self, context):
         print("Hello World")
         return {'FINISHED'}
 
-    def draw(self, context):
-        pass
 
-
-class ResetDimensionsYOperator(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.reset_dimensions_y"
-    bl_label = "Reset Y dimension"
-    bl_description = "Reset the Y dimension to the height of the bone"
+class AlignAllHitboxes(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.align_all_hitboxes"
+    bl_label = "Align all hitboxes"
+    bl_description = "Aligns all hitboxes to their respective bones"
     bl_options = {'UNDO'}
 
-    def execute(self, context):
-        print("Hello World")
-        return {'FINISHED'}
-
-    def draw(self, context):
-        pass
-
-
-class ResetDimensionsZOperator(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.reset_dimensions_z"
-    bl_label = "Reset Z dimension"
-    bl_description = "Reset the Z dimension to the length of the bone"
-    bl_options = {'UNDO'}
+    @classmethod
+    def poll(cls, context):
+        return (context.active_bone is not None)
 
     def execute(self, context):
-        print("Hello World")
-        return {'FINISHED'}
+        armature = context.active_object
+        data = armature.data.rigid_body_bones
 
-    def draw(self, context):
-        pass
+        with utils.Mode(context, 'EDIT'), utils.Selectable(context.scene, data), utils.Selected(context):
+            for bone in armature.data.edit_bones:
+                align_hitbox(context, armature, bone)
+
+        return {'FINISHED'}
 
 
 class Panel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones"
-    bl_label = "Rigid Body Settings"
+    bl_label = "Armature"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
-    bl_options = set()
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 0
 
     @classmethod
     def poll(cls, context):
-        return (
-            (context.active_bone is not None) and
-            (context.mode != 'EDIT_ARMATURE')
-        )
+        return (context.active_bone is not None)
 
     def draw(self, context):
-        layout = self.layout
-        data = context.active_object.data.rigid_body_bones
+        pass
 
-        layout.prop(data, "enabled")
+
+class SettingsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_settings"
+    bl_label = "Bone Settings"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones"
+    bl_options = set()
+    bl_order = 0
+
+    def draw(self, context):
+        data = context.active_object.data.rigid_body_bones
+        layout = self.layout
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "enabled")
+        col.prop(data, "hide_active_bones")
+        col.prop(data, "hide_hitboxes")
+
+        flow.separator()
+
+        col = flow.column()
+        col.operator("rigid_body_bones.align_all_hitboxes")
+        col.operator("rigid_body_bones.select_invalid_bones")
 
 
 class BonePanel(bpy.types.Panel):
@@ -190,13 +234,11 @@ class BonePanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
     bl_options = set()
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
-        return (
-            (context.active_bone is not None) and
-            (context.mode == 'EDIT_ARMATURE')
-        )
+        return is_edit_mode(context)
 
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones
@@ -228,30 +270,33 @@ class HitboxPanel(bpy.types.Panel):
 
         col = flow.column()
         col.prop(data, "type")
-        col.separator()
+        flow.separator()
 
         col = flow.column()
         col.prop(data, "collision_shape", text="Shape")
-        col.separator()
+        flow.separator()
 
-        col = flow.column(align=True)
+        col = flow.column()
+        col.prop(data, "location")
+        flow.separator()
 
-        row = col.row(align=True)
-        row.prop(data, "x", text="Dimensions  X")
-        row.operator("rigid_body_bones.reset_dimensions_x", text="", icon='X')
+        col = flow.column()
+        col.prop(data, "rotation")
+        flow.separator()
 
-        row = col.row(align=True)
-        row.prop(data, "y", text="Y")
-        row.operator("rigid_body_bones.reset_dimensions_y", text="", icon='X')
-
-        row = col.row(align=True)
-        row.prop(data, "z", text="Z")
-        row.operator("rigid_body_bones.reset_dimensions_z", text="", icon='X')
+        col = flow.column()
+        col.prop(data, "scale")
 
         if data.type == 'ACTIVE':
+            flow.separator()
             col = flow.column()
-            col.separator()
             col.prop(data, "mass")
+
+            flow.separator()
+
+            row = flow.row()
+            row.alignment = 'CENTER'
+            row.operator("rigid_body_bones.align_hitbox")
 
 
 class ConstraintPanel(bpy.types.Panel):
@@ -312,28 +357,28 @@ class AdvancedSettingsPanel(bpy.types.Panel):
         flow = self.layout.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
 
         col = flow.column()
-        col.prop(data, "friction", slider=True)
-
-        col = flow.column()
-        col.prop(data, "restitution", text="Bounciness", slider=True)
-
-        col.separator()
-
-        col = flow.column()
-        col.prop(data, "linear_damping", text="Damping Translation", slider=True)
-
-        col = flow.column()
-        col.prop(data, "angular_damping", text="Rotation", slider=True)
-
-        col.separator()
-
-        col = flow.column()
         col.prop(data, "use_margin")
 
         col = flow.column()
         col.enabled = data.use_margin
         col.prop(data, "collision_margin", text="Margin")
 
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "friction", slider=True)
+
+        col = flow.column()
+        col.prop(data, "restitution", text="Bounciness", slider=True)
+
+        if data.type == 'ACTIVE':
+            flow.separator()
+
+            col = flow.column()
+            col.prop(data, "linear_damping", text="Damping Translation", slider=True)
+
+            col = flow.column()
+            col.prop(data, "angular_damping", text="Rotation", slider=True)
 
 
 class CollectionsPanel(bpy.types.Panel):
@@ -361,6 +406,11 @@ class DeactivationPanel(bpy.types.Panel):
     bl_parent_id = "DATA_PT_rigid_body_bones_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 2
+
+    @classmethod
+    def poll(cls, context):
+        data = context.active_bone.rigid_body_bones
+        return (data.type == 'ACTIVE')
 
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones
