@@ -94,37 +94,6 @@ def remove_all(context, armature, data):
     safe_remove_collections(context, armature)
 
 
-@utils.armature_event("hide_active_bones")
-def event_hide_active_bones(context, armature, data):
-    hidden = set()
-
-    if data.enabled and data.hide_active_bones:
-        with utils.Mode(context, 'EDIT'):
-            for bone in armature.data.edit_bones:
-                if bones.is_active(bone):
-                    hidden.add(bone.name)
-
-    # Cannot hide in EDIT mode
-    with utils.Mode(context, 'POSE'):
-        for bone in armature.data.bones:
-            bone.hide = (bone.name in hidden)
-
-
-@utils.armature_event("hide_hitboxes")
-def event_hide_hitboxes(context, armature, data):
-    if data.hitboxes:
-        data.hitboxes.hide_viewport = data.hide_hitboxes
-
-
-@utils.armature_event("enabled")
-def event_enabled(context, armature, data):
-    if data.enabled:
-        make_all(context, armature, data)
-
-    else:
-        remove_all(context, armature, data)
-
-
 def event_mode_switch(context):
     # TODO is active_object correct ?
     armature = context.active_object
@@ -153,7 +122,6 @@ def event_mode_switch(context):
 
                     bones.align_hitbox(bone)
 
-
 def align_all_bones(context):
     # TODO is active_object correct ?
     armature = context.active_object
@@ -161,3 +129,35 @@ def align_all_bones(context):
     if armature and armature.type == 'ARMATURE' and armature.mode == 'EDIT':
         for bone in armature.data.edit_bones:
             bones.align_hitbox(bone)
+
+
+
+@utils.armature_event("hide_active_bones")
+def event_hide_active_bones(context, armature, data):
+    hidden = set()
+
+    if data.enabled and data.hide_active_bones:
+        with utils.Mode(context, 'EDIT'):
+            for bone in armature.data.edit_bones:
+                if bones.is_active(bone):
+                    hidden.add(bone.name)
+
+    # Cannot hide in EDIT mode
+    with utils.SelectedBones(armature), utils.Mode(context, 'POSE'):
+        for bone in armature.data.bones:
+            bone.hide = (bone.name in hidden)
+
+
+@utils.armature_event("hide_hitboxes")
+def event_hide_hitboxes(context, armature, data):
+    if data.hitboxes:
+        data.hitboxes.hide_viewport = data.hide_hitboxes
+
+
+@utils.armature_event("enabled")
+def event_enabled(context, armature, data):
+    if data.enabled:
+        make_all(context, armature, data)
+
+    else:
+        remove_all(context, armature, data)

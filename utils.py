@@ -62,9 +62,11 @@ class Mode:
         self.old_mode = None
 
     def __enter__(self):
-        # TODO is object correct ?
-        self.old_mode = self.context.object.mode
-        bpy.ops.object.mode_set(mode=self.mode)
+        # TODO is active_object correct ?
+        self.old_mode = self.context.active_object.mode
+
+        if self.old_mode != self.mode:
+            bpy.ops.object.mode_set(mode=self.mode)
 
     def __exit__(self, exc_type, exc_value, traceback):
         bpy.ops.object.mode_set(mode=self.old_mode)
@@ -115,6 +117,37 @@ class Selected:
             obj.select_set(True)
 
         self.view_layer.objects.active = self.active
+
+        return False
+
+
+class SelectedBones:
+    def __init__(self, armature):
+        self.armature = armature
+        self.active = None
+        self.selected = None
+
+    def __enter__(self):
+        bones = self.armature.data.edit_bones
+
+        self.selected = [(bone.name, bone.select, bone.select_head, bone.select_tail) for bone in bones]
+
+        if bones.active:
+            self.active = bones.active.name
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        bones = self.armature.data.edit_bones
+
+        for (name, select, select_head, select_tail) in self.selected:
+            bone = bones[name]
+            bone.select = select
+            bone.select_head = select_head
+            bone.select_tail = select_tail
+
+        if self.active is None:
+            bones.active = None
+        else:
+            bones.active = bones[self.active]
 
         return False
 

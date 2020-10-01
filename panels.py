@@ -32,7 +32,6 @@ class SettingsPanel(bpy.types.Panel):
     def draw(self, context):
         data = context.active_object.data.rigid_body_bones
         layout = self.layout
-        #layout.use_property_split = True
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 

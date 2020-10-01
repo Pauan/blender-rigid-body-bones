@@ -48,8 +48,6 @@ classes = (
     panels.AdvancedPhysicsPanel,
     panels.CollectionsPanel,
     panels.DeactivationPanel,
-    #BONE_PT_rigid_body_bones_bone,
-    #BONE_PT_rigid_body_bones_constraint,
 )
 
 def register():
@@ -62,11 +60,9 @@ def register():
     events.register()
 
     #bpy.utils.register_manual_map(add_object_manual_map)
-    #bpy.types.VIEW3D_MT_pose.append(add_menu)
 
 def unregister():
     print("UNREGISTERING")
-    #bpy.types.VIEW3D_MT_pose.remove(add_menu)
     #bpy.utils.unregister_manual_map(add_object_manual_map)
 
     events.unregister()

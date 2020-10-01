@@ -5,7 +5,7 @@ from . import armatures
 from . import bones
 
 
-fps = 1 / 30
+fps = 1 / 60
 
 owner = object()
 
@@ -72,10 +72,12 @@ def register():
     properties.EditBone.events["deactivate_angular_velocity"].append(bones.event_rigid_body)
 
 
+    # This is needed in order to re-subscribe when the file changes
     bpy.app.handlers.load_post.append(load_post)
 
     register_subscribers()
 
+    # This re-aligns the hitboxes when the bones move
     # TODO super gross, figure out a better way
     bpy.app.timers.register(
         timer,

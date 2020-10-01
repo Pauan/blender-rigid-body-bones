@@ -297,7 +297,7 @@ class EditBone(bpy.types.PropertyGroup):
     enable_constraint: bpy.props.BoolProperty(
         name="Enable Constraint",
         description="Enable constraint for hitbox",
-        default=False,
+        default=True,
         options=set(),
         update=make_event("enable_constraint"),
     )
