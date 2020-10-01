@@ -1,6 +1,6 @@
 import bpy
-from . import armature
-from . import bone
+from . import armatures
+from . import bones
 
 class Scene(bpy.types.PropertyGroup):
     collection: bpy.props.PointerProperty(type=bpy.types.Collection)
@@ -23,21 +23,21 @@ class Armature(bpy.types.PropertyGroup):
         name="Enable rigid bodies",
         description="Enable rigid body physics for armature",
         default=True,
-        update=armature.update,
+        update=armatures.update,
     )
 
     hide_active_bones: bpy.props.BoolProperty(
         name="Hide active bones",
         description="Hide bones which have an Active hitbox",
         default=True,
-        update=armature.update,
+        update=armatures.hide_active_bones,
     )
 
     hide_hitboxes: bpy.props.BoolProperty(
         name="Hide hitboxes",
         description="Hide bone hitboxes",
         default=False,
-        update=armature.update,
+        update=armatures.hide_bone_hitboxes,
     )
 
     @classmethod
@@ -58,7 +58,7 @@ class EditBone(bpy.types.PropertyGroup):
         description="Enable rigid body hitbox for bone",
         default=False,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     type: bpy.props.EnumProperty(
@@ -70,6 +70,7 @@ class EditBone(bpy.types.PropertyGroup):
             ('PASSIVE', "Passive", "Hitbox follows the bone", 0),
             ('ACTIVE', "Active", "Bone follows the hitbox", 1),
         ],
+        update=bones.update,
     )
 
     location: bpy.props.FloatVectorProperty(
@@ -82,7 +83,7 @@ class EditBone(bpy.types.PropertyGroup):
         subtype='XYZ',
         unit='LENGTH',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     rotation: bpy.props.FloatVectorProperty(
@@ -95,7 +96,7 @@ class EditBone(bpy.types.PropertyGroup):
         subtype='EULER',
         unit='ROTATION',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     scale: bpy.props.FloatVectorProperty(
@@ -107,7 +108,7 @@ class EditBone(bpy.types.PropertyGroup):
         step=1,
         subtype='XYZ',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     mass: bpy.props.FloatProperty(
@@ -119,7 +120,7 @@ class EditBone(bpy.types.PropertyGroup):
         step=10,
         unit='MASS',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     collision_shape: bpy.props.EnumProperty(
@@ -133,6 +134,7 @@ class EditBone(bpy.types.PropertyGroup):
             ('BOX', "Box", "Box-like shapes (i.e. cubes), including planes (i.e. ground planes)", 'MESH_CUBE', 2),
             ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
         ],
+        update=bones.update,
     )
 
     friction: bpy.props.FloatProperty(
@@ -143,7 +145,7 @@ class EditBone(bpy.types.PropertyGroup):
         soft_max=1.0,
         precision=3,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     restitution: bpy.props.FloatProperty(
@@ -154,7 +156,7 @@ class EditBone(bpy.types.PropertyGroup):
         soft_max=1.0,
         precision=3,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     linear_damping: bpy.props.FloatProperty(
@@ -165,7 +167,7 @@ class EditBone(bpy.types.PropertyGroup):
         max=1.0,
         precision=3,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     angular_damping: bpy.props.FloatProperty(
@@ -176,7 +178,7 @@ class EditBone(bpy.types.PropertyGroup):
         max=1.0,
         precision=3,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     use_margin: bpy.props.BoolProperty(
@@ -184,7 +186,7 @@ class EditBone(bpy.types.PropertyGroup):
         description="Use custom collision margin",
         default=False,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     collision_margin: bpy.props.FloatProperty(
@@ -198,7 +200,7 @@ class EditBone(bpy.types.PropertyGroup):
         subtype='DISTANCE',
         unit='LENGTH',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     collision_collections: bpy.props.BoolVectorProperty(
@@ -211,7 +213,7 @@ class EditBone(bpy.types.PropertyGroup):
         subtype='LAYER_MEMBER',
         size=20,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     use_deactivation: bpy.props.BoolProperty(
@@ -219,7 +221,7 @@ class EditBone(bpy.types.PropertyGroup):
         description="Enable deactivation of resting hitbox (increases performance and stability but can cause glitches)",
         default=False,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     use_start_deactivated: bpy.props.BoolProperty(
@@ -227,7 +229,7 @@ class EditBone(bpy.types.PropertyGroup):
         description="Deactivate hitbox at the start of the simulation",
         default=False,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     deactivate_linear_velocity: bpy.props.FloatProperty(
@@ -240,7 +242,7 @@ class EditBone(bpy.types.PropertyGroup):
         # TODO use subtype ?
         unit='VELOCITY',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     deactivate_angular_velocity: bpy.props.FloatProperty(
@@ -253,7 +255,7 @@ class EditBone(bpy.types.PropertyGroup):
         # TODO use subtype ?
         unit='VELOCITY',
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     enable_constraint: bpy.props.BoolProperty(
@@ -261,11 +263,15 @@ class EditBone(bpy.types.PropertyGroup):
         description="Enable constraint for hitbox",
         default=False,
         options=set(),
-        update=bone.update,
+        update=bones.update,
     )
 
     # TODO replace with PointerProperty
-    parent: bpy.props.StringProperty(name="Parent", description="Parent bone for constraint", update=bone.update)
+    parent: bpy.props.StringProperty(
+        name="Parent",
+        description="Parent bone for constraint",
+        update=bones.update,
+    )
 
     @classmethod
     def register(cls):

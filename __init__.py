@@ -12,15 +12,17 @@ bl_info = {
 
 import faulthandler
 
+from . import armatures
+from . import bones
+from . import panels
 from . import properties
-from . import armature
-from . import bone
 from . import utils
 
 from importlib import reload
+reload(armatures)
+reload(bones)
+reload(panels)
 reload(properties)
-reload(armature)
-reload(bone)
 reload(utils)
 
 # This allows you to right click on a button and link to documentation
@@ -35,18 +37,18 @@ classes = (
     properties.Scene,
     properties.Armature,
     properties.EditBone,
-    armature.AlignHitbox,
-    armature.SelectInvalidBones,
-    armature.AlignAllHitboxes,
-    armature.Panel,
-    armature.SettingsPanel,
-    armature.BonePanel,
-    armature.HitboxPanel,
-    armature.ConstraintPanel,
-    armature.AdvancedPanel,
-    armature.AdvancedSettingsPanel,
-    armature.CollectionsPanel,
-    armature.DeactivationPanel,
+    armatures.SelectInvalidBones,
+    armatures.AlignAllHitboxes,
+    bones.AlignHitbox,
+    panels.Panel,
+    panels.SettingsPanel,
+    panels.BonePanel,
+    panels.HitboxPanel,
+    panels.ConstraintPanel,
+    panels.AdvancedPanel,
+    panels.AdvancedSettingsPanel,
+    panels.CollectionsPanel,
+    panels.DeactivationPanel,
     #BONE_PT_rigid_body_bones_bone,
     #BONE_PT_rigid_body_bones_constraint,
 )
