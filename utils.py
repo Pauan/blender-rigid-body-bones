@@ -8,6 +8,37 @@ def log(obj):
     from pprint import PrettyPrinter
     PrettyPrinter(indent = 4).pprint(obj)
 
+def debug(message):
+    if True:
+        print(message)
+
+
+def armature_event(name):
+    def decorator(f):
+        def event(self, context):
+            debug("armature " + name)
+            # TODO is active_object correct ?
+            armature = context.active_object
+            data = armature.data.rigid_body_bones
+            return f(context, armature, data)
+
+        return event
+    return decorator
+
+
+def bone_event(name):
+    def decorator(f):
+        def event(self, context):
+            debug("bone " + name)
+            # TODO is active_object correct ?
+            armature = context.active_object
+            bone = context.active_bone
+            data = bone.rigid_body_bones
+            return f(context, armature, bone, data)
+
+        return event
+    return decorator
+
 
 class Selectable:
     def __init__(self, collection):

@@ -3,7 +3,7 @@ import bpy
 def make_event(name):
     def update(self, context):
         for f in self.events[name]:
-            f(context)
+            f(self, context)
 
     return update
 
@@ -68,11 +68,14 @@ class EditBone(bpy.types.PropertyGroup):
     events = {
         "enabled": [],
         "type": [],
+        "collision_shape": [],
         "location": [],
         "rotation": [],
         "scale": [],
+
+        "enable_constraint": [],
+
         "mass": [],
-        "collision_shape": [],
         "friction": [],
         "restitution": [],
         "linear_damping": [],
@@ -84,8 +87,6 @@ class EditBone(bpy.types.PropertyGroup):
         "use_start_deactivated": [],
         "deactivate_linear_velocity": [],
         "deactivate_angular_velocity": [],
-        "enable_constraint": [],
-        "parent": [],
     }
 
     enabled: bpy.props.BoolProperty(
@@ -136,9 +137,9 @@ class EditBone(bpy.types.PropertyGroup):
 
     scale: bpy.props.FloatVectorProperty(
         name="Scale",
-        description="Scale of the hitbox relative to the bone",
+        description="Scale of the hitbox relative to the bone length",
         size=3,
-        default=(1.0, 1.0, 1.0),
+        default=(0.2, 1.0, 0.2),
         precision=3,
         step=1,
         subtype='XYZ',
@@ -164,10 +165,10 @@ class EditBone(bpy.types.PropertyGroup):
         default='CAPSULE',
         options=set(),
         items=[
-            ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
             ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
             ('BOX', "Box", "Box-like shapes (i.e. cubes), including planes (i.e. ground planes)", 'MESH_CUBE', 2),
             ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
+            ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
         ],
         update=make_event("collision_shape"),
     )
@@ -305,7 +306,11 @@ class EditBone(bpy.types.PropertyGroup):
     parent: bpy.props.StringProperty(
         name="Parent",
         description="Parent bone for constraint",
-        update=make_event("parent"),
+    )
+
+    use_connect: bpy.props.BoolProperty(
+        name="Connected",
+        description="When bone has a parent, bone's head is stuck to the parent's tail",
     )
 
     @classmethod

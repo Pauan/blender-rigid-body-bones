@@ -14,6 +14,7 @@ import faulthandler
 
 from . import armatures
 from . import bones
+from . import events
 from . import panels
 from . import properties
 from . import utils
@@ -23,6 +24,7 @@ reload(utils)
 reload(properties)
 reload(armatures)
 reload(bones)
+reload(events)
 reload(panels)
 
 # This allows you to right click on a button and link to documentation
@@ -37,16 +39,13 @@ classes = (
     properties.Scene,
     properties.Armature,
     properties.EditBone,
-    armatures.SelectInvalidBones,
-    armatures.AlignAllHitboxes,
-    bones.AlignHitbox,
     panels.Panel,
     panels.SettingsPanel,
     panels.BonePanel,
     panels.HitboxPanel,
     panels.ConstraintPanel,
     panels.AdvancedPanel,
-    panels.AdvancedSettingsPanel,
+    panels.AdvancedPhysicsPanel,
     panels.CollectionsPanel,
     panels.DeactivationPanel,
     #BONE_PT_rigid_body_bones_bone,
@@ -60,6 +59,8 @@ def register():
     for cls in classes:
         register_class(cls)
 
+    events.register()
+
     #bpy.utils.register_manual_map(add_object_manual_map)
     #bpy.types.VIEW3D_MT_pose.append(add_menu)
 
@@ -67,6 +68,8 @@ def unregister():
     print("UNREGISTERING")
     #bpy.types.VIEW3D_MT_pose.remove(add_menu)
     #bpy.utils.unregister_manual_map(add_object_manual_map)
+
+    events.unregister()
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):

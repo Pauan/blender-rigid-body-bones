@@ -1,7 +1,6 @@
 import bpy
 from . import utils
 from . import bones
-from . import properties
 
 
 def root_collection(context):
@@ -95,13 +94,8 @@ def remove_all(context, armature, data):
     safe_remove_collections(context, armature)
 
 
-def update_hide_active_bones(context):
-    print("update_hide_active_bones")
-
-    # TODO is context.active_object correct ?
-    armature = context.active_object
-    data = armature.data.rigid_body_bones
-
+@utils.armature_event("hide_active_bones")
+def event_hide_active_bones(context, armature, data):
     hidden = set()
 
     if data.enabled and data.hide_active_bones:
@@ -113,36 +107,17 @@ def update_hide_active_bones(context):
     # Cannot hide in EDIT mode
     with utils.Mode(context, 'POSE'):
         for bone in armature.data.bones:
-            if bone.name in hidden:
-                bone.hide = True
-
-            else:
-                bone.hide = False
-
-properties.Armature.events["enabled"].append(update_hide_active_bones)
-properties.Armature.events["hide_active_bones"].append(update_hide_active_bones)
-properties.EditBone.events["enabled"].append(update_hide_active_bones)
-properties.EditBone.events["type"].append(update_hide_active_bones)
+            bone.hide = (bone.name in hidden)
 
 
-def set_hide_bone_hitboxes(self, context):
-    print("hide_bone_hitboxes")
-
-    # TODO is context.active_object correct ?
-    armature = context.active_object
-    data = armature.data.rigid_body_bones
-
+@utils.armature_event("hide_hitboxes")
+def event_hide_hitboxes(context, armature, data):
     if data.hitboxes:
         data.hitboxes.hide_viewport = data.hide_hitboxes
 
 
-def set_enabled(self, context):
-    print("enabled")
-
-    # TODO is context.active_object correct ?
-    armature = context.active_object
-    data = armature.data.rigid_body_bones
-
+@utils.armature_event("enabled")
+def event_enabled(context, armature, data):
     if data.enabled:
         make_all(context, armature, data)
 
@@ -150,37 +125,39 @@ def set_enabled(self, context):
         remove_all(context, armature, data)
 
 
-class SelectInvalidBones(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.select_invalid_bones"
-    bl_label = "Select invalid bones"
-    bl_description = "Selects bones which have invalid properties (such as Parent)"
-    bl_options = {'UNDO'}
+def event_mode_switch(context):
+    # TODO is active_object correct ?
+    armature = context.active_object
 
-    @classmethod
-    def poll(cls, context):
-        return utils.is_edit_mode(context)
-
-    def execute(self, context):
-        print("Hello World")
-        return {'FINISHED'}
-
-
-class AlignAllHitboxes(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.align_all_hitboxes"
-    bl_label = "Align all hitboxes"
-    bl_description = "Aligns all hitboxes to their respective bones"
-    bl_options = {'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        return (context.active_bone is not None)
-
-    def execute(self, context):
-        armature = context.active_object
+    if armature and armature.type == 'ARMATURE':
         data = armature.data.rigid_body_bones
 
-        with utils.Mode(context, 'EDIT'), utils.Selectable(context.scene, data), utils.Selected(context):
-            for bone in armature.data.edit_bones:
-                bones.align_hitbox(context, armature, bone)
+        print(armature.mode)
+        #print(data.is_property_set("enabled"))
+        #data.property_unset("enabled")
+        #print(data.is_property_set("enabled"))
 
-        return {'FINISHED'}
+        if armature.mode == 'EDIT':
+            for bone in armature.data.edit_bones:
+                bones.restore_parent(armature, bone)
+
+        else:
+            is_enabled = data.enabled
+
+            with utils.Mode(context, 'EDIT'):
+                for bone in armature.data.edit_bones:
+                    if is_enabled:
+                        bones.store_parent(armature, bone)
+                    else:
+                        bones.restore_parent(armature, bone)
+
+                    bones.align_hitbox(bone)
+
+
+def align_all_bones(context):
+    # TODO is active_object correct ?
+    armature = context.active_object
+
+    if armature and armature.type == 'ARMATURE' and armature.mode == 'EDIT':
+        for bone in armature.data.edit_bones:
+            bones.align_hitbox(bone)

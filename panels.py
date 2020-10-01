@@ -46,16 +46,6 @@ class SettingsPanel(bpy.types.Panel):
         col.prop(data, "hide_active_bones")
         col.prop(data, "hide_hitboxes")
 
-        flow.separator()
-
-        col = flow.column()
-        col.operator("rigid_body_bones.align_all_hitboxes")
-
-        flow.separator()
-
-        col = flow.column()
-        col.operator("rigid_body_bones.select_invalid_bones")
-
 
 class BonePanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_bone"
@@ -122,12 +112,6 @@ class HitboxPanel(bpy.types.Panel):
             col = flow.column()
             col.prop(data, "mass")
 
-            flow.separator()
-
-            row = flow.row()
-            row.alignment = 'CENTER'
-            row.operator("rigid_body_bones.align_hitbox")
-
 
 class ConstraintPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_constraint"
@@ -169,9 +153,9 @@ class AdvancedPanel(bpy.types.Panel):
         pass
 
 
-class AdvancedSettingsPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_advanced_settings"
-    bl_label = "Settings"
+class AdvancedPhysicsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_advanced_physics"
+    bl_label = "Physics"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
