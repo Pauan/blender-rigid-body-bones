@@ -1,6 +1,7 @@
 import bpy
 from . import utils
 from . import bones
+from . import properties
 
 
 def root_collection(context):
@@ -36,6 +37,7 @@ def hitboxes_collection(context, armature):
         parent = root_collection(context)
         data.hitboxes = utils.make_collection(armature.name + " [Hitboxes]", parent)
         data.hitboxes.hide_render = True
+        data.hitboxes.hide_viewport = data.hide_hitboxes
 
     return data.hitboxes
 
@@ -52,6 +54,21 @@ def make_root_body(context, armature, data):
     return data.root_body
 
 
+def safe_remove_collections(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if data.constraints and utils.safe_remove_collection(data.constraints):
+        data.constraints = None
+
+    if data.hitboxes and utils.safe_remove_collection(data.hitboxes):
+        data.hitboxes = None
+
+    root = context.scene.rigid_body_bones.collection
+
+    if root and utils.safe_remove_collection(root):
+        context.scene.rigid_body_bones.collection = None
+
+
 def make_all(context, armature, data):
     with utils.Mode(context, 'EDIT'):
         for bone in armature.data.edit_bones:
@@ -61,31 +78,66 @@ def make_all(context, armature, data):
 def remove_all(context, armature, data):
     with utils.Mode(context, 'EDIT'):
         for bone in armature.data.edit_bones:
-            bones.cleanup(bone)
+            bones.remove(context, armature, bone)
 
-    hitboxes = data.hitboxes
-    data.root_body = None
-    data.constraints = None
-    data.hitboxes = None
+    if data.root_body:
+        utils.remove_object(data.root_body)
+        data.root_body = None
 
-    if hitboxes:
-        utils.remove_collection(hitboxes, recursive=True)
+    if data.constraints:
+        utils.remove_collection(data.constraints, recursive=True)
+        data.constraints = None
 
-    root = context.scene.rigid_body_bones.collection
+    if data.hitboxes:
+        utils.remove_collection(data.hitboxes, recursive=True)
+        data.hitboxes = None
 
-    if root and utils.safe_remove_collection(root):
-        context.scene.rigid_body_bones.collection = None
-
-
-def hide_bone_hitboxes(self, context):
-    pass
-
-def hide_active_bones(self, context):
-    pass
+    safe_remove_collections(context, armature)
 
 
-def update(self, context):
-    print("UPDATING")
+def update_hide_active_bones(context):
+    print("update_hide_active_bones")
+
+    # TODO is context.active_object correct ?
+    armature = context.active_object
+    data = armature.data.rigid_body_bones
+
+    hidden = set()
+
+    if data.enabled and data.hide_active_bones:
+        with utils.Mode(context, 'EDIT'):
+            for bone in armature.data.edit_bones:
+                if bones.is_active(bone):
+                    hidden.add(bone.name)
+
+    # Cannot hide in EDIT mode
+    with utils.Mode(context, 'POSE'):
+        for bone in armature.data.bones:
+            if bone.name in hidden:
+                bone.hide = True
+
+            else:
+                bone.hide = False
+
+properties.Armature.events["enabled"].append(update_hide_active_bones)
+properties.Armature.events["hide_active_bones"].append(update_hide_active_bones)
+properties.EditBone.events["enabled"].append(update_hide_active_bones)
+properties.EditBone.events["type"].append(update_hide_active_bones)
+
+
+def set_hide_bone_hitboxes(self, context):
+    print("hide_bone_hitboxes")
+
+    # TODO is context.active_object correct ?
+    armature = context.active_object
+    data = armature.data.rigid_body_bones
+
+    if data.hitboxes:
+        data.hitboxes.hide_viewport = data.hide_hitboxes
+
+
+def set_enabled(self, context):
+    print("enabled")
 
     # TODO is context.active_object correct ?
     armature = context.active_object

@@ -19,11 +19,11 @@ from . import properties
 from . import utils
 
 from importlib import reload
+reload(utils)
+reload(properties)
 reload(armatures)
 reload(bones)
 reload(panels)
-reload(properties)
-reload(utils)
 
 # This allows you to right click on a button and link to documentation
 def add_object_manual_map():

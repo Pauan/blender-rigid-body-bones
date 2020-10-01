@@ -106,16 +106,40 @@ def make_passive_hitbox(context, armature, bone):
     return hitbox
 
 
+def create(context, armature, bone):
+    data = bone.rigid_body_bones
+
+    if not data.hitbox:
+        if data.type == 'ACTIVE':
+            data.hitbox = make_active_hitbox(context, armature, bone)
+
+        else:
+            data.hitbox = make_passive_hitbox(context, armature, bone)
+
+
+def remove(context, armature, bone):
+    data = bone.rigid_body_bones
+
+    if data.hitbox:
+        utils.remove_object(data.hitbox)
+        data.hitbox = None
+
+    if data.constraint:
+        utils.remove_object(data.constraint)
+        data.constraint = None
+
+
 def initialize(context, armature, bone):
     data = bone.rigid_body_bones
 
     if data.enabled:
-        if not data.hitbox:
-            if data.type == 'ACTIVE':
-                data.hitbox = make_active_hitbox(context, armature, bone)
+        create(context, armature, bone)
 
-            else:
-                data.hitbox = make_passive_hitbox(context, armature, bone)
+
+def is_active(bone):
+    data = bone.rigid_body_bones
+
+    return data.enabled and data.type == 'ACTIVE'
 
 
 def align_hitbox(context, armature, bone):
@@ -134,17 +158,19 @@ def align_hitbox(context, armature, bone):
         pass
 
 
-def cleanup(bone):
-    data = bone.rigid_body_bones
-    data.constraint = None
-    data.hitbox = None
-
-
-
 def update(self, context):
     print("BONE")
-    print(context.active_object)
-    print(context.active_bone)
+
+    armature = context.active_object
+    bone = context.active_bone
+
+    if self.enabled:
+        create(context, armature, bone)
+        #update(context, armature, bone)
+
+    else:
+        remove(context, armature, bone)
+        armatures.safe_remove_collections(context, armature)
 
 
 class AlignHitbox(bpy.types.Operator):
