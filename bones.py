@@ -14,9 +14,28 @@ def hitbox_dimensions(bone):
     return dimensions
 
 
-def update_shape(object, type):
+def init_hitbox(object):
+    object.hide_render = True
+    object.show_in_front = True
+    object.display.show_shadows = False
+
+
+def show_bounds(object, type):
+    object.show_bounds = True
+    object.display_type = 'BOUNDS'
     object.display_bounds_type = type
+
+
+def update_shape(object, type):
     object.rigid_body.collision_shape = type
+
+    if type == 'CONVEX_HULL' or type == 'MESH':
+        object.show_bounds = False
+        object.display_type = 'WIRE'
+        object.display_bounds_type = 'BOX'
+
+    else:
+        show_bounds(object, type)
 
 
 def update_rigid_body(rigid_body, data):
@@ -34,15 +53,6 @@ def update_rigid_body(rigid_body, data):
     rigid_body.deactivate_angular_velocity = data.deactivate_angular_velocity
 
 
-def init_hitbox(object, type):
-    object.hide_render = True
-    object.show_in_front = True
-    object.show_bounds = True
-    object.display_type = 'BOUNDS'
-    object.display.show_shadows = False
-    update_shape(object, type)
-
-
 def make_empty_rigid_body(context, name, collection, parent):
     mesh = bpy.data.meshes.new(name=name)
     body = bpy.data.objects.new(name, mesh)
@@ -58,7 +68,8 @@ def make_empty_rigid_body(context, name, collection, parent):
         body.rigid_body.collision_collections[0] = False
         body.hide_select = True
         body.hide_viewport = True
-        init_hitbox(body, type='BOX')
+        init_hitbox(body)
+        show_bounds(body, type='BOX')
 
     return body
 
@@ -106,7 +117,8 @@ def make_active_hitbox(context, armature, bone):
         utils.select(context, [hitbox])
         bpy.ops.rigidbody.object_add(type='ACTIVE')
         update_rigid_body(hitbox.rigid_body, data)
-        init_hitbox(hitbox, type=data.collision_shape)
+        init_hitbox(hitbox)
+        update_shape(hitbox, type=data.collision_shape)
 
     return hitbox
 
@@ -131,7 +143,8 @@ def make_passive_hitbox(context, armature, bone):
         utils.select(context, [hitbox])
         bpy.ops.rigidbody.object_add(type='PASSIVE')
         hitbox.rigid_body.kinematic = True
-        init_hitbox(hitbox, type=data.collision_shape)
+        init_hitbox(hitbox)
+        update_shape(hitbox, type=data.collision_shape)
 
     return hitbox
 

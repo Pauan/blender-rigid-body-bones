@@ -163,13 +163,16 @@ class EditBone(bpy.types.PropertyGroup):
     collision_shape: bpy.props.EnumProperty(
         name="Collision Shape",
         description="Collision Shape of hitbox in Rigid Body Simulations",
-        default='CAPSULE',
+        default='BOX',
         options=set(),
         items=[
-            ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
             ('BOX', "Box", "Box-like shapes (i.e. cubes), including planes (i.e. ground planes)", 'MESH_CUBE', 2),
-            ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
             ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
+            ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
+            ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
+            ('CONE', "Cone", "", "MESH_CONE", 4),
+            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", "MESH_ICOSPHERE", 5),
+            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", "MESH_MONKEY", 6),
         ],
         update=make_event("collision_shape"),
     )

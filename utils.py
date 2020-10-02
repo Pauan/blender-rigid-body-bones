@@ -239,5 +239,6 @@ def make_cube(name, dimensions, collection):
     mesh = bpy.data.meshes.new(name=name)
     set_mesh_cube(mesh, dimensions)
     cube = bpy.data.objects.new(name, mesh)
+    cube.scale = (1.0, 1.0, -1.0)
     collection.objects.link(cube)
     return cube

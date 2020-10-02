@@ -45,7 +45,8 @@ class SettingsPanel(bpy.types.Panel):
         col.prop(data, "hide_active_bones")
         col.prop(data, "hide_hitboxes")
 
-        if True:
+        # TODO remove this
+        if False:
             flow.separator()
 
             col = flow.column()
