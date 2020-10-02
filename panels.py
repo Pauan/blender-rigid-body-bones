@@ -68,6 +68,8 @@ class BonePanel(bpy.types.Panel):
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones
 
+        self.layout.enabled = utils.is_armature_enabled(context)
+
         self.layout.prop(data, "enabled", text = "")
 
     def draw(self, context):
@@ -88,7 +90,7 @@ class HitboxPanel(bpy.types.Panel):
         data = context.active_bone.rigid_body_bones
 
         layout = self.layout
-        layout.enabled = data.enabled
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
@@ -135,7 +137,7 @@ class ConstraintPanel(bpy.types.Panel):
 
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled
+        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
         self.layout.prop(data, "enable_constraint", text="")
 
     def draw(self, context):
@@ -171,7 +173,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
         self.layout.use_property_split = True
-        self.layout.enabled = data.enabled
+        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
 
         flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
@@ -212,7 +214,7 @@ class CollectionsPanel(bpy.types.Panel):
 
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled
+        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
         self.layout.prop(data, "collision_collections", text="")
 
 
@@ -233,12 +235,12 @@ class DeactivationPanel(bpy.types.Panel):
 
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled
+        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
         self.layout.prop(data, "use_deactivation", text="")
 
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled and data.use_deactivation
+        self.layout.enabled = data.enabled and data.use_deactivation and utils.is_armature_enabled(context)
         self.layout.use_property_split = True
 
         flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)

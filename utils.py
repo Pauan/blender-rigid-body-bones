@@ -168,6 +168,9 @@ def is_armature(context):
         (context.active_object.type == 'ARMATURE')
     )
 
+def is_armature_enabled(context):
+    return context.active_object.data.rigid_body_bones.enabled
+
 
 def select(context, objs):
     view_layer = context.view_layer
