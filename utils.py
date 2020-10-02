@@ -156,10 +156,16 @@ class SelectedBones:
         return False
 
 
+def has_active_bone(context):
+    return is_armature(context) and (context.active_bone is not None)
+
 def is_edit_mode(context):
+    return (context.mode == 'EDIT_ARMATURE')
+
+def is_armature(context):
     return (
-        (context.active_bone is not None) and
-        (context.mode == 'EDIT_ARMATURE')
+        (context.active_object is not None) and
+        (context.active_object.type == 'ARMATURE')
     )
 
 

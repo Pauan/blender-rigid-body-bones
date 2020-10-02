@@ -172,7 +172,6 @@ def is_active(bone):
 
 
 def align_hitbox(bone):
-    print("ALIGN HITBOX")
     data = bone.rigid_body_bones
 
     if data.hitbox:
@@ -181,13 +180,22 @@ def align_hitbox(bone):
         utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
 
 
-def store_parent(armature, bone, armature_enabled):
+def remove_parent(bone):
+    data = bone.rigid_body_bones
+
+    if data.enabled and data.type == 'ACTIVE':
+        assert data.is_property_set("parent")
+        assert data.is_property_set("use_connect")
+        bone.parent = None
+
+
+def store_parent(bone, armature_enabled):
     data = bone.rigid_body_bones
 
     assert not data.is_property_set("parent")
     assert not data.is_property_set("use_connect")
 
-    if armature_enabled and data.enabled and data.type == 'ACTIVE':
+    if data.enabled and data.type == 'ACTIVE':
         parent = bone.parent
 
         if parent:
@@ -199,10 +207,12 @@ def store_parent(armature, bone, armature_enabled):
             data.parent = ""
 
         data.use_connect = bone.use_connect
-        bone.parent = None
+
+        if armature_enabled:
+            bone.parent = None
 
 
-def restore_parent(armature, bone, mapping):
+def restore_parent(bone, mapping, delete):
     data = bone.rigid_body_bones
 
     if data.is_property_set("parent"):
@@ -229,8 +239,9 @@ def restore_parent(armature, bone, mapping):
 
         bone.use_connect = data.use_connect
 
-        data.property_unset("use_connect")
-        data.property_unset("parent")
+        if delete:
+            data.property_unset("use_connect")
+            data.property_unset("parent")
 
     else:
         assert not data.is_property_set("use_connect")

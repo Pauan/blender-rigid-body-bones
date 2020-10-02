@@ -13,7 +13,7 @@ class Panel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return (context.active_bone is not None)
+        return utils.is_armature(context)
 
     def draw(self, context):
         pass
@@ -45,6 +45,12 @@ class SettingsPanel(bpy.types.Panel):
         col.prop(data, "hide_active_bones")
         col.prop(data, "hide_hitboxes")
 
+        if True:
+            flow.separator()
+
+            col = flow.column()
+            col.operator("rigid_body_bones.factory_default")
+
 
 class BonePanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_bone"
@@ -57,7 +63,7 @@ class BonePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return utils.is_edit_mode(context)
+        return utils.has_active_bone(context) and utils.is_edit_mode(context)
 
     def draw_header(self, context):
         data = context.active_bone.rigid_body_bones

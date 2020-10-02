@@ -42,6 +42,7 @@ classes = (
     properties.Scene,
     properties.Armature,
     properties.EditBone,
+    armatures.FactoryDefaults,
     panels.Panel,
     panels.SettingsPanel,
     panels.BonePanel,
