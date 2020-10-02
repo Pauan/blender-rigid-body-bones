@@ -1,3 +1,4 @@
+import sys
 import bpy
 import bmesh
 from math import radians
@@ -7,6 +8,9 @@ from mathutils import Vector, Euler, Matrix
 def log(obj):
     from pprint import PrettyPrinter
     PrettyPrinter(indent = 4).pprint(obj)
+
+def error(message):
+    print(message, file=sys.stderr)
 
 def debug(message):
     if True:

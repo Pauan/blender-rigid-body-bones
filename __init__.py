@@ -1,3 +1,6 @@
+# TODO support undo/redo
+# TODO support animating settings
+# TODO support alt click to change all selected objects
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

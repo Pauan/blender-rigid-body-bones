@@ -94,42 +94,73 @@ def remove_all(context, armature, data):
     safe_remove_collections(context, armature)
 
 
+def store_parents(context, armature, data):
+    if not data.parents_stored:
+        is_enabled = data.enabled
+
+        with utils.Mode(context, 'EDIT'):
+            for bone in armature.data.edit_bones:
+                bones.store_parent(armature, bone, is_enabled)
+                bones.align_hitbox(bone)
+
+        data.parents_stored = True
+
+
+def restore_parents(context, armature, data):
+    if data.parents_stored:
+        edit_bones = armature.data.edit_bones
+
+        # Fast O(1) lookup rather than O(n) lookup
+        # This converts an O(n^2) algorithm into an O(2n) algorithm
+        mapping = {}
+
+        # TODO can this be made faster ?
+        for bone in edit_bones:
+            bone_data = bone.rigid_body_bones
+
+            if bone_data.is_property_set("name"):
+                mapping[bone_data.name] = bone
+                bone_data.property_unset("name")
+
+        for bone in edit_bones:
+            bones.restore_parent(armature, bone, mapping)
+
+        data.parents_stored = False
+
+
 def event_mode_switch(context):
+    import time
+    time_start = time.time()
+
     # TODO is active_object correct ?
     armature = context.active_object
 
     if armature and armature.type == 'ARMATURE':
         data = armature.data.rigid_body_bones
 
-        print(armature.mode)
-        #print(data.is_property_set("enabled"))
-        #data.property_unset("enabled")
-        #print(data.is_property_set("enabled"))
+        print("MODE SWITCH", armature.mode)
 
         if armature.mode == 'EDIT':
-            for bone in armature.data.edit_bones:
-                bones.restore_parent(armature, bone)
+            restore_parents(context, armature, data)
 
         else:
-            is_enabled = data.enabled
+            store_parents(context, armature, data)
 
-            with utils.Mode(context, 'EDIT'):
-                for bone in armature.data.edit_bones:
-                    if is_enabled:
-                        bones.store_parent(armature, bone)
-                    else:
-                        bones.restore_parent(armature, bone)
+    print("My Script Finished: %.4f sec" % (time.time() - time_start))
 
-                    bones.align_hitbox(bone)
 
-def align_all_bones(context):
+# Aligns the hitboxes while moving bones
+def event_timer(context):
     # TODO is active_object correct ?
     armature = context.active_object
 
     if armature and armature.type == 'ARMATURE' and armature.mode == 'EDIT':
-        for bone in armature.data.edit_bones:
-            bones.align_hitbox(bone)
+        data = armature.data.rigid_body_bones
 
+        if data.enabled and not data.hide_hitboxes:
+            for bone in armature.data.edit_bones:
+                pass
+                #bones.align_hitbox(bone)
 
 
 @utils.armature_event("hide_active_bones")
@@ -156,6 +187,8 @@ def event_hide_hitboxes(context, armature, data):
 
 @utils.armature_event("enabled")
 def event_enabled(context, armature, data):
+    print("ENABLING")
+
     if data.enabled:
         make_all(context, armature, data)
 

@@ -10,7 +10,7 @@ fps = 1 / 60
 owner = object()
 
 def timer():
-    armatures.align_all_bones(bpy.context)
+    armatures.event_timer(bpy.context)
     return fps
 
 
@@ -23,6 +23,7 @@ def register_subscribers():
         owner=owner,
         args=(bpy.context,),
         notify=armatures.event_mode_switch,
+        options={'PERSISTENT'}
     )
 
     armatures.event_mode_switch(bpy.context)

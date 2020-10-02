@@ -24,6 +24,7 @@ class Armature(bpy.types.PropertyGroup):
     hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
+    parents_stored: bpy.props.BoolProperty(default=False)
 
     events = {
         "enabled": [],
@@ -301,6 +302,10 @@ class EditBone(bpy.types.PropertyGroup):
         options=set(),
         update=make_event("enable_constraint"),
     )
+
+    # These properties are used to save/restore the parent
+    # TODO replace with PointerProperty
+    name: bpy.props.StringProperty()
 
     # TODO replace with PointerProperty
     parent: bpy.props.StringProperty(

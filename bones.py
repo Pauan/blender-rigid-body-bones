@@ -172,6 +172,7 @@ def is_active(bone):
 
 
 def align_hitbox(bone):
+    print("ALIGN HITBOX")
     data = bone.rigid_body_bones
 
     if data.hitbox:
@@ -180,43 +181,59 @@ def align_hitbox(bone):
         utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
 
 
-def store_parent(armature, bone):
+def store_parent(armature, bone, armature_enabled):
     data = bone.rigid_body_bones
 
-    if data.enabled and data.type == 'ACTIVE':
-        if not data.is_property_set("parent"):
-            if bone.parent:
-                data.parent = bone.parent.name
+    assert not data.is_property_set("parent")
+    assert not data.is_property_set("use_connect")
 
-            else:
-                data.parent = ""
+    if armature_enabled and data.enabled and data.type == 'ACTIVE':
+        parent = bone.parent
 
-            data.use_connect = bone.use_connect
-            bone.parent = None
+        if parent:
+            name = parent.name
+            parent.rigid_body_bones.name = name
+            data.parent = name
 
-    else:
-        restore_parent(armature, bone)
+        else:
+            data.parent = ""
+
+        data.use_connect = bone.use_connect
+        bone.parent = None
 
 
-def restore_parent(armature, bone):
+def restore_parent(armature, bone, mapping):
     data = bone.rigid_body_bones
 
     if data.is_property_set("parent"):
+        assert data.is_property_set("use_connect")
+
         if data.parent == "":
             bone.parent = None
 
         else:
-            parent = armature.data.edit_bones.get(data.parent)
+            parent = mapping.get(data.parent)
+
+            #parent = None
+
+            # TODO make this faster somehow
+            #for x in armature.data.edit_bones:
+                #if x.rigid_body_bones.name == data.parent:
+                    #parent = x
+                    #break
 
             if parent is None:
-                raise Exception("[{}] could not find parent \"{}\"".format(bone.name, data.parent))
+                utils.error("[{}] could not find parent \"{}\"".format(bone.name, data.parent))
 
             bone.parent = parent
 
         bone.use_connect = data.use_connect
 
-        data.property_unset("parent")
         data.property_unset("use_connect")
+        data.property_unset("parent")
+
+    else:
+        assert not data.is_property_set("use_connect")
 
 
 @utils.bone_event("type")
