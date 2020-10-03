@@ -30,27 +30,35 @@ class Armature(bpy.types.PropertyGroup):
         "enabled": [],
         "hide_active_bones": [],
         "hide_hitboxes": [],
+        "hide_constraints": [],
     }
 
     enabled: bpy.props.BoolProperty(
         name="Enable rigid bodies",
-        description="Enable rigid body physics for armature",
+        description="Enable rigid body physics for the armature",
         default=True,
         update=make_event("enabled"),
     )
 
     hide_active_bones: bpy.props.BoolProperty(
         name="Hide active bones",
-        description="Hide bones which have an Active hitbox",
+        description="Hide bones which have an Active rigid body",
         default=True,
         update=make_event("hide_active_bones"),
     )
 
     hide_hitboxes: bpy.props.BoolProperty(
-        name="Hide hitboxes",
-        description="Hide bone hitboxes",
+        name="Hide rigid bodies",
+        description="Hide bone rigid bodies",
         default=False,
         update=make_event("hide_hitboxes"),
+    )
+
+    hide_constraints: bpy.props.BoolProperty(
+        name="Hide constraints",
+        description="Hide bone constraints",
+        default=True,
+        update=make_event("hide_constraints"),
     )
 
     @classmethod
@@ -90,7 +98,30 @@ class EditBone(bpy.types.PropertyGroup):
         "scale": [],
         "origin": [],
 
-        "enable_constraint": [],
+        "constraint_enabled": [],
+        "disable_collisions": [],
+        "use_breaking": [],
+        "breaking_threshold": [],
+
+        "use_spring_ang_x": [],
+        "use_spring_ang_y": [],
+        "use_spring_ang_z": [],
+        "spring_stiffness_ang_x": [],
+        "spring_stiffness_ang_y": [],
+        "spring_stiffness_ang_z": [],
+        "spring_damping_ang_x": [],
+        "spring_damping_ang_y": [],
+        "spring_damping_ang_z": [],
+
+        "use_spring_x": [],
+        "use_spring_y": [],
+        "use_spring_z": [],
+        "spring_stiffness_x": [],
+        "spring_stiffness_y": [],
+        "spring_stiffness_z": [],
+        "spring_damping_x": [],
+        "spring_damping_y": [],
+        "spring_damping_z": [],
 
         "mass": [],
         "friction": [],
@@ -104,11 +135,13 @@ class EditBone(bpy.types.PropertyGroup):
         "use_start_deactivated": [],
         "deactivate_linear_velocity": [],
         "deactivate_angular_velocity": [],
+        "use_override_solver_iterations": [],
+        "solver_iterations": [],
     }
 
     enabled: bpy.props.BoolProperty(
         name="Enable Rigid Body",
-        description="Enable rigid body hitbox for bone",
+        description="Enable rigid body for the bone",
         default=False,
         options=set(),
         update=make_event("enabled"),
@@ -116,19 +149,19 @@ class EditBone(bpy.types.PropertyGroup):
 
     type: bpy.props.EnumProperty(
         name="Type",
-        description="Behavior of the hitbox",
+        description="Behavior of the rigid body",
         default='PASSIVE',
         options=set(),
         items=[
-            ('PASSIVE', "Passive", "Hitbox follows the bone", 0),
-            ('ACTIVE', "Active", "Bone follows the hitbox", 1),
+            ('PASSIVE', "Passive", "Rigid body follows the bone", 0),
+            ('ACTIVE', "Active", "Bone follows the rigid body", 1),
         ],
         update=make_event("type"),
     )
 
     location: bpy.props.FloatVectorProperty(
         name="Location",
-        description="Location of the hitbox relative to the bone",
+        description="Location of the rigid body relative to the bone",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=5,
@@ -141,7 +174,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     rotation: bpy.props.FloatVectorProperty(
         name="Rotation",
-        description="Rotation of the hitbox relative to the origin",
+        description="Rotation of the rigid body relative to the origin",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=3,
@@ -154,7 +187,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     scale: bpy.props.FloatVectorProperty(
         name="Scale",
-        description="Scale of the hitbox relative to the bone length",
+        description="Scale of the rigid body relative to the bone length",
         size=3,
         default=(0.2, 1.0, 0.2),
         precision=3,
@@ -165,8 +198,8 @@ class EditBone(bpy.types.PropertyGroup):
     )
 
     origin: bpy.props.FloatProperty(
-        name="Origin",
-        description="Offset origin (relative to the bone): Head=0, Tail=1",
+        name="Offset Origin",
+        description="Origin relative to the bone: Head=0, Tail=1",
         default=0.5,
         soft_min=0.0,
         soft_max=1.0,
@@ -177,7 +210,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     mass: bpy.props.FloatProperty(
         name="Mass",
-        description="How much the hitbox 'weighs' irrespective of gravity",
+        description="How much the rigid body 'weighs' irrespective of gravity",
         default=1.0,
         min=0.001,
         precision=3,
@@ -189,7 +222,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     collision_shape: bpy.props.EnumProperty(
         name="Collision Shape",
-        description="Collision Shape of hitbox in Rigid Body Simulations",
+        description="Collision shape of the rigid body",
         default='BOX',
         options=set(),
         items=[
@@ -206,7 +239,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     friction: bpy.props.FloatProperty(
         name="Friction",
-        description="Resistance of hitbox to movement",
+        description="Resistance of the rigid body to movement",
         default=0.5,
         min=0.0,
         soft_max=1.0,
@@ -217,7 +250,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     restitution: bpy.props.FloatProperty(
         name="Restitution",
-        description="Tendency of hitbox to bounce after colliding with another (0 = stays still, 1 = perfectly elastic)",
+        description="Tendency of the rigid body to bounce after colliding with another (0 = stays still, 1 = perfectly elastic)",
         default=0.0,
         min=0.0,
         soft_max=1.0,
@@ -272,7 +305,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     collision_collections: bpy.props.BoolVectorProperty(
         name="Collision Collections",
-        description="Collision collections hitbox belongs to",
+        description="Collision collections the rigid body belongs to",
         default=(
             True,  False, False, False, False, False, False, False, False, False,
             False, False, False, False, False, False, False, False, False, False
@@ -285,7 +318,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     use_deactivation: bpy.props.BoolProperty(
         name="Enable Deactivation",
-        description="Enable deactivation of resting hitbox (increases performance and stability but can cause glitches)",
+        description="Enable deactivation of resting rigid body (increases performance and stability but can cause glitches)",
         default=False,
         options=set(),
         update=make_event("use_deactivation"),
@@ -293,7 +326,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     use_start_deactivated: bpy.props.BoolProperty(
         name="Start Deactivated",
-        description="Deactivate hitbox at the start of the simulation",
+        description="Deactivate rigid body at the start of the simulation",
         default=False,
         options=set(),
         update=make_event("use_start_deactivated"),
@@ -301,7 +334,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     deactivate_linear_velocity: bpy.props.FloatProperty(
         name="Linear Velocity Deactivation Threshold",
-        description="Linear Velocity below which simulation stops simulating hitbox",
+        description="Linear Velocity below which simulation stops simulating the rigid body",
         default=0.4,
         min=0.0,
         step=10,
@@ -314,7 +347,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     deactivate_angular_velocity: bpy.props.FloatProperty(
         name="Angular Velocity Deactivation Threshold",
-        description="Angular Velocity below which simulation stops simulating hitbox",
+        description="Angular Velocity below which simulation stops simulating the rigid body",
         default=0.5,
         min=0.0,
         step=10,
@@ -325,13 +358,242 @@ class EditBone(bpy.types.PropertyGroup):
         update=make_event("deactivate_angular_velocity"),
     )
 
-    enable_constraint: bpy.props.BoolProperty(
+    use_override_solver_iterations: bpy.props.BoolProperty(
+        name="Override Solver Iterations",
+        description="Override the number of solver iterations for this constraint",
+        default=False,
+        options=set(),
+        update=make_event("use_override_solver_iterations"),
+    )
+
+    solver_iterations: bpy.props.IntProperty(
+        name="Solver Iterations",
+        description="Number of constraint solver iterations made per simulation step (higher values are more accurate but slower)",
+        default=10,
+        min=1,
+        max=1000,
+        step=1,
+        options=set(),
+        update=make_event("solver_iterations"),
+    )
+
+    constraint_enabled: bpy.props.BoolProperty(
         name="Enable Constraint",
-        description="Enable constraint for hitbox",
+        description="Enable constraint for the rigid body",
         default=True,
         options=set(),
-        update=make_event("enable_constraint"),
+        update=make_event("constraint_enabled"),
     )
+
+    disable_collisions: bpy.props.BoolProperty(
+        name="Disable Collisions",
+        description="Disable collisions with the parent bone",
+        default=True,
+        options=set(),
+        update=make_event("disable_collisions"),
+    )
+
+    use_breaking: bpy.props.BoolProperty(
+        name="Breakable",
+        description="Limits can be broken if it receives an impulse above the threshold",
+        default=False,
+        options=set(),
+        update=make_event("use_breaking"),
+    )
+
+    breaking_threshold: bpy.props.FloatProperty(
+        name="Breaking Threshold",
+        description="Impulse threshold that must be reached for the constraint to break",
+        default=10.0,
+        min=0.0,
+        step=100,
+        precision=2,
+        options=set(),
+        update=make_event("breaking_threshold"),
+    )
+
+
+    use_spring_ang_x: bpy.props.BoolProperty(
+        name="X Rotate Spring",
+        description="Enable spring on X rotational axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_ang_x"),
+    )
+
+    use_spring_ang_y: bpy.props.BoolProperty(
+        name="Y Rotate Spring",
+        description="Enable spring on Y rotational axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_ang_y"),
+    )
+
+    use_spring_ang_z: bpy.props.BoolProperty(
+        name="Z Rotate Spring",
+        description="Enable spring on Z rotational axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_ang_z"),
+    )
+
+    spring_stiffness_ang_x: bpy.props.FloatProperty(
+        name="X Rotate Stiffness",
+        description="Spring stiffness on the X rotational axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_ang_x"),
+    )
+
+    spring_stiffness_ang_y: bpy.props.FloatProperty(
+        name="Y Rotate Stiffness",
+        description="Spring stiffness on the Y rotational axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_ang_y"),
+    )
+
+    spring_stiffness_ang_z: bpy.props.FloatProperty(
+        name="Z Rotate Stiffness",
+        description="Spring stiffness on the Z rotational axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_ang_z"),
+    )
+
+    spring_damping_ang_x: bpy.props.FloatProperty(
+        name="X Rotate Damping",
+        description="Spring damping on the X rotational axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_ang_x"),
+    )
+
+    spring_damping_ang_y: bpy.props.FloatProperty(
+        name="Y Rotate Damping",
+        description="Spring damping on the Y rotational axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_ang_y"),
+    )
+
+    spring_damping_ang_z: bpy.props.FloatProperty(
+        name="Z Rotate Damping",
+        description="Spring damping on the Z rotational axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_ang_z"),
+    )
+
+
+    use_spring_x: bpy.props.BoolProperty(
+        name="X Translate Spring",
+        description="Enable spring on X translate axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_x"),
+    )
+
+    use_spring_y: bpy.props.BoolProperty(
+        name="Y Translate Spring",
+        description="Enable spring on Y translate axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_y"),
+    )
+
+    use_spring_z: bpy.props.BoolProperty(
+        name="Z Translate Spring",
+        description="Enable spring on Z translate axis",
+        default=False,
+        options=set(),
+        update=make_event("use_spring_z"),
+    )
+
+    spring_stiffness_x: bpy.props.FloatProperty(
+        name="X Translate Stiffness",
+        description="Spring stiffness on the X translate axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_x"),
+    )
+
+    spring_stiffness_y: bpy.props.FloatProperty(
+        name="Y Translate Stiffness",
+        description="Spring stiffness on the Y translate axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_y"),
+    )
+
+    spring_stiffness_z: bpy.props.FloatProperty(
+        name="Z Translate Stiffness",
+        description="Spring stiffness on the Z translate axis",
+        default=10.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=make_event("spring_stiffness_z"),
+    )
+
+    spring_damping_x: bpy.props.FloatProperty(
+        name="X Translate Damping",
+        description="Spring damping on the X translate axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_x"),
+    )
+
+    spring_damping_y: bpy.props.FloatProperty(
+        name="Y Translate Damping",
+        description="Spring damping on the Y translate axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_y"),
+    )
+
+    spring_damping_z: bpy.props.FloatProperty(
+        name="Z Translate Damping",
+        description="Spring damping on the Z translate axis",
+        default=0.5,
+        min=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        update=make_event("spring_damping_z"),
+    )
+
 
     @classmethod
     def register(cls):

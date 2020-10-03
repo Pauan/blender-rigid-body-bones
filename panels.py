@@ -44,13 +44,7 @@ class ArmatureSettingsPanel(bpy.types.Panel):
         col.prop(data, "enabled")
         col.prop(data, "hide_active_bones")
         col.prop(data, "hide_hitboxes")
-
-        # TODO remove this
-        if False:
-            flow.separator()
-
-            col = flow.column()
-            col.operator("rigid_body_bones.factory_default")
+        col.prop(data, "hide_constraints")
 
 
 class BonePanel(bpy.types.Panel):
@@ -111,14 +105,14 @@ class SettingsPanel(bpy.types.Panel):
             col.prop(data, "mass")
 
 
-class ConstraintPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_bone_constraint"
-    bl_label = "Constraint"
+class LimitsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_limits"
+    bl_label = "Limits"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
-    bl_options = set()
+    bl_options = {'DEFAULT_CLOSED'}
     bl_order = 1
 
     @classmethod
@@ -126,15 +120,118 @@ class ConstraintPanel(bpy.types.Panel):
         data = context.active_bone.rigid_body_bones
         return (data.type == 'ACTIVE')
 
-    def draw_header(self, context):
+    #def draw_header(self, context):
+        #data = context.active_bone.rigid_body_bones
+        #self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        #self.layout.prop(data, "constraint_enabled", text="")
+
+    def draw(self, context):
+        pass
+
+
+class SpringsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_springs"
+    bl_label = "Springs"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
-        self.layout.prop(data, "enable_constraint", text="")
+        return (data.type == 'ACTIVE')
+
+    def draw(self, context):
+        pass
+
+
+class SpringsRotatePanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_springs_rotate"
+    bl_label = "Rotate"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_springs"
+    bl_options = set()
+    bl_order = 0
 
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
         layout = self.layout
-        layout.enabled = data.enable_constraint
+        layout.enabled = data.enabled and data.constraint_enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "use_spring_ang_x")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_ang_x
+        sub.prop(data, "spring_stiffness_ang_x", text="X Stiffness")
+        sub.prop(data, "spring_damping_ang_x", text="Damping")
+
+        col = flow.column()
+        col.prop(data, "use_spring_ang_y")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_ang_y
+        sub.prop(data, "spring_stiffness_ang_y", text="Y Stiffness")
+        sub.prop(data, "spring_damping_ang_y", text="Damping")
+
+        col = flow.column()
+        col.prop(data, "use_spring_ang_z")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_ang_z
+        sub.prop(data, "spring_stiffness_ang_z", text="Z Stiffness")
+        sub.prop(data, "spring_damping_ang_z", text="Damping")
+
+
+class SpringsTranslatePanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_springs_translate"
+    bl_label = "Translate"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_springs"
+    bl_options = set()
+    bl_order = 1
+
+    def draw(self, context):
+        data = context.active_bone.rigid_body_bones
+        layout = self.layout
+        layout.enabled = data.enabled and data.constraint_enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "use_spring_x")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_x
+        sub.prop(data, "spring_stiffness_x", text="X Stiffness")
+        sub.prop(data, "spring_damping_x", text="Damping")
+
+        col = flow.column()
+        col.prop(data, "use_spring_y")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_y
+        sub.prop(data, "spring_stiffness_y", text="Stiffness")
+        sub.prop(data, "spring_damping_y", text="Damping")
+
+        col = flow.column()
+        col.prop(data, "use_spring_z")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_spring_z
+        sub.prop(data, "spring_stiffness_z", text="Stiffness")
+        sub.prop(data, "spring_damping_z", text="Damping")
 
 
 class OffsetPanel(bpy.types.Panel):
@@ -145,7 +242,7 @@ class OffsetPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 2
+    bl_order = 3
 
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
@@ -157,7 +254,7 @@ class OffsetPanel(bpy.types.Panel):
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         col = flow.column()
-        col.prop(data, "origin", slider=True)
+        col.prop(data, "origin", slider=True, text="Origin")
 
         flow.separator()
 
@@ -183,7 +280,7 @@ class AdvancedPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 3
+    bl_order = 4
 
     def draw(self, context):
         pass
@@ -196,7 +293,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone_advanced"
-    bl_options = set()
+    bl_options = {'DEFAULT_CLOSED'}
     bl_order = 0
 
     def draw(self, context):
@@ -205,6 +302,20 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
         self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
 
         flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "disable_collisions")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "use_breaking")
+
+        sub = col.column()
+        sub.enabled = data.use_breaking
+        sub.prop(data, "breaking_threshold", text="Threshold")
+
+        flow.separator()
 
         col = flow.column()
         col.prop(data, "use_margin")
@@ -269,10 +380,12 @@ class DeactivationPanel(bpy.types.Panel):
 
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
-        self.layout.enabled = data.enabled and data.use_deactivation and utils.is_armature_enabled(context)
-        self.layout.use_property_split = True
+        layout = self.layout
 
-        flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+        layout.enabled = data.enabled and data.use_deactivation and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         col = flow.column()
         col.prop(data, "use_start_deactivated")
@@ -280,3 +393,33 @@ class DeactivationPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "deactivate_linear_velocity", text="Velocity Linear")
         col.prop(data, "deactivate_angular_velocity", text="Angular")
+
+
+class OverrideIterationsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_override_iterations"
+    bl_label = "Override Iterations"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_advanced"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 3
+
+    @classmethod
+    def poll(cls, context):
+        data = context.active_bone.rigid_body_bones
+        return (data.type == 'ACTIVE')
+
+    def draw_header(self, context):
+        data = context.active_bone.rigid_body_bones
+        self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        self.layout.prop(data, "use_override_solver_iterations", text="")
+
+    def draw(self, context):
+        data = context.active_bone.rigid_body_bones
+        layout = self.layout
+
+        layout.enabled = data.enabled and data.use_override_solver_iterations and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        layout.prop(data, "solver_iterations", text="Iterations")

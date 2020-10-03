@@ -24,7 +24,7 @@ def constraints_collection(context, armature):
         parent = hitboxes_collection(context, armature)
         data.constraints = utils.make_collection(armature.name + " [Constraints]", parent)
         data.constraints.hide_render = True
-        data.constraints.hide_viewport = True
+        data.constraints.hide_viewport = data.hide_constraints
 
     return data.constraints
 
@@ -93,14 +93,6 @@ def remove_all(context, armature, data):
         utils.remove_object(data.root_body)
         data.property_unset("root_body")
 
-    if data.constraints:
-        utils.remove_collection(data.constraints, recursive=True)
-        data.property_unset("constraints")
-
-    if data.hitboxes:
-        utils.remove_collection(data.hitboxes, recursive=True)
-        data.property_unset("hitboxes")
-
     safe_remove_collections(context, armature)
 
 
@@ -160,7 +152,7 @@ def event_mode_switch(context):
             store_parents(context, armature, data)
 
 
-# Aligns the hitboxes while moving bones
+# Aligns the hitboxes while moving bones in Edit mode
 def event_timer(context):
     # TODO is active_object correct ?
     armature = context.active_object
@@ -194,6 +186,11 @@ def event_hide_hitboxes(context, armature, data):
     if data.hitboxes:
         data.hitboxes.hide_viewport = data.hide_hitboxes
 
+@utils.armature_event("hide_constraints")
+def event_hide_constraints(context, armature, data):
+    if data.constraints:
+        data.constraints.hide_viewport = data.hide_constraints
+
 
 @utils.armature_event("enabled")
 def event_enabled(context, armature, data):
@@ -204,7 +201,7 @@ def event_enabled(context, armature, data):
         remove_all(context, armature, data)
 
 
-
+# TODO remove this
 class FactoryDefaults(bpy.types.Operator):
     bl_idname = "rigid_body_bones.factory_default"
     bl_label = "Factory defaults"

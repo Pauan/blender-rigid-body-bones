@@ -88,6 +88,49 @@ def align_constraint(constraint, bone):
     constraint.empty_display_size = bone.length * 0.2
 
 
+def is_spring(data):
+    return (
+        data.use_spring_ang_x or
+        data.use_spring_ang_y or
+        data.use_spring_ang_z or
+        data.use_spring_x or
+        data.use_spring_y or
+        data.use_spring_z
+    )
+
+def update_constraint(constraint, data):
+    if is_spring(data):
+        constraint.type = 'GENERIC_SPRING'
+    else:
+        constraint.type = 'GENERIC'
+
+    constraint.disable_collisions = data.disable_collisions
+    constraint.use_breaking = data.use_breaking
+    constraint.breaking_threshold = data.breaking_threshold
+    constraint.use_override_solver_iterations = data.use_override_solver_iterations
+    constraint.solver_iterations = data.solver_iterations
+
+    constraint.use_spring_ang_x = data.use_spring_ang_x
+    constraint.use_spring_ang_y = data.use_spring_ang_y
+    constraint.use_spring_ang_z = data.use_spring_ang_z
+    constraint.spring_stiffness_ang_x = data.spring_stiffness_ang_x
+    constraint.spring_stiffness_ang_y = data.spring_stiffness_ang_y
+    constraint.spring_stiffness_ang_z = data.spring_stiffness_ang_z
+    constraint.spring_damping_ang_x = data.spring_damping_ang_x
+    constraint.spring_damping_ang_y = data.spring_damping_ang_y
+    constraint.spring_damping_ang_z = data.spring_damping_ang_z
+
+    constraint.use_spring_x = data.use_spring_x
+    constraint.use_spring_y = data.use_spring_y
+    constraint.use_spring_z = data.use_spring_z
+    constraint.spring_stiffness_x = data.spring_stiffness_x
+    constraint.spring_stiffness_y = data.spring_stiffness_y
+    constraint.spring_stiffness_z = data.spring_stiffness_z
+    constraint.spring_damping_x = data.spring_damping_x
+    constraint.spring_damping_y = data.spring_damping_y
+    constraint.spring_damping_z = data.spring_damping_z
+
+
 def create_constraint(context, armature, bone):
     data = bone.rigid_body_bones
 
@@ -100,6 +143,7 @@ def create_constraint(context, armature, bone):
         )
 
         align_constraint(constraint, bone)
+        update_constraint(constraint.rigid_body_constraint, data)
 
         data.constraint = constraint
 
@@ -154,7 +198,7 @@ def make_active_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
     hitbox = utils.make_cube(
-        name=bone.name + " [Hitbox]",
+        name=bone.name + " [Active]",
         dimensions=hitbox_dimensions(bone),
         collection=armatures.hitboxes_collection(context, armature),
     )
@@ -180,7 +224,7 @@ def make_passive_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
     hitbox = utils.make_cube(
-        name=bone.name + " [Hitbox]",
+        name=bone.name + " [Passive]",
         dimensions=hitbox_dimensions(bone),
         collection=armatures.hitboxes_collection(context, armature),
     )
@@ -210,7 +254,7 @@ def create(context, armature, bone):
         if data.type == 'ACTIVE':
             data.hitbox = make_active_hitbox(context, armature, bone)
 
-            if data.enable_constraint:
+            if data.constraint_enabled:
                 create_constraint(context, armature, bone)
 
         else:
@@ -342,6 +386,11 @@ def event_rigid_body(context, armature, bone, data):
     if data.hitbox:
         update_rigid_body(data.hitbox.rigid_body, data)
 
+@utils.bone_event("constraint")
+def event_constraint(context, armature, bone, data):
+    if data.constraint:
+        update_constraint(data.constraint.rigid_body_constraint, data)
+
 
 @utils.bone_event("enabled")
 def event_enabled(context, armature, bone, data):
@@ -350,4 +399,13 @@ def event_enabled(context, armature, bone, data):
 
     else:
         remove(bone)
+        armatures.safe_remove_collections(context, armature)
+
+@utils.bone_event("constraint_enabled")
+def event_constraint_enabled(context, armature, bone, data):
+    if data.constraint_enabled:
+        create_constraint(context, armature, bone)
+
+    else:
+        remove_constraint(bone)
         armatures.safe_remove_collections(context, armature)

@@ -46,12 +46,16 @@ def register():
 
     properties.Armature.events["hide_hitboxes"].append(armatures.event_hide_hitboxes)
 
+    properties.Armature.events["hide_constraints"].append(armatures.event_hide_constraints)
+
 
     properties.EditBone.events["enabled"].append(bones.event_enabled)
 
     properties.EditBone.events["type"].append(bones.event_type)
 
     properties.EditBone.events["collision_shape"].append(bones.event_collision_shape)
+
+    properties.EditBone.events["constraint_enabled"].append(bones.event_constraint_enabled)
 
     properties.EditBone.events["origin"].append(bones.event_location)
     properties.EditBone.events["location"].append(bones.event_location)
@@ -74,6 +78,32 @@ def register():
     properties.EditBone.events["use_start_deactivated"].append(bones.event_rigid_body)
     properties.EditBone.events["deactivate_linear_velocity"].append(bones.event_rigid_body)
     properties.EditBone.events["deactivate_angular_velocity"].append(bones.event_rigid_body)
+
+    properties.EditBone.events["disable_collisions"].append(bones.event_constraint)
+    properties.EditBone.events["use_breaking"].append(bones.event_constraint)
+    properties.EditBone.events["breaking_threshold"].append(bones.event_constraint)
+    properties.EditBone.events["use_override_solver_iterations"].append(bones.event_constraint)
+    properties.EditBone.events["solver_iterations"].append(bones.event_constraint)
+
+    properties.EditBone.events["use_spring_ang_x"].append(bones.event_constraint)
+    properties.EditBone.events["use_spring_ang_y"].append(bones.event_constraint)
+    properties.EditBone.events["use_spring_ang_z"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_ang_x"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_ang_y"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_ang_z"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_ang_x"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_ang_y"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_ang_z"].append(bones.event_constraint)
+
+    properties.EditBone.events["use_spring_x"].append(bones.event_constraint)
+    properties.EditBone.events["use_spring_y"].append(bones.event_constraint)
+    properties.EditBone.events["use_spring_z"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_x"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_y"].append(bones.event_constraint)
+    properties.EditBone.events["spring_stiffness_z"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_x"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_y"].append(bones.event_constraint)
+    properties.EditBone.events["spring_damping_z"].append(bones.event_constraint)
 
 
     # This is needed in order to re-subscribe when the file changes

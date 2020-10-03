@@ -4,6 +4,9 @@
 # TODO support convex hull and mesh shapes
 # TODO synchronize the hitbox/constraint name with the bone name
 # TODO test duplicating bones
+# TODO align passive hitboxes properly when moving bones
+# TODO when disabling rigid body for the armature, it should also cleanup the bone parent state
+# TODO when hiding active bone, it should remember its prior hidden state and restore it
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -50,12 +53,16 @@ classes = (
     panels.ArmatureSettingsPanel,
     panels.BonePanel,
     panels.SettingsPanel,
-    panels.ConstraintPanel,
+    panels.LimitsPanel,
+    panels.SpringsPanel,
+    panels.SpringsRotatePanel,
+    panels.SpringsTranslatePanel,
     panels.OffsetPanel,
     panels.AdvancedPanel,
     panels.AdvancedPhysicsPanel,
     panels.CollectionsPanel,
     panels.DeactivationPanel,
+    panels.OverrideIterationsPanel,
 )
 
 def register():

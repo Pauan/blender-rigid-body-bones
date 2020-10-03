@@ -191,21 +191,12 @@ def make_collection(name, parent):
 
 
 def remove_object(object):
-    if object.data is not None:
-        object.data.name += " [DELETED]"
+    data = object.data
 
     bpy.data.objects.remove(object)
 
-
-def remove_collection(collection, recursive=False):
-    for child in collection.objects:
-        remove_object(child)
-
-    if recursive:
-        for child in collection.children:
-            remove_collection(child, recursive)
-
-    bpy.data.collections.remove(collection)
+    if data is not None:
+        bpy.data.meshes.remove(data)
 
 
 def safe_remove_collection(collection):
