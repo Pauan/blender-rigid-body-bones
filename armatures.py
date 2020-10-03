@@ -138,6 +138,65 @@ def restore_parents(armature, data):
         data.property_unset("parents_stored")
 
 
+def get_active_bones(context, armature, data):
+    active = {}
+
+    if data.enabled:
+        with utils.Mode(context, 'EDIT'):
+            for bone in armature.data.edit_bones:
+                if bones.is_active(bone):
+                    active[bone.name] = bone
+
+    return active
+
+
+def remove_constraints(context, armature, data):
+    # Remove Child Of constraints
+    for bone in armature.pose.bones:
+        for constraint in bone.constraints:
+            if constraint.name == "Rigid Body Bones [Child Of]":
+                bone.constraints.remove(constraint)
+                break
+
+
+# TODO also run this when enabling/disabling the rigid bodies ?
+def update_constraints(context, armature, data):
+    active = get_active_bones(context, armature, data)
+
+    # Create/update/remove Child Of constraints
+    for bone in armature.pose.bones:
+        index = None
+        found = None
+
+        for i, constraint in enumerate(bone.constraints):
+            if constraint.name == "Rigid Body Bones [Child Of]":
+                found = constraint
+                index = i
+                break
+
+        edit_bone = active.get(bone.name)
+
+        if edit_bone is None:
+            if found is not None:
+                bone.constraints.remove(found)
+
+        else:
+            if found is None:
+                index = len(bone.constraints)
+                found = bone.constraints.new(type='CHILD_OF')
+                found.name = "Rigid Body Bones [Child Of]"
+
+            assert index is not None
+
+            if index != 0:
+                bone.constraints.move(index, 0)
+
+            hitbox = edit_bone.rigid_body_bones.hitbox
+            print(hitbox)
+            #assert hitbox is not None
+            #found.target = hitbox
+
+
 def event_mode_switch(context):
     # TODO is active_object correct ?
     armature = context.active_object
@@ -147,9 +206,11 @@ def event_mode_switch(context):
 
         if armature.mode == 'EDIT':
             restore_parents(armature, data)
+            remove_constraints(context, armature, data)
 
         else:
             store_parents(context, armature, data)
+            update_constraints(context, armature, data)
 
 
 # Aligns the hitboxes while moving bones in Edit mode
@@ -167,18 +228,16 @@ def event_timer(context):
 
 @utils.armature_event("hide_active_bones")
 def event_hide_active_bones(context, armature, data):
-    hidden = set()
+    if data.hide_active_bones:
+        active = get_active_bones(context, armature, data)
 
-    if data.enabled and data.hide_active_bones:
-        with utils.Mode(context, 'EDIT'):
-            for bone in armature.data.edit_bones:
-                if bones.is_active(bone):
-                    hidden.add(bone.name)
+    else:
+        active = {}
 
     # Cannot hide in EDIT mode
     with utils.SelectedBones(armature), utils.Mode(context, 'POSE'):
         for bone in armature.data.bones:
-            bone.hide = (bone.name in hidden)
+            bone.hide = (bone.name in active)
 
 
 @utils.armature_event("hide_hitboxes")
