@@ -104,7 +104,17 @@ def create_constraint(context, armature, bone):
             parent=armature,
         )
 
+        constraint.location = bone.head
+
         data.constraint = constraint
+
+
+def remove_constraint(bone):
+    data = bone.rigid_body_bones
+
+    if data.constraint:
+        utils.remove_object(data.constraint)
+        data.property_unset("constraint")
 
 
 def constraint_location(bone):
@@ -208,16 +218,14 @@ def create(context, armature, bone):
             data.hitbox = make_passive_hitbox(context, armature, bone)
 
 
-def remove(context, armature, bone):
+def remove(bone):
     data = bone.rigid_body_bones
 
     if data.hitbox:
         utils.remove_object(data.hitbox)
-        data.hitbox = None
+        data.property_unset("hitbox")
 
-    if data.constraint:
-        utils.remove_object(data.constraint)
-        data.constraint = None
+    remove_constraint(bone)
 
 
 def initialize(context, armature, bone):
@@ -285,14 +293,6 @@ def restore_parent(bone, mapping, delete):
         else:
             parent = mapping.get(data.parent)
 
-            #parent = None
-
-            # TODO make this faster somehow
-            #for x in armature.data.edit_bones:
-                #if x.rigid_body_bones.name == data.parent:
-                    #parent = x
-                    #break
-
             if parent is None:
                 utils.error("[{}] could not find parent \"{}\"".format(bone.name, data.parent))
 
@@ -310,7 +310,7 @@ def restore_parent(bone, mapping, delete):
 
 @utils.bone_event("type")
 def event_type(context, armature, bone, data):
-    remove(context, armature, bone)
+    remove(bone)
     initialize(context, armature, bone)
 
 
@@ -347,5 +347,5 @@ def event_enabled(context, armature, bone, data):
         create(context, armature, bone)
 
     else:
-        remove(context, armature, bone)
+        remove(bone)
         armatures.safe_remove_collections(context, armature)

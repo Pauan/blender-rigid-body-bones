@@ -57,15 +57,15 @@ def safe_remove_collections(context, armature):
     data = armature.data.rigid_body_bones
 
     if data.constraints and utils.safe_remove_collection(data.constraints):
-        data.constraints = None
+        data.property_unset("constraints")
 
     if data.hitboxes and utils.safe_remove_collection(data.hitboxes):
-        data.hitboxes = None
+        data.property_unset("hitboxes")
 
     root = context.scene.rigid_body_bones.collection
 
     if root and utils.safe_remove_collection(root):
-        context.scene.rigid_body_bones.collection = None
+        context.scene.rigid_body_bones.property_unset("collection")
 
 
 def make_all(context, armature, data):
@@ -87,19 +87,19 @@ def remove_all(context, armature, data):
 
         for bone in edit_bones:
             bones.restore_parent(bone, mapping, False)
-            bones.remove(context, armature, bone)
+            bones.remove(bone)
 
     if data.root_body:
         utils.remove_object(data.root_body)
-        data.root_body = None
+        data.property_unset("root_body")
 
     if data.constraints:
         utils.remove_collection(data.constraints, recursive=True)
-        data.constraints = None
+        data.property_unset("constraints")
 
     if data.hitboxes:
         utils.remove_collection(data.hitboxes, recursive=True)
-        data.hitboxes = None
+        data.property_unset("hitboxes")
 
     safe_remove_collections(context, armature)
 
@@ -143,7 +143,7 @@ def restore_parents(armature, data):
         for bone in edit_bones:
             bones.restore_parent(bone, mapping, True)
 
-        data.parents_stored = False
+        data.property_unset("parents_stored")
 
 
 def event_mode_switch(context):
@@ -226,7 +226,7 @@ class FactoryDefaults(bpy.types.Operator):
             for bone in edit_bones:
                 bones.restore_parent(bone, mapping, True)
 
-            data.parents_stored = False
+            data.property_unset("parents_stored")
 
             data.enabled = True
             data.hide_active_bones = True

@@ -184,18 +184,6 @@ def select(context, objs):
     view_layer.objects.active = objs[-1]
 
 
-def set_parent(context, child, parent):
-    with Selected(context):
-        select(context, [child, parent])
-        bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
-
-
-def set_parent_relative(context, child, parent):
-    with Selected(context):
-        select(context, [child, parent])
-        bpy.ops.object.parent_no_inverse_set()
-
-
 def make_collection(name, parent):
     collection = bpy.data.collections.new(name)
     parent.children.link(collection)
