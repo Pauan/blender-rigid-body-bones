@@ -66,6 +66,21 @@ class EditBone(bpy.types.PropertyGroup):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
 
+    # These properties are used to save/restore the parent
+    # TODO replace with PointerProperty
+    name: bpy.props.StringProperty()
+
+    # TODO replace with PointerProperty
+    parent: bpy.props.StringProperty(
+        name="Parent",
+        description="Parent bone for constraint",
+    )
+
+    use_connect: bpy.props.BoolProperty(
+        name="Connected",
+        description="When bone has a parent, bone's head is stuck to the parent's tail",
+    )
+
     events = {
         "enabled": [],
         "type": [],
@@ -73,6 +88,7 @@ class EditBone(bpy.types.PropertyGroup):
         "location": [],
         "rotation": [],
         "scale": [],
+        "origin": [],
 
         "enable_constraint": [],
 
@@ -125,7 +141,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     rotation: bpy.props.FloatVectorProperty(
         name="Rotation",
-        description="Rotation of the hitbox relative to the center of the bone",
+        description="Rotation of the hitbox relative to the origin",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=3,
@@ -146,6 +162,17 @@ class EditBone(bpy.types.PropertyGroup):
         subtype='XYZ',
         options=set(),
         update=make_event("scale"),
+    )
+
+    origin: bpy.props.FloatProperty(
+        name="Origin",
+        description="Offset origin (relative to the bone): Head=0, Tail=1",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
+        precision=3,
+        options=set(),
+        update=make_event("origin"),
     )
 
     mass: bpy.props.FloatProperty(
@@ -304,21 +331,6 @@ class EditBone(bpy.types.PropertyGroup):
         default=True,
         options=set(),
         update=make_event("enable_constraint"),
-    )
-
-    # These properties are used to save/restore the parent
-    # TODO replace with PointerProperty
-    name: bpy.props.StringProperty()
-
-    # TODO replace with PointerProperty
-    parent: bpy.props.StringProperty(
-        name="Parent",
-        description="Parent bone for constraint",
-    )
-
-    use_connect: bpy.props.BoolProperty(
-        name="Connected",
-        description="When bone has a parent, bone's head is stuck to the parent's tail",
     )
 
     @classmethod

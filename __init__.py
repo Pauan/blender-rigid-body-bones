@@ -1,6 +1,9 @@
 # TODO support undo/redo
 # TODO support animating settings
 # TODO support alt click to change all selected objects
+# TODO support convex hull and mesh shapes
+# TODO synchronize the hitbox/constraint name with the bone name
+# TODO test duplicating bones
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -43,11 +46,12 @@ classes = (
     properties.Armature,
     properties.EditBone,
     armatures.FactoryDefaults,
-    panels.Panel,
-    panels.SettingsPanel,
+    panels.ArmaturePanel,
+    panels.ArmatureSettingsPanel,
     panels.BonePanel,
-    panels.HitboxPanel,
+    panels.SettingsPanel,
     panels.ConstraintPanel,
+    panels.OffsetPanel,
     panels.AdvancedPanel,
     panels.AdvancedPhysicsPanel,
     panels.CollectionsPanel,

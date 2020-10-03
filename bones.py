@@ -64,25 +64,73 @@ def make_empty_rigid_body(context, name, collection, parent):
     with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
         utils.select(context, [body])
         bpy.ops.rigidbody.object_add(type='PASSIVE')
-        body.rigid_body.kinematic = True
-        body.rigid_body.collision_collections[0] = False
-        body.hide_select = True
-        body.hide_viewport = True
-        init_hitbox(body)
-        show_bounds(body, type='BOX')
+
+    body.rigid_body.kinematic = True
+    body.rigid_body.collision_collections[0] = False
+    body.hide_select = True
+    body.hide_viewport = True
+    init_hitbox(body)
+    show_bounds(body, type='BOX')
 
     return body
 
 
-def hitbox_location(bone, type):
-    if type == 'ACTIVE':
-        location = bone.rigid_body_bones.location.copy()
-        bone_to_object_space(location)
-        location += bone.center
-        return location
+def make_empty(context, name, collection, parent):
+    empty = bpy.data.objects.new(name=name, object_data=None)
+    collection.objects.link(empty)
 
-    else:
-        return Vector((0.0, bone.length * -0.5, 0.0)) + bone.rigid_body_bones.location
+    empty.parent = parent
+    empty.parent_type = 'OBJECT'
+
+    with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+        utils.select(context, [empty])
+        bpy.ops.rigidbody.constraint_add(type='FIXED')
+
+    empty.hide_select = True
+    empty.hide_viewport = True
+    #init_hitbox(empty)
+
+    return empty
+
+
+def create_constraint(context, armature, bone):
+    data = bone.rigid_body_bones
+
+    if not data.constraint:
+        constraint = make_empty(
+            context,
+            name=bone.name + " [Head]",
+            collection=armatures.constraints_collection(context, armature),
+            parent=armature,
+        )
+
+        data.constraint = constraint
+
+
+def constraint_location(bone):
+    location = bone.rigid_body_bones.location.copy()
+    bone_to_object_space(location)
+    location += bone.center
+    return location
+
+
+def hitbox_location(bone, type):
+    data = bone.rigid_body_bones
+
+    length = bone.length
+    origin = length * (data.origin - 0.5)
+
+    location = Vector((0.0, -origin * data.scale.y, 0.0))
+    location.rotate(data.rotation)
+
+    location.y += origin - (length * 0.5)
+    location += data.location
+
+    if type == 'ACTIVE':
+        bone_to_object_space(location)
+        location += bone.tail
+
+    return location
 
 
 def hitbox_rotation(bone, type):

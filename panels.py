@@ -2,8 +2,8 @@ import bpy
 from . import utils
 
 
-class Panel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones"
+class ArmaturePanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_armature"
     bl_label = "Armature"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -19,13 +19,13 @@ class Panel(bpy.types.Panel):
         pass
 
 
-class SettingsPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_settings"
+class ArmatureSettingsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_armature_settings"
     bl_label = "Bone Settings"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
-    bl_parent_id = "DATA_PT_rigid_body_bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_armature"
     bl_options = set()
     bl_order = 0
 
@@ -77,9 +77,9 @@ class BonePanel(bpy.types.Panel):
         pass
 
 
-class HitboxPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_hitbox"
-    bl_label = "Hitbox"
+class SettingsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_settings"
+    bl_label = "Settings"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
@@ -98,31 +98,21 @@ class HitboxPanel(bpy.types.Panel):
 
         col = flow.column()
         col.prop(data, "type")
+
         flow.separator()
 
         col = flow.column()
         col.prop(data, "collision_shape", text="Shape")
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "location")
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "rotation")
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "scale")
 
         if data.type == 'ACTIVE':
             flow.separator()
+
             col = flow.column()
             col.prop(data, "mass")
 
 
 class ConstraintPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_constraint"
+    bl_idname = "DATA_PT_rigid_body_bones_bone_constraint"
     bl_label = "Constraint"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -147,15 +137,53 @@ class ConstraintPanel(bpy.types.Panel):
         layout.enabled = data.enable_constraint
 
 
-class AdvancedPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_advanced"
-    bl_label = "Advanced"
+class OffsetPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_offset"
+    bl_label = "Offset"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 2
+
+    def draw(self, context):
+        data = context.active_bone.rigid_body_bones
+
+        layout = self.layout
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "origin", slider=True)
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "location")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "rotation")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "scale")
+
+
+class AdvancedPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_advanced"
+    bl_label = "Advanced"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 3
 
     def draw(self, context):
         pass
@@ -167,7 +195,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
-    bl_parent_id = "DATA_PT_rigid_body_bones_advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_advanced"
     bl_options = set()
     bl_order = 0
 
@@ -209,7 +237,7 @@ class CollectionsPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
-    bl_parent_id = "DATA_PT_rigid_body_bones_advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 1
 
@@ -225,7 +253,7 @@ class DeactivationPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
-    bl_parent_id = "DATA_PT_rigid_body_bones_advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 2
 
