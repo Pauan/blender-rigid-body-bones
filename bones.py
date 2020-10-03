@@ -5,16 +5,7 @@ from . import armatures
 from . import utils
 
 
-def bone_to_object_space(vector):
-    vector.rotate(Euler((radians(90.0), 0.0, 0.0)))
-
-def hitbox_dimensions(bone):
-    dimensions = bone.rigid_body_bones.scale * bone.length
-    bone_to_object_space(dimensions)
-    return dimensions
-
-
-def init_hitbox(object):
+def common_settings(object):
     object.hide_render = True
     object.show_in_front = True
     object.display.show_shadows = False
@@ -67,9 +58,8 @@ def make_empty_rigid_body(context, name, collection, parent):
 
     body.rigid_body.kinematic = True
     body.rigid_body.collision_collections[0] = False
-    body.hide_select = True
     body.hide_viewport = True
-    init_hitbox(body)
+    common_settings(body)
     show_bounds(body, type='BOX')
 
     return body
@@ -86,11 +76,16 @@ def make_empty(context, name, collection, parent):
         utils.select(context, [empty])
         bpy.ops.rigidbody.constraint_add(type='FIXED')
 
-    empty.hide_select = True
-    empty.hide_viewport = True
-    #init_hitbox(empty)
+    common_settings(empty)
+    empty.empty_display_type = 'CIRCLE'
 
     return empty
+
+
+def align_constraint(constraint, bone):
+    constraint.location = bone.head
+    constraint.rotation_euler = bone.matrix.to_euler()
+    constraint.empty_display_size = bone.length * 0.2
 
 
 def create_constraint(context, armature, bone):
@@ -104,7 +99,7 @@ def create_constraint(context, armature, bone):
             parent=armature,
         )
 
-        constraint.location = bone.head
+        align_constraint(constraint, bone)
 
         data.constraint = constraint
 
@@ -117,11 +112,10 @@ def remove_constraint(bone):
         data.property_unset("constraint")
 
 
-def constraint_location(bone):
-    location = bone.rigid_body_bones.location.copy()
-    bone_to_object_space(location)
-    location += bone.center
-    return location
+def hitbox_dimensions(bone):
+    dimensions = bone.rigid_body_bones.scale * bone.length
+    dimensions.rotate(Euler((radians(90.0), 0.0, 0.0)))
+    return dimensions
 
 
 def hitbox_location(bone, type):
@@ -137,7 +131,7 @@ def hitbox_location(bone, type):
     location += data.location
 
     if type == 'ACTIVE':
-        bone_to_object_space(location)
+        location.rotate(bone.matrix.to_euler())
         location += bone.tail
 
     return location
@@ -174,9 +168,10 @@ def make_active_hitbox(context, armature, bone):
     with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
         utils.select(context, [hitbox])
         bpy.ops.rigidbody.object_add(type='ACTIVE')
-        update_rigid_body(hitbox.rigid_body, data)
-        init_hitbox(hitbox)
-        update_shape(hitbox, type=data.collision_shape)
+
+    update_rigid_body(hitbox.rigid_body, data)
+    common_settings(hitbox)
+    update_shape(hitbox, type=data.collision_shape)
 
     return hitbox
 
@@ -200,9 +195,10 @@ def make_passive_hitbox(context, armature, bone):
     with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
         utils.select(context, [hitbox])
         bpy.ops.rigidbody.object_add(type='PASSIVE')
-        hitbox.rigid_body.kinematic = True
-        init_hitbox(hitbox)
-        update_shape(hitbox, type=data.collision_shape)
+
+    hitbox.rigid_body.kinematic = True
+    common_settings(hitbox)
+    update_shape(hitbox, type=data.collision_shape)
 
     return hitbox
 
@@ -213,6 +209,9 @@ def create(context, armature, bone):
     if not data.hitbox:
         if data.type == 'ACTIVE':
             data.hitbox = make_active_hitbox(context, armature, bone)
+
+            if data.enable_constraint:
+                create_constraint(context, armature, bone)
 
         else:
             data.hitbox = make_passive_hitbox(context, armature, bone)
@@ -247,6 +246,9 @@ def align_hitbox(bone):
         data.hitbox.location = hitbox_location(bone, data.type)
         data.hitbox.rotation_euler = hitbox_rotation(bone, data.type)
         utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
+
+    if data.constraint:
+        align_constraint(data.constraint, bone)
 
 
 def remove_parent(bone):

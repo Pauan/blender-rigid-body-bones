@@ -191,7 +191,9 @@ def make_collection(name, parent):
 
 
 def remove_object(object):
-    object.data.name = object.data.name + " [DELETED]"
+    if object.data is not None:
+        object.data.name += " [DELETED]"
+
     bpy.data.objects.remove(object)
 
 
