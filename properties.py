@@ -98,7 +98,6 @@ class EditBone(bpy.types.PropertyGroup):
         "scale": [],
         "origin": [],
 
-        "constraint_enabled": [],
         "disable_collisions": [],
         "use_breaking": [],
         "breaking_threshold": [],
@@ -360,7 +359,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     use_override_solver_iterations: bpy.props.BoolProperty(
         name="Override Solver Iterations",
-        description="Override the number of solver iterations for this constraint",
+        description="Override the number of solver iterations for the limits",
         default=False,
         options=set(),
         update=make_event("use_override_solver_iterations"),
@@ -368,21 +367,13 @@ class EditBone(bpy.types.PropertyGroup):
 
     solver_iterations: bpy.props.IntProperty(
         name="Solver Iterations",
-        description="Number of constraint solver iterations made per simulation step (higher values are more accurate but slower)",
+        description="Number of limit solver iterations made per simulation step (higher values are more accurate but slower)",
         default=10,
         min=1,
         max=1000,
         step=1,
         options=set(),
         update=make_event("solver_iterations"),
-    )
-
-    constraint_enabled: bpy.props.BoolProperty(
-        name="Enable Constraint",
-        description="Enable constraint for the rigid body",
-        default=True,
-        options=set(),
-        update=make_event("constraint_enabled"),
     )
 
     disable_collisions: bpy.props.BoolProperty(
@@ -403,7 +394,7 @@ class EditBone(bpy.types.PropertyGroup):
 
     breaking_threshold: bpy.props.FloatProperty(
         name="Breaking Threshold",
-        description="Impulse threshold that must be reached for the constraint to break",
+        description="Impulse threshold that must be reached for the limits to break",
         default=10.0,
         min=0.0,
         step=100,

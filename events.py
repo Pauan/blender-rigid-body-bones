@@ -55,8 +55,6 @@ def register():
 
     properties.EditBone.events["collision_shape"].append(bones.event_collision_shape)
 
-    properties.EditBone.events["constraint_enabled"].append(bones.event_constraint_enabled)
-
     properties.EditBone.events["origin"].append(bones.event_location)
     properties.EditBone.events["location"].append(bones.event_location)
     properties.EditBone.events["rotation"].append(bones.event_location)

@@ -254,8 +254,7 @@ def create(context, armature, bone):
         if data.type == 'ACTIVE':
             data.hitbox = make_active_hitbox(context, armature, bone)
 
-            if data.constraint_enabled:
-                create_constraint(context, armature, bone)
+            create_constraint(context, armature, bone)
 
         else:
             data.hitbox = make_passive_hitbox(context, armature, bone)
@@ -399,13 +398,4 @@ def event_enabled(context, armature, bone, data):
 
     else:
         remove(bone)
-        armatures.safe_remove_collections(context, armature)
-
-@utils.bone_event("constraint_enabled")
-def event_constraint_enabled(context, armature, bone, data):
-    if data.constraint_enabled:
-        create_constraint(context, armature, bone)
-
-    else:
-        remove_constraint(bone)
         armatures.safe_remove_collections(context, armature)

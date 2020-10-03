@@ -120,11 +120,6 @@ class LimitsPanel(bpy.types.Panel):
         data = context.active_bone.rigid_body_bones
         return (data.type == 'ACTIVE')
 
-    #def draw_header(self, context):
-        #data = context.active_bone.rigid_body_bones
-        #self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
-        #self.layout.prop(data, "constraint_enabled", text="")
-
     def draw(self, context):
         pass
 
@@ -161,7 +156,7 @@ class SpringsRotatePanel(bpy.types.Panel):
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
         layout = self.layout
-        layout.enabled = data.enabled and data.constraint_enabled and utils.is_armature_enabled(context)
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
@@ -204,7 +199,7 @@ class SpringsTranslatePanel(bpy.types.Panel):
     def draw(self, context):
         data = context.active_bone.rigid_body_bones
         layout = self.layout
-        layout.enabled = data.enabled and data.constraint_enabled and utils.is_armature_enabled(context)
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
@@ -303,19 +298,20 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
 
         flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
-        col = flow.column()
-        col.prop(data, "disable_collisions")
+        if data.type == 'ACTIVE':
+            col = flow.column()
+            col.prop(data, "disable_collisions")
 
-        flow.separator()
+            flow.separator()
 
-        col = flow.column()
-        col.prop(data, "use_breaking")
+            col = flow.column()
+            col.prop(data, "use_breaking")
 
-        sub = col.column()
-        sub.enabled = data.use_breaking
-        sub.prop(data, "breaking_threshold", text="Threshold")
+            sub = col.column()
+            sub.enabled = data.use_breaking
+            sub.prop(data, "breaking_threshold", text="Threshold")
 
-        flow.separator()
+            flow.separator()
 
         col = flow.column()
         col.prop(data, "use_margin")
