@@ -7,6 +7,10 @@
 # TODO align passive hitboxes properly when moving bones
 # TODO when disabling rigid body for the armature, it should also cleanup the bone parent state
 # TODO when hiding active bone, it should remember its prior hidden state and restore it
+# TODO investigate the performance of bpy_prop_collection and ArmatureBones
+# TODO FIXED and RAGDOLL types
+# TODO make panel always visible
+# TODO make parent a PointerProperty to Bone.rigid_body_bones
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -31,8 +35,8 @@ from . import utils
 from importlib import reload
 reload(utils)
 reload(properties)
-reload(armatures)
 reload(bones)
+reload(armatures)
 reload(events)
 reload(panels)
 
@@ -47,7 +51,7 @@ def add_object_manual_map():
 classes = (
     properties.Scene,
     properties.Armature,
-    properties.EditBone,
+    properties.Bone,
     armatures.FactoryDefaults,
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,

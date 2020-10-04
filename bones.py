@@ -83,8 +83,8 @@ def make_empty(context, name, collection, parent):
 
 
 def align_constraint(constraint, bone):
-    constraint.location = bone.head
-    constraint.rotation_euler = bone.matrix.to_euler()
+    constraint.location = bone.head_local
+    constraint.rotation_euler = bone.matrix_local.to_euler()
     constraint.empty_display_size = bone.length * 0.2
 
 
@@ -175,8 +175,8 @@ def hitbox_location(bone, type):
     location += data.location
 
     if type == 'ACTIVE':
-        location.rotate(bone.matrix.to_euler())
-        location += bone.tail
+        location.rotate(bone.matrix_local.to_euler())
+        location += bone.tail_local
 
     return location
 
@@ -184,7 +184,7 @@ def hitbox_location(bone, type):
 def hitbox_rotation(bone, type):
     if type == 'ACTIVE':
         rotation = bone.rigid_body_bones.rotation.copy()
-        rotation.rotate(bone.matrix.to_euler())
+        rotation.rotate(bone.matrix_local.to_euler())
         rotation.rotate_axis('X', radians(90.0))
         return rotation
 
@@ -260,7 +260,7 @@ def create(context, armature, bone):
             data.hitbox = make_passive_hitbox(context, armature, bone)
 
 
-def remove(bone):
+def remove_bone(bone):
     data = bone.rigid_body_bones
 
     if data.hitbox:
@@ -270,19 +270,19 @@ def remove(bone):
     remove_constraint(bone)
 
 
-def initialize(context, armature, bone):
+def initialize_bone(context, armature, bone):
     data = bone.rigid_body_bones
 
     if data.enabled:
         create(context, armature, bone)
 
 
-def is_active(bone):
+def is_bone_active(bone):
     data = bone.rigid_body_bones
     return data.enabled and data.type == 'ACTIVE'
 
 
-def align_hitbox(bone):
+def align_bone_hitbox(bone):
     data = bone.rigid_body_bones
 
     if data.hitbox:
@@ -294,16 +294,16 @@ def align_hitbox(bone):
         align_constraint(data.constraint, bone)
 
 
-def remove_parent(bone):
+def remove_bone_parent(bone, edit_bone):
     data = bone.rigid_body_bones
 
     if data.enabled and data.type == 'ACTIVE':
         assert data.is_property_set("parent")
         assert data.is_property_set("use_connect")
-        bone.parent = None
+        edit_bone.parent = None
 
 
-def store_parent(bone, armature_enabled):
+def store_bone_parent(bone, edit_bone, armature_enabled):
     data = bone.rigid_body_bones
 
     assert not data.is_property_set("parent")
@@ -314,36 +314,38 @@ def store_parent(bone, armature_enabled):
 
         if parent:
             name = parent.name
+            assert edit_bone.parent.name == name
             parent.rigid_body_bones.name = name
             data.parent = name
 
         else:
+            assert edit_bone.parent is None
             data.parent = ""
 
-        data.use_connect = bone.use_connect
+        data.use_connect = edit_bone.use_connect
 
         if armature_enabled:
-            bone.parent = None
+            edit_bone.parent = None
 
 
-def restore_parent(bone, mapping, delete):
+def restore_bone_parent(bone, edit_bone, mapping, delete):
     data = bone.rigid_body_bones
 
     if data.is_property_set("parent"):
         assert data.is_property_set("use_connect")
 
         if data.parent == "":
-            bone.parent = None
+            edit_bone.parent = None
 
         else:
             parent = mapping.get(data.parent)
 
             if parent is None:
-                utils.error("[{}] could not find parent \"{}\"".format(bone.name, data.parent))
+                utils.error("[{}] could not find parent \"{}\"".format(edit_bone.name, data.parent))
 
-            bone.parent = parent
+            edit_bone.parent = parent
 
-        bone.use_connect = data.use_connect
+        edit_bone.use_connect = data.use_connect
 
         if delete:
             data.property_unset("use_connect")
@@ -355,8 +357,8 @@ def restore_parent(bone, mapping, delete):
 
 @utils.bone_event("type")
 def event_type(context, armature, bone, data):
-    remove(bone)
-    initialize(context, armature, bone)
+    remove_bone(bone)
+    initialize_bone(context, armature, bone)
 
 
 @utils.bone_event("collision_shape")
@@ -397,5 +399,5 @@ def event_enabled(context, armature, bone, data):
         create(context, armature, bone)
 
     else:
-        remove(bone)
+        remove_bone(bone)
         armatures.safe_remove_collections(context, armature)

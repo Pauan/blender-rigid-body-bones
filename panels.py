@@ -61,7 +61,7 @@ class BonePanel(bpy.types.Panel):
         return utils.has_active_bone(context) and utils.is_edit_mode(context)
 
     def draw_header(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
 
         self.layout.enabled = utils.is_armature_enabled(context)
 
@@ -82,7 +82,7 @@ class SettingsPanel(bpy.types.Panel):
     bl_order = 0
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
 
         layout = self.layout
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
@@ -117,7 +117,7 @@ class LimitsPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         return (data.type == 'ACTIVE')
 
     def draw(self, context):
@@ -136,7 +136,7 @@ class SpringsPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         return (data.type == 'ACTIVE')
 
     def draw(self, context):
@@ -154,7 +154,8 @@ class SpringsRotatePanel(bpy.types.Panel):
     bl_order = 0
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         layout = self.layout
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
@@ -197,7 +198,8 @@ class SpringsTranslatePanel(bpy.types.Panel):
     bl_order = 1
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         layout = self.layout
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
@@ -240,7 +242,7 @@ class OffsetPanel(bpy.types.Panel):
     bl_order = 3
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
 
         layout = self.layout
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
@@ -292,7 +294,8 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
     bl_order = 0
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         self.layout.use_property_split = True
         self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
 
@@ -349,7 +352,8 @@ class CollectionsPanel(bpy.types.Panel):
     bl_order = 1
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
         self.layout.prop(data, "collision_collections", text="")
 
@@ -366,16 +370,18 @@ class DeactivationPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         return (data.type == 'ACTIVE')
 
     def draw_header(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
+
         self.layout.prop(data, "use_deactivation", text="")
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         layout = self.layout
 
         layout.enabled = data.enabled and data.use_deactivation and utils.is_armature_enabled(context)
@@ -403,16 +409,18 @@ class OverrideIterationsPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         return (data.type == 'ACTIVE')
 
     def draw_header(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+
         self.layout.enabled = data.enabled and utils.is_armature_enabled(context)
+
         self.layout.prop(data, "use_override_solver_iterations", text="")
 
     def draw(self, context):
-        data = context.active_bone.rigid_body_bones
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
         layout = self.layout
 
         layout.enabled = data.enabled and data.use_override_solver_iterations and utils.is_armature_enabled(context)

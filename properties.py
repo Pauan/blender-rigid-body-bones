@@ -70,7 +70,7 @@ class Armature(bpy.types.PropertyGroup):
         del bpy.types.Armature.rigid_body_bones
 
 
-class EditBone(bpy.types.PropertyGroup):
+class Bone(bpy.types.PropertyGroup):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
 
@@ -588,8 +588,8 @@ class EditBone(bpy.types.PropertyGroup):
 
     @classmethod
     def register(cls):
-        bpy.types.EditBone.rigid_body_bones = bpy.props.PointerProperty(type=cls)
+        bpy.types.Bone.rigid_body_bones = bpy.props.PointerProperty(type=cls)
 
     @classmethod
     def unregister(cls):
-        del bpy.types.EditBone.rigid_body_bones
+        del bpy.types.Bone.rigid_body_bones

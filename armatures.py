@@ -1,6 +1,10 @@
 import bpy
 from . import utils
 from . import bones
+from .bones import (
+    restore_bone_parent, remove_bone_parent, store_bone_parent, remove_bone, initialize_bone,
+    align_bone_hitbox, is_bone_active
+)
 
 
 def root_collection(context):
@@ -22,7 +26,7 @@ def constraints_collection(context, armature):
 
     if not data.constraints:
         parent = hitboxes_collection(context, armature)
-        data.constraints = utils.make_collection(armature.name + " [Constraints]", parent)
+        data.constraints = utils.make_collection(armature.data.name + " [Constraints]", parent)
         data.constraints.hide_render = True
         data.constraints.hide_viewport = data.hide_constraints
 
@@ -34,7 +38,7 @@ def hitboxes_collection(context, armature):
 
     if not data.hitboxes:
         parent = root_collection(context)
-        data.hitboxes = utils.make_collection(armature.name + " [Hitboxes]", parent)
+        data.hitboxes = utils.make_collection(armature.data.name + " [Hitboxes]", parent)
         data.hitboxes.hide_render = True
         data.hitboxes.hide_viewport = data.hide_hitboxes
 
@@ -45,7 +49,7 @@ def make_root_body(context, armature, data):
     if not data.root_body:
         data.root_body = make_empty_rigid_body(
             context,
-            name=armature.name + " [Root]",
+            name=armature.data.name + " [Root]",
             collection=hitboxes_collection(context, armature),
             parent=armature,
         )
@@ -71,23 +75,27 @@ def safe_remove_collections(context, armature):
 def make_all(context, armature, data):
     with utils.Mode(context, 'EDIT'):
         is_stored = data.parents_stored
+        edit_bones = armature.data.edit_bones
 
-        for bone in armature.data.edit_bones:
+        for bone in armature.data.bones:
             if is_stored:
-                bones.remove_parent(bone)
+                edit_bone = edit_bones[bone.name]
+                remove_bone_parent(bone, edit_bone)
 
-            bones.initialize(context, armature, bone)
+            initialize_bone(context, armature, bone)
 
 
 def remove_all(context, armature, data):
     with utils.Mode(context, 'EDIT'):
+        bones = armature.data.bones
         edit_bones = armature.data.edit_bones
 
-        mapping = make_name_mapping(edit_bones, False)
+        mapping = make_name_mapping(bones, edit_bones, False)
 
-        for bone in edit_bones:
-            bones.restore_parent(bone, mapping, False)
-            bones.remove(bone)
+        for bone in bones:
+            edit_bone = edit_bones[bone.name]
+            restore_bone_parent(bone, edit_bone, mapping, False)
+            remove_bone(bone)
 
     if data.root_body:
         utils.remove_object(data.root_body)
@@ -97,15 +105,15 @@ def remove_all(context, armature, data):
 
 
 # Fast O(1) lookup rather than O(n) lookup
-def make_name_mapping(edit_bones, delete):
+def make_name_mapping(bones, edit_bones, delete):
     mapping = {}
 
     # TODO can this be made faster ?
-    for bone in edit_bones:
+    for bone in bones:
         data = bone.rigid_body_bones
 
         if data.is_property_set("name"):
-            mapping[data.name] = bone
+            mapping[data.name] = edit_bones[bone.name]
 
             if delete:
                 data.property_unset("name")
@@ -118,83 +126,73 @@ def store_parents(context, armature, data):
         is_enabled = data.enabled
 
         with utils.Mode(context, 'EDIT'):
-            for bone in armature.data.edit_bones:
-                bones.store_parent(bone, is_enabled)
-                bones.align_hitbox(bone)
+            edit_bones = armature.data.edit_bones
+
+            for bone in armature.data.bones:
+                edit_bone = edit_bones[bone.name]
+                store_bone_parent(bone, edit_bone, is_enabled)
+                align_bone_hitbox(bone)
 
         data.parents_stored = True
 
 
 def restore_parents(armature, data):
     if data.parents_stored:
+        bones = armature.data.bones
         edit_bones = armature.data.edit_bones
 
         # This converts an O(n^2) algorithm into an O(2n) algorithm
-        mapping = make_name_mapping(edit_bones, True)
+        mapping = make_name_mapping(bones, edit_bones, True)
 
-        for bone in edit_bones:
-            bones.restore_parent(bone, mapping, True)
+        for bone in bones:
+            edit_bone = edit_bones[bone.name]
+            restore_bone_parent(bone, edit_bone, mapping, True)
 
         data.property_unset("parents_stored")
 
 
-def get_active_bones(context, armature, data):
-    active = {}
-
-    if data.enabled:
-        with utils.Mode(context, 'EDIT'):
-            for bone in armature.data.edit_bones:
-                if bones.is_active(bone):
-                    active[bone.name] = bone
-
-    return active
-
-
 def remove_constraints(context, armature, data):
     # Remove Child Of constraints
-    for bone in armature.pose.bones:
-        for constraint in bone.constraints:
+    for pose_bone in armature.pose.bones:
+        for constraint in pose_bone.constraints:
             if constraint.name == "Rigid Body Bones [Child Of]":
-                bone.constraints.remove(constraint)
+                pose_bone.constraints.remove(constraint)
                 break
 
 
 # TODO also run this when enabling/disabling the rigid bodies ?
 def update_constraints(context, armature, data):
-    active = get_active_bones(context, armature, data)
-
     # Create/update/remove Child Of constraints
-    for bone in armature.pose.bones:
+    for pose_bone in armature.pose.bones:
         index = None
         found = None
 
-        for i, constraint in enumerate(bone.constraints):
+        for i, constraint in enumerate(pose_bone.constraints):
             if constraint.name == "Rigid Body Bones [Child Of]":
                 found = constraint
                 index = i
                 break
 
-        edit_bone = active.get(bone.name)
+        bone = pose_bone.bone
 
-        if edit_bone is None:
-            if found is not None:
-                bone.constraints.remove(found)
-
-        else:
+        if is_bone_active(bone):
             if found is None:
-                index = len(bone.constraints)
-                found = bone.constraints.new(type='CHILD_OF')
+                index = len(pose_bone.constraints)
+                found = pose_bone.constraints.new(type='CHILD_OF')
                 found.name = "Rigid Body Bones [Child Of]"
 
             assert index is not None
 
             if index != 0:
-                bone.constraints.move(index, 0)
+                pose_bone.constraints.move(index, 0)
 
-            hitbox = edit_bone.rigid_body_bones.hitbox
+            hitbox = bone.rigid_body_bones.hitbox
             print(hitbox)
-            #assert hitbox is not None
-            #found.target = hitbox
+            assert hitbox is not None
+            found.target = hitbox
+
+        elif found is not None:
+            pose_bone.constraints.remove(found)
 
 
 def event_mode_switch(context):
@@ -222,22 +220,16 @@ def event_timer(context):
         data = armature.data.rigid_body_bones
 
         if data.enabled and not data.hide_hitboxes:
-            for bone in armature.data.edit_bones:
-                bones.align_hitbox(bone)
+            for bone in armature.data.bones:
+                align_bone_hitbox(bone)
 
 
 @utils.armature_event("hide_active_bones")
 def event_hide_active_bones(context, armature, data):
-    if data.hide_active_bones:
-        active = get_active_bones(context, armature, data)
-
-    else:
-        active = {}
-
     # Cannot hide in EDIT mode
     with utils.SelectedBones(armature), utils.Mode(context, 'POSE'):
         for bone in armature.data.bones:
-            bone.hide = (bone.name in active)
+            bone.hide = is_bone_active(bone)
 
 
 @utils.armature_event("hide_hitboxes")
@@ -274,13 +266,15 @@ class FactoryDefaults(bpy.types.Operator):
         data = armature.data.rigid_body_bones
 
         with utils.Mode(context, 'EDIT'):
+            bones = armature.data.bones
             edit_bones = armature.data.edit_bones
 
             # This converts an O(n^2) algorithm into an O(2n) algorithm
-            mapping = make_name_mapping(edit_bones, True)
+            mapping = make_name_mapping(bones, edit_bones, True)
 
-            for bone in edit_bones:
-                bones.restore_parent(bone, mapping, True)
+            for bone in bones:
+                edit_bone = edit_bones[bone.name]
+                restore_bone_parent(bone, edit_bone, mapping, True)
 
             data.property_unset("parents_stored")
 

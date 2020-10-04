@@ -36,7 +36,7 @@ def bone_event(name):
             debug("bone " + name)
             # TODO is active_object correct ?
             armature = context.active_object
-            bone = context.active_bone
+            bone = utils.get_active_bone(armature)
             data = bone.rigid_body_bones
             return f(context, armature, bone, data)
 
@@ -132,7 +132,7 @@ class SelectedBones:
         self.selected = None
 
     def __enter__(self):
-        bones = self.armature.data.edit_bones
+        bones = self.armature.data.bones
 
         self.selected = [(bone.name, bone.select, bone.select_head, bone.select_tail) for bone in bones]
 
@@ -140,7 +140,7 @@ class SelectedBones:
             self.active = bones.active.name
 
     def __exit__(self, exc_type, exc_value, traceback):
-        bones = self.armature.data.edit_bones
+        bones = self.armature.data.bones
 
         for (name, select, select_head, select_tail) in self.selected:
             bone = bones[name]
@@ -156,8 +156,11 @@ class SelectedBones:
         return False
 
 
+def get_active_bone(armature):
+    return armature.data.bones.active
+
 def has_active_bone(context):
-    return is_armature(context) and (context.active_bone is not None)
+    return is_armature(context) and (get_active_bone(context.active_object) is not None)
 
 def is_edit_mode(context):
     return (context.mode == 'EDIT_ARMATURE')
