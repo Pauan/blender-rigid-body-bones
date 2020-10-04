@@ -151,51 +151,59 @@ def restore_parents(armature, data):
         data.property_unset("parents_stored")
 
 
-def remove_constraints(context, armature, data):
-    # Remove Child Of constraints
-    for pose_bone in armature.pose.bones:
-        for constraint in pose_bone.constraints:
-            if constraint.name == "Rigid Body Bones [Child Of]":
-                pose_bone.constraints.remove(constraint)
-                break
+def remove_bone_constraint(pose_bone):
+    for constraint in pose_bone.constraints:
+        if constraint.name == "Rigid Body Bones [Child Of]":
+            pose_bone.constraints.remove(constraint)
+            break
+
+def update_bone_constraint(pose_bone):
+    index = None
+    found = None
+
+    for i, constraint in enumerate(pose_bone.constraints):
+        if constraint.name == "Rigid Body Bones [Child Of]":
+            found = constraint
+            index = i
+            break
+
+    bone = pose_bone.bone
+
+    if is_bone_active(bone):
+        hitbox = bone.rigid_body_bones.hitbox
+
+        assert hitbox is not None
+
+        if found is None:
+            index = len(pose_bone.constraints)
+            found = pose_bone.constraints.new(type='CHILD_OF')
+            found.name = "Rigid Body Bones [Child Of]"
+
+        assert index is not None
+
+        if index != 0:
+            pose_bone.constraints.move(index, 0)
+
+        found.target = hitbox
+
+    elif found is not None:
+        pose_bone.constraints.remove(found)
 
 
-# TODO also run this when enabling/disabling the rigid bodies ?
-def update_constraints(context, armature, data):
-    # Create/update/remove Child Of constraints
-    for pose_bone in armature.pose.bones:
-        index = None
-        found = None
+def update_bone_constraints(armature, data):
+    if data.enabled and armature.mode != 'EDIT':
+        # Create/update/remove Child Of constraints
+        for pose_bone in armature.pose.bones:
+            update_bone_constraint(pose_bone)
 
-        for i, constraint in enumerate(pose_bone.constraints):
-            if constraint.name == "Rigid Body Bones [Child Of]":
-                found = constraint
-                index = i
-                break
-
-        bone = pose_bone.bone
-
-        if is_bone_active(bone):
-            if found is None:
-                index = len(pose_bone.constraints)
-                found = pose_bone.constraints.new(type='CHILD_OF')
-                found.name = "Rigid Body Bones [Child Of]"
-
-            assert index is not None
-
-            if index != 0:
-                pose_bone.constraints.move(index, 0)
-
-            hitbox = bone.rigid_body_bones.hitbox
-            print(hitbox)
-            assert hitbox is not None
-            found.target = hitbox
-
-        elif found is not None:
-            pose_bone.constraints.remove(found)
+    else:
+        # Remove Child Of constraints
+        for pose_bone in armature.pose.bones:
+            remove_bone_constraint(pose_bone)
 
 
 def event_mode_switch(context):
+    print("armature event_mode_switch")
     # TODO is active_object correct ?
     armature = context.active_object
 
@@ -204,15 +212,15 @@ def event_mode_switch(context):
 
         if armature.mode == 'EDIT':
             restore_parents(armature, data)
-            remove_constraints(context, armature, data)
-
         else:
             store_parents(context, armature, data)
-            update_constraints(context, armature, data)
+
+        update_bone_constraints(armature, data)
 
 
 # Aligns the hitboxes while moving bones in Edit mode
 def event_timer(context):
+    print("TIMER")
     # TODO is active_object correct ?
     armature = context.active_object
 
@@ -224,18 +232,24 @@ def event_timer(context):
                 align_bone_hitbox(bone)
 
 
+@utils.armature_event("update_constraints")
+def event_update_constraints(context, armature, data):
+    update_bone_constraints(armature, data)
+
+
 @utils.armature_event("hide_active_bones")
 def event_hide_active_bones(context, armature, data):
     # Cannot hide in EDIT mode
     with utils.SelectedBones(armature), utils.Mode(context, 'POSE'):
         for bone in armature.data.bones:
-            bone.hide = is_bone_active(bone)
+            bone.hide = data.enabled and is_bone_active(bone)
 
 
 @utils.armature_event("hide_hitboxes")
 def event_hide_hitboxes(context, armature, data):
     if data.hitboxes:
         data.hitboxes.hide_viewport = data.hide_hitboxes
+
 
 @utils.armature_event("hide_constraints")
 def event_hide_constraints(context, armature, data):
@@ -272,14 +286,18 @@ class FactoryDefaults(bpy.types.Operator):
             # This converts an O(n^2) algorithm into an O(2n) algorithm
             mapping = make_name_mapping(bones, edit_bones, True)
 
+            data.property_unset("parents_stored")
+            data.property_unset("enabled")
+            data.property_unset("hide_active_bones")
+            data.property_unset("hide_hitboxes")
+
             for bone in bones:
                 edit_bone = edit_bones[bone.name]
                 restore_bone_parent(bone, edit_bone, mapping, True)
+                initialize_bone(context, armature, bone)
 
-            data.property_unset("parents_stored")
-
-            data.enabled = True
-            data.hide_active_bones = True
-            data.hide_hitboxes = False
+            # TODO code duplication
+            for pose_bone in armature.pose.bones:
+                update_bone_constraint(pose_bone)
 
         return {'FINISHED'}

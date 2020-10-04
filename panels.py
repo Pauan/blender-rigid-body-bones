@@ -58,9 +58,10 @@ class BonePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return utils.has_active_bone(context) and utils.is_edit_mode(context)
+        return utils.has_active_bone(context) and utils.is_pose_mode(context)
 
     def draw_header(self, context):
+        print("ACTIVE", utils.get_active_bone(context.active_object))
         data = utils.get_active_bone(context.active_object).rigid_body_bones
 
         self.layout.enabled = utils.is_armature_enabled(context)
@@ -103,6 +104,11 @@ class SettingsPanel(bpy.types.Panel):
 
             col = flow.column()
             col.prop(data, "mass")
+
+            flow.separator()
+
+            col = flow.column()
+            col.prop(data, "disable_collisions")
 
 
 class LimitsPanel(bpy.types.Panel):
@@ -302,11 +308,6 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
         flow = self.layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         if data.type == 'ACTIVE':
-            col = flow.column()
-            col.prop(data, "disable_collisions")
-
-            flow.separator()
-
             col = flow.column()
             col.prop(data, "use_breaking")
 

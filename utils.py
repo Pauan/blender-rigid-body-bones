@@ -36,7 +36,7 @@ def bone_event(name):
             debug("bone " + name)
             # TODO is active_object correct ?
             armature = context.active_object
-            bone = utils.get_active_bone(armature)
+            bone = get_active_bone(armature)
             data = bone.rigid_body_bones
             return f(context, armature, bone, data)
 
@@ -163,7 +163,12 @@ def has_active_bone(context):
     return is_armature(context) and (get_active_bone(context.active_object) is not None)
 
 def is_edit_mode(context):
+    # TODO use the mode of the active_object ?
     return (context.mode == 'EDIT_ARMATURE')
+
+def is_pose_mode(context):
+    # TODO use the mode of the active_object ?
+    return (context.mode == 'POSE')
 
 def is_armature(context):
     return (

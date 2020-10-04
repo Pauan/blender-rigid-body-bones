@@ -1,5 +1,5 @@
 # TODO support undo/redo
-# TODO support animating settings
+# TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
 # TODO synchronize the hitbox/constraint name with the bone name
@@ -11,6 +11,7 @@
 # TODO FIXED and RAGDOLL types
 # TODO make panel always visible
 # TODO make parent a PointerProperty to Bone.rigid_body_bones
+# TODO cleanup hitboxes when the bone is deleted
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -52,7 +53,9 @@ classes = (
     properties.Scene,
     properties.Armature,
     properties.Bone,
+
     armatures.FactoryDefaults,
+
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,
     panels.BonePanel,
