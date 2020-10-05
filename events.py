@@ -56,17 +56,21 @@ def register():
     print("REGISTER EVENTS")
 
     properties.Bone.events["enabled"].append(bones.event_enabled_remove)
+    properties.Bone.events["enabled"].append(bones.event_fix_parent)
     properties.Bone.events["enabled"].append(armatures.event_update_errors)
     properties.Bone.events["enabled"].append(bones.event_enabled_add)
-    # TODO more efficient function for these events
+    # TODO more efficient function for this event
     properties.Bone.events["enabled"].append(armatures.event_update_constraints)
+    # TODO more efficient function for this event
     properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
 
     properties.Bone.events["type"].append(bones.event_type_remove)
+    properties.Bone.events["type"].append(bones.event_fix_parent)
     properties.Bone.events["type"].append(armatures.event_update_errors)
     properties.Bone.events["type"].append(bones.event_type_add)
-    # TODO more efficient function for these events
+    # TODO more efficient function for this event
     properties.Bone.events["type"].append(armatures.event_update_constraints)
+    # TODO more efficient function for this event
     properties.Bone.events["type"].append(armatures.event_hide_active_bones)
 
     properties.Bone.events["collision_shape"].append(bones.event_collision_shape)
