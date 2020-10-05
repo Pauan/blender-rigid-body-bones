@@ -4,7 +4,6 @@
 # TODO support convex hull and mesh shapes
 
 # TODO when hiding active bone, it should remember its prior hidden state and restore it
-# TODO investigate the performance of bpy_prop_collection and ArmatureBones
 # TODO FIXED and RAGDOLL types
 # TODO cleanup hitboxes when the bone is deleted
 # TODO test duplicating bones
@@ -50,8 +49,6 @@ classes = (
     properties.Error,
     properties.Armature,
     properties.Bone,
-
-    armatures.FactoryDefaults,
 
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,

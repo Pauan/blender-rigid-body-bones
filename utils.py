@@ -93,30 +93,6 @@ class ModeCAS:
         return False
 
 
-#class Tab:
-#    def __init__(self, context, name):
-#        self.context = context
-#        self.name = name
-#        self.space_data = None
-#
-#    def __enter__(self):
-#        self.space_data = self.context.space_data.context
-#        self.context.space_data.context = self.name
-#
-#        for x in self.context.screen.areas:
-#            if x.type == 'PROPERTIES':
-#                area = x
-#                break
-#
-#        local = self.context.copy()
-#        local["area"] = x
-#        return local
-#
-#    def __exit__(self, exc_type, exc_value, traceback):
-#        self.context.space_data.context = self.space_data
-#        return False
-
-
 class Selected:
     def __init__(self, context):
         self.context = context
@@ -137,37 +113,6 @@ class Selected:
             obj.select_set(True)
 
         self.view_layer.objects.active = self.active
-
-        return False
-
-
-class SelectedBones:
-    def __init__(self, armature):
-        self.armature = armature
-        self.active = None
-        self.selected = None
-
-    def __enter__(self):
-        bones = self.armature.data.bones
-
-        self.selected = [(bone.name, bone.select, bone.select_head, bone.select_tail) for bone in bones]
-
-        if bones.active:
-            self.active = bones.active.name
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        bones = self.armature.data.bones
-
-        for (name, select, select_head, select_tail) in self.selected:
-            bone = bones[name]
-            bone.select = select
-            bone.select_head = select_head
-            bone.select_tail = select_tail
-
-        if self.active is None:
-            bones.active = None
-        else:
-            bones.active = bones[self.active]
 
         return False
 

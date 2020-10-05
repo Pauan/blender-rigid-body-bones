@@ -7,6 +7,14 @@ from .bones import (
 )
 
 
+def show_hitboxes(data):
+    if data.mode == 'EDIT':
+        data.hitboxes.hide_viewport = True
+
+    else:
+        data.hitboxes.hide_viewport = data.hide_hitboxes
+
+
 def root_collection(context):
     scene = context.scene
 
@@ -40,7 +48,7 @@ def hitboxes_collection(context, armature):
         parent = root_collection(context)
         data.hitboxes = utils.make_collection(armature.data.name + " [Hitboxes]", parent)
         data.hitboxes.hide_render = True
-        data.hitboxes.hide_viewport = data.hide_hitboxes
+        show_hitboxes(data)
 
     return data.hitboxes
 
@@ -121,10 +129,7 @@ def restore_parents(context, armature, data):
                         bone.parent = None
 
                     else:
-                        parent = edit_bones[names[name]]
-                        #if parent is None:
-                            #utils.error("[{}] could not find parent \"{}\"".format(bone.name, names[data.parent]))
-                        bone.parent = parent
+                        bone.parent = edit_bones[names[name]]
 
                     bone.use_connect = use_connect
 
@@ -264,7 +269,6 @@ def event_update_constraints(context, armature, data):
 
 @utils.armature_event("hide_active_bones")
 def event_hide_active_bones(context, armature, data):
-    # utils.SelectedBones(armature),
     with utils.ModeCAS(context, 'EDIT', 'POSE'):
         armature_enabled = data.enabled and data.hide_active_bones
 
@@ -276,11 +280,7 @@ def event_hide_active_bones(context, armature, data):
 @utils.armature_event("hide_hitboxes")
 def event_hide_hitboxes(context, armature, data):
     if data.hitboxes:
-        if armature.mode == 'EDIT':
-            data.hitboxes.hide_viewport = True
-
-        else:
-            data.hitboxes.hide_viewport = data.hide_hitboxes
+        show_hitboxes(data)
 
 
 @utils.armature_event("hide_constraints")
@@ -291,7 +291,6 @@ def event_hide_constraints(context, armature, data):
 
 @utils.armature_event("enabled")
 def event_enabled(context, armature, data):
-    # utils.SelectedBones(armature),
     with utils.ModeCAS(context, 'EDIT', 'POSE'):
         if data.enabled:
             for bone in armature.data.bones:
@@ -306,40 +305,3 @@ def event_enabled(context, armature, data):
                 data.property_unset("root_body")
 
             safe_remove_collections(context, armature)
-
-
-# TODO remove this
-class FactoryDefaults(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.factory_default"
-    bl_label = "Factory defaults"
-
-    @classmethod
-    def poll(cls, context):
-        return utils.is_armature(context)
-
-    def execute(self, context):
-        armature = context.active_object
-        data = armature.data.rigid_body_bones
-
-        with utils.Mode(context, 'EDIT'):
-            bones = armature.data.bones
-            edit_bones = armature.data.edit_bones
-
-            # This converts an O(n^2) algorithm into an O(2n) algorithm
-            mapping = make_name_mapping(bones, edit_bones)
-
-            data.property_unset("parents_stored")
-            data.property_unset("enabled")
-            data.property_unset("hide_active_bones")
-            data.property_unset("hide_hitboxes")
-
-            for bone in bones:
-                edit_bone = edit_bones[bone.name]
-                restore_bone_parent(bone, edit_bone, mapping)
-                initialize_bone(context, armature, bone)
-
-            # TODO code duplication
-            for pose_bone in armature.pose.bones:
-                update_bone_constraint(pose_bone)
-
-        return {'FINISHED'}
