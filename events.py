@@ -24,11 +24,13 @@ def mode_switch(context):
         if data.mode != object.mode:
             data.mode = object.mode
 
-            print("event", "mode_switch", object.mode)
+            print("EVENT", "mode_switch", object.mode, "{")
 
             for f in properties.Armature.events["mode_switch"]:
                 # TODO pass something other than None ?
                 f(None, context)
+
+            print("}")
 
 
 def register_subscribers():
@@ -59,8 +61,9 @@ def register():
     properties.Bone.events["enabled"].append(armatures.event_update_constraints)
     properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
 
+    properties.Bone.events["type"].append(bones.event_type_remove)
     properties.Bone.events["type"].append(armatures.event_update_errors)
-    properties.Bone.events["type"].append(bones.event_type)
+    properties.Bone.events["type"].append(bones.event_type_add)
     # TODO more efficient function for these events
     properties.Bone.events["type"].append(armatures.event_update_constraints)
     properties.Bone.events["type"].append(armatures.event_hide_active_bones)

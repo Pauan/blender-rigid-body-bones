@@ -2,12 +2,11 @@
 # TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
-# TODO synchronize the hitbox/constraint name with the bone name
-# TODO test duplicating bones
 # TODO when hiding active bone, it should remember its prior hidden state and restore it
 # TODO investigate the performance of bpy_prop_collection and ArmatureBones
 # TODO FIXED and RAGDOLL types
 # TODO cleanup hitboxes when the bone is deleted
+# TODO test duplicating bones
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

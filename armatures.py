@@ -224,9 +224,11 @@ def event_update_errors(context, armature, data):
 
                 if is_active:
                     data.error = 'ACTIVE_PARENT'
+                    remove_bone(bone)
 
                 else:
                     data.property_unset("error")
+                    initialize_bone(context, armature, bone)
 
         else:
             data.property_unset("error")
@@ -234,16 +236,16 @@ def event_update_errors(context, armature, data):
 
 @utils.armature_event("update_constraints")
 def event_update_constraints(context, armature, data):
-    if data.enabled and armature.mode != 'EDIT':
-        # Create/update/remove Child Of constraints
-        for pose_bone in armature.pose.bones:
-            update_bone_constraint(pose_bone)
+    if data.enabled:
+        if armature.mode != 'EDIT':
+            # Create/update/remove Child Of constraints
+            for pose_bone in armature.pose.bones:
+                update_bone_constraint(pose_bone)
 
     else:
         # Remove Child Of constraints
         for pose_bone in armature.pose.bones:
-            pass
-            #remove_bone_constraint(pose_bone)
+            remove_bone_constraint(pose_bone)
 
 
 @utils.armature_event("hide_active_bones")

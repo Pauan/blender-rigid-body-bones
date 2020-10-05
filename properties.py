@@ -2,10 +2,12 @@ import bpy
 
 def make_event(name):
     def update(self, context):
-        print("event", name)
+        print("EVENT", name, "{")
 
         for f in self.events[name]:
             f(self, context)
+
+        print("}")
 
     return update
 
@@ -78,7 +80,7 @@ class Bone(bpy.types.PropertyGroup):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
 
-    error: bpy.props.StringProperty(update=make_event("error"))
+    error: bpy.props.StringProperty()
 
     # These properties are used to save/restore the parent
     # TODO replace with PointerProperty
@@ -96,7 +98,6 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     events = {
-        "error": [],
         "enabled": [],
         "type": [],
         "collision_shape": [],

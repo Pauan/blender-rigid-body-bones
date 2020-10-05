@@ -131,13 +131,17 @@ def update_constraint(constraint, data):
     constraint.spring_damping_z = data.spring_damping_z
 
 
+def constraint_name(bone):
+    return bone.name + " [Head]"
+
+
 def create_constraint(context, armature, bone):
     data = bone.rigid_body_bones
 
     if not data.constraint:
         constraint = make_empty(
             context,
-            name=bone.name + " [Head]",
+            name=constraint_name(bone),
             collection=armatures.constraints_collection(context, armature),
             parent=armature,
         )
@@ -194,11 +198,19 @@ def hitbox_rotation(bone, type):
         return rotation
 
 
+def hitbox_name(bone, type):
+    if type == 'ACTIVE':
+        return bone.name + " [Active]"
+
+    else:
+        return bone.name + " [Passive]"
+
+
 def make_active_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
     hitbox = utils.make_cube(
-        name=bone.name + " [Active]",
+        name=hitbox_name(bone, 'ACTIVE'),
         dimensions=hitbox_dimensions(bone),
         collection=armatures.hitboxes_collection(context, armature),
     )
@@ -224,7 +236,7 @@ def make_passive_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
     hitbox = utils.make_cube(
-        name=bone.name + " [Passive]",
+        name=hitbox_name(bone, 'PASSIVE'),
         dimensions=hitbox_dimensions(bone),
         collection=armatures.hitboxes_collection(context, armature),
     )
@@ -288,13 +300,21 @@ def is_bone_active(data):
 def align_bone(bone):
     data = bone.rigid_body_bones
 
-    if data.hitbox:
-        data.hitbox.location = hitbox_location(bone, data.type)
-        data.hitbox.rotation_euler = hitbox_rotation(bone, data.type)
-        utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
+    hitbox = data.hitbox
 
-    if data.constraint:
-        align_constraint(data.constraint, bone)
+    if hitbox:
+        name = hitbox_name(bone, data.type)
+        hitbox.name = name
+        hitbox.data.name = name
+        hitbox.location = hitbox_location(bone, data.type)
+        hitbox.rotation_euler = hitbox_rotation(bone, data.type)
+        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone))
+
+    constraint = data.constraint
+
+    if constraint:
+        constraint.name = constraint_name(bone)
+        align_constraint(constraint, bone)
 
 
 def store_bone_parent(bone):
@@ -340,9 +360,12 @@ def restore_bone_parent(bone, names, datas):
         assert not data.is_property_set("use_connect")
 
 
-@utils.bone_event("type")
-def event_type(context, armature, bone, data):
+@utils.bone_event("type_remove")
+def event_type_remove(context, armature, bone, data):
     remove_bone(bone)
+
+@utils.bone_event("type_add")
+def event_type_add(context, armature, bone, data):
     initialize_bone(context, armature, bone)
 
 

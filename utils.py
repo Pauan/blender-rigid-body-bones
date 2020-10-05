@@ -20,10 +20,10 @@ def debug(message):
 def armature_event(name):
     def decorator(f):
         def event(self, context):
-            debug("armature " + name)
             # TODO is active_object correct ?
             armature = context.active_object
             data = armature.data.rigid_body_bones
+            debug("  [{}] {}".format(armature.data.name, name))
             return f(context, armature, data)
 
         return event
@@ -33,11 +33,11 @@ def armature_event(name):
 def bone_event(name):
     def decorator(f):
         def event(self, context):
-            debug("bone " + name)
             # TODO is active_object correct ?
             armature = context.active_object
             bone = get_active_bone(armature)
             data = bone.rigid_body_bones
+            debug("  [{}] {}".format(bone.name, name))
             return f(context, armature, bone, data)
 
         return event
