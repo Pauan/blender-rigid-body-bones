@@ -2,6 +2,8 @@ import bpy
 
 def make_event(name):
     def update(self, context):
+        print("event", name)
+
         for f in self.events[name]:
             f(self, context)
 
@@ -21,12 +23,14 @@ class Scene(bpy.types.PropertyGroup):
 
 
 class Armature(bpy.types.PropertyGroup):
+    mode: bpy.props.StringProperty()
     hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
     parents_stored: bpy.props.BoolProperty(default=False)
 
     events = {
+        "mode_switch": [],
         "enabled": [],
         "hide_active_bones": [],
         "hide_hitboxes": [],
@@ -43,7 +47,7 @@ class Armature(bpy.types.PropertyGroup):
     hide_active_bones: bpy.props.BoolProperty(
         name="Hide active bones",
         description="Hide bones which have an Active rigid body",
-        default=True,
+        default=False,
         update=make_event("hide_active_bones"),
     )
 
@@ -74,6 +78,8 @@ class Bone(bpy.types.PropertyGroup):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
 
+    error: bpy.props.StringProperty(update=make_event("error"))
+
     # These properties are used to save/restore the parent
     # TODO replace with PointerProperty
     name: bpy.props.StringProperty()
@@ -90,6 +96,7 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     events = {
+        "error": [],
         "enabled": [],
         "type": [],
         "collision_shape": [],

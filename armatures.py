@@ -2,8 +2,8 @@ import bpy
 from . import utils
 from . import bones
 from .bones import (
-    restore_bone_parent, remove_bone_parent, store_bone_parent, remove_bone, initialize_bone,
-    align_bone_hitbox, is_bone_active
+    restore_bone_parent, store_bone_parent, remove_bone, initialize_bone,
+    align_bone, is_bone_enabled, is_bone_active
 )
 
 
@@ -72,83 +72,61 @@ def safe_remove_collections(context, armature):
         context.scene.rigid_body_bones.property_unset("collection")
 
 
-def make_all(context, armature, data):
-    with utils.Mode(context, 'EDIT'):
-        is_stored = data.parents_stored
-        edit_bones = armature.data.edit_bones
+def store_parents(context, armature, data):
+    assert armature.mode != 'EDIT'
+
+    if not data.parents_stored:
+        data.parents_stored = True
+
+        stored = set()
 
         for bone in armature.data.bones:
-            if is_stored:
-                edit_bone = edit_bones[bone.name]
-                remove_bone_parent(bone, edit_bone)
+            if store_bone_parent(bone):
+                stored.add(bone.name)
 
-            initialize_bone(context, armature, bone)
+            align_bone(bone)
 
-
-def remove_all(context, armature, data):
-    with utils.Mode(context, 'EDIT'):
-        bones = armature.data.bones
-        edit_bones = armature.data.edit_bones
-
-        mapping = make_name_mapping(bones, edit_bones, False)
-
-        for bone in bones:
-            edit_bone = edit_bones[bone.name]
-            restore_bone_parent(bone, edit_bone, mapping, False)
-            remove_bone(bone)
-
-    if data.root_body:
-        utils.remove_object(data.root_body)
-        data.property_unset("root_body")
-
-    safe_remove_collections(context, armature)
+        # TODO if this triggers a mode_switch event then it can break everything
+        with utils.Mode(context, 'EDIT'):
+            for bone in armature.data.edit_bones:
+                if bone.name in stored:
+                    bone.parent = None
 
 
-# Fast O(1) lookup rather than O(n) lookup
-def make_name_mapping(bones, edit_bones, delete):
-    mapping = {}
+def restore_parents(context, armature, data):
+    if data.parents_stored:
+        data.property_unset("parents_stored")
 
-    # TODO can this be made faster ?
-    for bone in bones:
-        data = bone.rigid_body_bones
+        # Fast O(1) lookup rather than O(n) lookup
+        # This converts an O(n^2) algorithm into an O(2n) algorithm
+        names = {}
+        datas = {}
 
-        if data.is_property_set("name"):
-            mapping[data.name] = edit_bones[bone.name]
+        # TODO if this triggers a mode_switch event then it can break everything
+        with utils.ModeCAS(context, 'EDIT', 'POSE'):
+            for bone in armature.data.bones:
+                restore_bone_parent(bone, names, datas)
 
-            if delete:
-                data.property_unset("name")
-
-    return mapping
-
-
-def store_parents(context, armature, data):
-    if not data.parents_stored:
-        is_enabled = data.enabled
-
+        # TODO if this triggers a mode_switch event then it can break everything
         with utils.Mode(context, 'EDIT'):
             edit_bones = armature.data.edit_bones
 
-            for bone in armature.data.bones:
-                edit_bone = edit_bones[bone.name]
-                store_bone_parent(bone, edit_bone, is_enabled)
-                align_bone_hitbox(bone)
+            for bone in edit_bones:
+                data = datas.get(bone.name)
 
-        data.parents_stored = True
+                if data is not None:
+                    (name, use_connect) = data
 
+                    if name == "":
+                        bone.parent = None
 
-def restore_parents(armature, data):
-    if data.parents_stored:
-        bones = armature.data.bones
-        edit_bones = armature.data.edit_bones
+                    else:
+                        parent = edit_bones[names[name]]
+                        #if parent is None:
+                            #utils.error("[{}] could not find parent \"{}\"".format(bone.name, names[data.parent]))
+                        bone.parent = parent
 
-        # This converts an O(n^2) algorithm into an O(2n) algorithm
-        mapping = make_name_mapping(bones, edit_bones, True)
-
-        for bone in bones:
-            edit_bone = edit_bones[bone.name]
-            restore_bone_parent(bone, edit_bone, mapping, True)
-
-        data.property_unset("parents_stored")
+                    bone.use_connect = use_connect
 
 
 def remove_bone_constraint(pose_bone):
@@ -156,6 +134,7 @@ def remove_bone_constraint(pose_bone):
         if constraint.name == "Rigid Body Bones [Child Of]":
             pose_bone.constraints.remove(constraint)
             break
+
 
 def update_bone_constraint(pose_bone):
     index = None
@@ -167,10 +146,10 @@ def update_bone_constraint(pose_bone):
             index = i
             break
 
-    bone = pose_bone.bone
+    data = pose_bone.bone.rigid_body_bones
 
-    if is_bone_active(bone):
-        hitbox = bone.rigid_body_bones.hitbox
+    if is_bone_enabled(data) and is_bone_active(data):
+        hitbox = data.hitbox
 
         assert hitbox is not None
 
@@ -190,7 +169,71 @@ def update_bone_constraint(pose_bone):
         pose_bone.constraints.remove(found)
 
 
-def update_bone_constraints(armature, data):
+# TODO non-recursive version ?
+def is_active_parent(seen, bone):
+    if bone is None:
+        return False
+
+    else:
+        is_active = seen.get(bone.name)
+
+        if is_active is not None:
+            return is_active
+
+        else:
+            data = bone.rigid_body_bones
+
+            # Cannot use is_bone_enabled
+            if data.enabled and is_bone_active(data):
+                seen[bone.name] = True
+                return True
+
+            else:
+                is_active = is_active_parent(seen, bone.parent)
+                seen[bone.name] = is_active
+                return is_active
+
+
+@utils.armature_event("change_parents")
+def event_change_parents(context, armature, data):
+    if not data.enabled or armature.mode == 'EDIT':
+        restore_parents(context, armature, data)
+
+    else:
+        store_parents(context, armature, data)
+
+
+@utils.armature_event("update_errors")
+def event_update_errors(context, armature, data):
+    assert armature.mode != 'EDIT'
+
+    seen = {}
+
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+
+        # Cannot use is_bone_enabled
+        if data.enabled:
+            if is_bone_active(data):
+                seen[bone.name] = True
+                data.property_unset("error")
+
+            else:
+                is_active = is_active_parent(seen, bone.parent)
+                seen[bone.name] = is_active
+
+                if is_active:
+                    data.error = 'ACTIVE_PARENT'
+
+                else:
+                    data.property_unset("error")
+
+        else:
+            data.property_unset("error")
+
+
+@utils.armature_event("update_constraints")
+def event_update_constraints(context, armature, data):
     if data.enabled and armature.mode != 'EDIT':
         # Create/update/remove Child Of constraints
         for pose_bone in armature.pose.bones:
@@ -199,56 +242,29 @@ def update_bone_constraints(armature, data):
     else:
         # Remove Child Of constraints
         for pose_bone in armature.pose.bones:
-            remove_bone_constraint(pose_bone)
-
-
-def event_mode_switch(context):
-    print("armature event_mode_switch")
-    # TODO is active_object correct ?
-    armature = context.active_object
-
-    if armature and armature.type == 'ARMATURE':
-        data = armature.data.rigid_body_bones
-
-        if armature.mode == 'EDIT':
-            restore_parents(armature, data)
-        else:
-            store_parents(context, armature, data)
-
-        update_bone_constraints(armature, data)
-
-
-# Aligns the hitboxes while moving bones in Edit mode
-def event_timer(context):
-    print("TIMER")
-    # TODO is active_object correct ?
-    armature = context.active_object
-
-    if armature and armature.type == 'ARMATURE' and armature.mode == 'EDIT':
-        data = armature.data.rigid_body_bones
-
-        if data.enabled and not data.hide_hitboxes:
-            for bone in armature.data.bones:
-                align_bone_hitbox(bone)
-
-
-@utils.armature_event("update_constraints")
-def event_update_constraints(context, armature, data):
-    update_bone_constraints(armature, data)
+            pass
+            #remove_bone_constraint(pose_bone)
 
 
 @utils.armature_event("hide_active_bones")
 def event_hide_active_bones(context, armature, data):
-    # Cannot hide in EDIT mode
-    with utils.SelectedBones(armature), utils.Mode(context, 'POSE'):
+    # utils.SelectedBones(armature),
+    with utils.ModeCAS(context, 'EDIT', 'POSE'):
+        armature_enabled = data.enabled and data.hide_active_bones
+
         for bone in armature.data.bones:
-            bone.hide = data.enabled and is_bone_active(bone)
+            data = bone.rigid_body_bones
+            bone.hide = armature_enabled and is_bone_enabled(data) and is_bone_active(data)
 
 
 @utils.armature_event("hide_hitboxes")
 def event_hide_hitboxes(context, armature, data):
     if data.hitboxes:
-        data.hitboxes.hide_viewport = data.hide_hitboxes
+        if armature.mode == 'EDIT':
+            data.hitboxes.hide_viewport = True
+
+        else:
+            data.hitboxes.hide_viewport = data.hide_hitboxes
 
 
 @utils.armature_event("hide_constraints")
@@ -259,11 +275,21 @@ def event_hide_constraints(context, armature, data):
 
 @utils.armature_event("enabled")
 def event_enabled(context, armature, data):
-    if data.enabled:
-        make_all(context, armature, data)
+    # utils.SelectedBones(armature),
+    with utils.ModeCAS(context, 'EDIT', 'POSE'):
+        if data.enabled:
+            for bone in armature.data.bones:
+                initialize_bone(context, armature, bone)
 
-    else:
-        remove_all(context, armature, data)
+        else:
+            for bone in armature.data.bones:
+                remove_bone(bone)
+
+            if data.root_body:
+                utils.remove_object(data.root_body)
+                data.property_unset("root_body")
+
+            safe_remove_collections(context, armature)
 
 
 # TODO remove this
@@ -284,7 +310,7 @@ class FactoryDefaults(bpy.types.Operator):
             edit_bones = armature.data.edit_bones
 
             # This converts an O(n^2) algorithm into an O(2n) algorithm
-            mapping = make_name_mapping(bones, edit_bones, True)
+            mapping = make_name_mapping(bones, edit_bones)
 
             data.property_unset("parents_stored")
             data.property_unset("enabled")
@@ -293,7 +319,7 @@ class FactoryDefaults(bpy.types.Operator):
 
             for bone in bones:
                 edit_bone = edit_bones[bone.name]
-                restore_bone_parent(bone, edit_bone, mapping, True)
+                restore_bone_parent(bone, edit_bone, mapping)
                 initialize_bone(context, armature, bone)
 
             # TODO code duplication

@@ -66,14 +66,30 @@ class Mode:
         self.old_mode = None
 
     def __enter__(self):
-        # TODO is active_object correct ?
         self.old_mode = self.context.active_object.mode
-
-        if self.old_mode != self.mode:
-            bpy.ops.object.mode_set(mode=self.mode)
+        bpy.ops.object.mode_set(mode=self.mode)
 
     def __exit__(self, exc_type, exc_value, traceback):
         bpy.ops.object.mode_set(mode=self.old_mode)
+        return False
+
+
+class ModeCAS:
+    def __init__(self, context, old_mode, new_mode):
+        self.context = context
+        self.old_mode = old_mode
+        self.new_mode = new_mode
+        self.matched = False
+
+    def __enter__(self):
+        if self.context.active_object.mode == self.old_mode:
+            self.matched = True
+            bpy.ops.object.mode_set(mode=self.new_mode)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.matched:
+            bpy.ops.object.mode_set(mode=self.old_mode)
+
         return False
 
 

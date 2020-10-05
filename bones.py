@@ -270,19 +270,22 @@ def remove_bone(bone):
     remove_constraint(bone)
 
 
+def is_bone_enabled(data):
+    return data.enabled and data.error == ""
+
+
 def initialize_bone(context, armature, bone):
     data = bone.rigid_body_bones
 
-    if data.enabled:
+    if is_bone_enabled(data):
         create(context, armature, bone)
 
 
-def is_bone_active(bone):
-    data = bone.rigid_body_bones
-    return data.enabled and data.type == 'ACTIVE'
+def is_bone_active(data):
+    return data.type == 'ACTIVE'
 
 
-def align_bone_hitbox(bone):
+def align_bone(bone):
     data = bone.rigid_body_bones
 
     if data.hitbox:
@@ -294,62 +297,44 @@ def align_bone_hitbox(bone):
         align_constraint(data.constraint, bone)
 
 
-def remove_bone_parent(bone, edit_bone):
-    data = bone.rigid_body_bones
-
-    if data.enabled and data.type == 'ACTIVE':
-        assert data.is_property_set("parent")
-        assert data.is_property_set("use_connect")
-        edit_bone.parent = None
-
-
-def store_bone_parent(bone, edit_bone, armature_enabled):
+def store_bone_parent(bone):
     data = bone.rigid_body_bones
 
     assert not data.is_property_set("parent")
     assert not data.is_property_set("use_connect")
 
-    if data.enabled and data.type == 'ACTIVE':
+    if is_bone_enabled(data) and is_bone_active(data):
         parent = bone.parent
 
         if parent:
             name = parent.name
-            assert edit_bone.parent.name == name
             parent.rigid_body_bones.name = name
             data.parent = name
 
         else:
-            assert edit_bone.parent is None
             data.parent = ""
 
-        data.use_connect = edit_bone.use_connect
+        data.use_connect = bone.use_connect
+        return True
 
-        if armature_enabled:
-            edit_bone.parent = None
+    else:
+        return False
 
 
-def restore_bone_parent(bone, edit_bone, mapping, delete):
+def restore_bone_parent(bone, names, datas):
     data = bone.rigid_body_bones
+
+    if data.is_property_set("name"):
+        names[data.name] = bone.name
+        data.property_unset("name")
 
     if data.is_property_set("parent"):
         assert data.is_property_set("use_connect")
 
-        if data.parent == "":
-            edit_bone.parent = None
+        datas[bone.name] = (data.parent, data.use_connect)
 
-        else:
-            parent = mapping.get(data.parent)
-
-            if parent is None:
-                utils.error("[{}] could not find parent \"{}\"".format(edit_bone.name, data.parent))
-
-            edit_bone.parent = parent
-
-        edit_bone.use_connect = data.use_connect
-
-        if delete:
-            data.property_unset("use_connect")
-            data.property_unset("parent")
+        data.property_unset("parent")
+        data.property_unset("use_connect")
 
     else:
         assert not data.is_property_set("use_connect")
@@ -395,7 +380,7 @@ def event_constraint(context, armature, bone, data):
 
 @utils.bone_event("enabled")
 def event_enabled(context, armature, bone, data):
-    if data.enabled:
+    if is_bone_enabled(data):
         create(context, armature, bone)
 
     else:

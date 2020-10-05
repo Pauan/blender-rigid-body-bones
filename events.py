@@ -14,6 +14,23 @@ def timer():
     return fps
 
 
+def mode_switch(context):
+    # TODO is active_object correct ?
+    object = context.active_object
+
+    if object and object.type == 'ARMATURE':
+        data = object.data.rigid_body_bones
+
+        if data.mode != object.mode:
+            data.mode = object.mode
+
+            print("event", "mode_switch", object.mode)
+
+            for f in properties.Armature.events["mode_switch"]:
+                # TODO pass something other than None ?
+                f(None, context)
+
+
 def register_subscribers():
     bpy.msgbus.clear_by_owner(owner)
 
@@ -22,11 +39,11 @@ def register_subscribers():
         key=(bpy.types.Object, "mode"),
         owner=owner,
         args=(bpy.context,),
-        notify=armatures.event_mode_switch,
+        notify=mode_switch,
         options={'PERSISTENT'}
     )
 
-    armatures.event_mode_switch(bpy.context)
+    mode_switch(bpy.context)
 
 @persistent
 def load_post(dummy):
@@ -36,15 +53,17 @@ def load_post(dummy):
 def register():
     print("REGISTER EVENTS")
 
+    properties.Bone.events["enabled"].append(armatures.event_update_errors)
     properties.Bone.events["enabled"].append(bones.event_enabled)
     # TODO more efficient function for these events
     properties.Bone.events["enabled"].append(armatures.event_update_constraints)
-    #properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
+    properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
 
+    properties.Bone.events["type"].append(armatures.event_update_errors)
     properties.Bone.events["type"].append(bones.event_type)
     # TODO more efficient function for these events
     properties.Bone.events["type"].append(armatures.event_update_constraints)
-    #properties.Bone.events["type"].append(armatures.event_hide_active_bones)
+    properties.Bone.events["type"].append(armatures.event_hide_active_bones)
 
     properties.Bone.events["collision_shape"].append(bones.event_collision_shape)
 
@@ -132,9 +151,14 @@ def register():
 
     properties.Armature.events["enabled"].append(armatures.event_enabled)
     properties.Armature.events["enabled"].append(armatures.event_update_constraints)
-    #properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
+    properties.Armature.events["enabled"].append(armatures.event_change_parents)
+    properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
 
-    #properties.Armature.events["hide_active_bones"].append(armatures.event_hide_active_bones)
+    properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
+    properties.Armature.events["mode_switch"].append(armatures.event_update_constraints)
+    properties.Armature.events["mode_switch"].append(armatures.event_change_parents)
+
+    properties.Armature.events["hide_active_bones"].append(armatures.event_hide_active_bones)
 
     properties.Armature.events["hide_hitboxes"].append(armatures.event_hide_hitboxes)
 

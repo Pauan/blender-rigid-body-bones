@@ -4,13 +4,9 @@
 # TODO support convex hull and mesh shapes
 # TODO synchronize the hitbox/constraint name with the bone name
 # TODO test duplicating bones
-# TODO align passive hitboxes properly when moving bones
-# TODO when disabling rigid body for the armature, it should also cleanup the bone parent state
 # TODO when hiding active bone, it should remember its prior hidden state and restore it
 # TODO investigate the performance of bpy_prop_collection and ArmatureBones
 # TODO FIXED and RAGDOLL types
-# TODO make panel always visible
-# TODO make parent a PointerProperty to Bone.rigid_body_bones
 # TODO cleanup hitboxes when the bone is deleted
 bl_info = {
     "name": "Rigid Body Bones",
