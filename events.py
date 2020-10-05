@@ -55,8 +55,9 @@ def load_post(dummy):
 def register():
     print("REGISTER EVENTS")
 
+    properties.Bone.events["enabled"].append(bones.event_enabled_remove)
     properties.Bone.events["enabled"].append(armatures.event_update_errors)
-    properties.Bone.events["enabled"].append(bones.event_enabled)
+    properties.Bone.events["enabled"].append(bones.event_enabled_add)
     # TODO more efficient function for these events
     properties.Bone.events["enabled"].append(armatures.event_update_constraints)
     properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)

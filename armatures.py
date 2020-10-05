@@ -84,7 +84,7 @@ def store_parents(context, armature, data):
             if store_bone_parent(bone):
                 stored.add(bone.name)
 
-            align_bone(bone)
+            align_bone(armature, bone)
 
         # TODO if this triggers a mode_switch event then it can break everything
         with utils.Mode(context, 'EDIT'):
@@ -130,16 +130,17 @@ def restore_parents(context, armature, data):
 
 
 def remove_bone_constraint(pose_bone):
-    for constraint in pose_bone.constraints:
-        if constraint.name == "Rigid Body Bones [Child Of]":
-            pose_bone.constraints.remove(constraint)
-            break
+    constraint = pose_bone.constraints.get("Rigid Body Bones [Child Of]")
+
+    if constraint is not None:
+        pose_bone.constraints.remove(constraint)
 
 
 def update_bone_constraint(pose_bone):
     index = None
     found = None
 
+    # TODO can this be replaced with a collection method ?
     for i, constraint in enumerate(pose_bone.constraints):
         if constraint.name == "Rigid Body Bones [Child Of]":
             found = constraint
@@ -157,6 +158,8 @@ def update_bone_constraint(pose_bone):
             index = len(pose_bone.constraints)
             found = pose_bone.constraints.new(type='CHILD_OF')
             found.name = "Rigid Body Bones [Child Of]"
+            # TODO verify that this properly sets the inverse
+            found.set_inverse_pending = True
 
         assert index is not None
 

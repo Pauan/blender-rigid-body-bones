@@ -297,7 +297,14 @@ def is_bone_active(data):
     return data.type == 'ACTIVE'
 
 
-def align_bone(bone):
+def bone_set_inverse(armature, bone, data):
+    if data.type == 'ACTIVE':
+        pose_bone = armature.pose.bones[bone.name]
+        constraint = pose_bone.constraints["Rigid Body Bones [Child Of]"]
+        constraint.set_inverse_pending = True
+
+
+def align_bone(armature, bone):
     data = bone.rigid_body_bones
 
     hitbox = data.hitbox
@@ -309,6 +316,7 @@ def align_bone(bone):
         hitbox.location = hitbox_location(bone, data.type)
         hitbox.rotation_euler = hitbox_rotation(bone, data.type)
         utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone))
+        bone_set_inverse(armature, bone, data)
 
     constraint = data.constraint
 
@@ -379,16 +387,19 @@ def event_collision_shape(context, armature, bone, data):
 def event_location(context, armature, bone, data):
     if data.hitbox:
         data.hitbox.location = hitbox_location(bone, data.type)
+        bone_set_inverse(armature, bone, data)
 
 @utils.bone_event("rotation")
 def event_rotation(context, armature, bone, data):
     if data.hitbox:
         data.hitbox.rotation_euler = hitbox_rotation(bone, data.type)
+        bone_set_inverse(armature, bone, data)
 
 @utils.bone_event("scale")
 def event_scale(context, armature, bone, data):
     if data.hitbox:
         utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
+        bone_set_inverse(armature, bone, data)
 
 @utils.bone_event("rigid_body")
 def event_rigid_body(context, armature, bone, data):
@@ -401,11 +412,13 @@ def event_constraint(context, armature, bone, data):
         update_constraint(data.constraint.rigid_body_constraint, data)
 
 
-@utils.bone_event("enabled")
-def event_enabled(context, armature, bone, data):
+@utils.bone_event("enabled_add")
+def event_enabled_add(context, armature, bone, data):
     if is_bone_enabled(data):
         create(context, armature, bone)
 
-    else:
+@utils.bone_event("enabled_remove")
+def event_enabled_remove(context, armature, bone, data):
+    if not is_bone_enabled(data):
         remove_bone(bone)
         armatures.safe_remove_collections(context, armature)
