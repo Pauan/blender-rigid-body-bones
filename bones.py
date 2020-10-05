@@ -272,6 +272,53 @@ def create(context, armature, bone):
             data.hitbox = make_passive_hitbox(context, armature, bone)
 
 
+def fix_parent(context, armature, bone, data):
+    assert data.is_property_set("name")
+    assert data.is_property_set("parent")
+    assert data.is_property_set("use_connect")
+
+    print(bone.name, bone.parent)
+
+    if is_bone_enabled(data) and is_bone_active(data):
+        if bone.parent is not None:
+            name = bone.name
+
+            with utils.Mode(context, 'EDIT'):
+                armature.data.edit_bones[name].parent = None
+
+    else:
+        if bone.parent is None:
+            parent = data.parent
+            use_connect = data.use_connect
+
+            if parent == "" and bone.use_connect == use_connect:
+                return
+
+            name = bone.name
+            parent_name = None
+
+            if parent != "":
+                # TODO make this faster somehow ?
+                for bone in armature.data.bones:
+                    if bone.rigid_body_bones.name == parent:
+                        parent_name = bone.name
+                        break
+
+                assert parent_name is not None
+
+            with utils.Mode(context, 'EDIT'):
+                edit_bones = armature.data.edit_bones
+                edit_bone = edit_bones[name]
+
+                if parent_name is None:
+                    assert edit_bone.parent is None
+
+                else:
+                    edit_bone.parent = edit_bones[parent_name]
+
+                edit_bone.use_connect = use_connect
+
+
 def remove_bone(bone):
     data = bone.rigid_body_bones
 
@@ -328,44 +375,40 @@ def align_bone(armature, bone):
 def store_bone_parent(bone):
     data = bone.rigid_body_bones
 
+    assert not data.is_property_set("name")
     assert not data.is_property_set("parent")
     assert not data.is_property_set("use_connect")
 
-    if is_bone_enabled(data) and is_bone_active(data):
-        parent = bone.parent
+    data.name = bone.name
 
-        if parent:
-            name = parent.name
-            parent.rigid_body_bones.name = name
-            data.parent = name
+    parent = bone.parent
 
-        else:
-            data.parent = ""
-
-        data.use_connect = bone.use_connect
-        return True
+    if parent:
+        data.parent = parent.name
 
     else:
-        return False
+        data.parent = ""
+
+    data.use_connect = bone.use_connect
+
+    return is_bone_enabled(data) and is_bone_active(data)
 
 
 def restore_bone_parent(bone, names, datas):
     data = bone.rigid_body_bones
 
-    if data.is_property_set("name"):
-        names[data.name] = bone.name
-        data.property_unset("name")
+    assert data.is_property_set("name")
+    assert data.is_property_set("parent")
+    assert data.is_property_set("use_connect")
 
-    if data.is_property_set("parent"):
-        assert data.is_property_set("use_connect")
+    names[data.name] = bone.name
 
+    if is_bone_enabled(data) and is_bone_active(data):
         datas[bone.name] = (data.parent, data.use_connect)
 
-        data.property_unset("parent")
-        data.property_unset("use_connect")
-
-    else:
-        assert not data.is_property_set("use_connect")
+    data.property_unset("name")
+    data.property_unset("parent")
+    data.property_unset("use_connect")
 
 
 @utils.bone_event("type_remove")
@@ -375,6 +418,7 @@ def event_type_remove(context, armature, bone, data):
 @utils.bone_event("type_add")
 def event_type_add(context, armature, bone, data):
     initialize_bone(context, armature, bone)
+    fix_parent(context, armature, bone, data)
 
 
 @utils.bone_event("collision_shape")
@@ -416,6 +460,7 @@ def event_constraint(context, armature, bone, data):
 def event_enabled_add(context, armature, bone, data):
     if is_bone_enabled(data):
         create(context, armature, bone)
+        fix_parent(context, armature, bone, data)
 
 @utils.bone_event("enabled_remove")
 def event_enabled_remove(context, armature, bone, data):

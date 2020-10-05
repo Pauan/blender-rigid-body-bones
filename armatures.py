@@ -86,18 +86,18 @@ def store_parents(context, armature, data):
     if not data.parents_stored:
         data.parents_stored = True
 
-        stored = set()
+        active = set()
 
         for bone in armature.data.bones:
             if store_bone_parent(bone):
-                stored.add(bone.name)
+                active.add(bone.name)
 
             align_bone(armature, bone)
 
         # TODO if this triggers a mode_switch event then it can break everything
         with utils.Mode(context, 'EDIT'):
             for bone in armature.data.edit_bones:
-                if bone.name in stored:
+                if bone.name in active:
                     bone.parent = None
 
 
@@ -119,19 +119,29 @@ def restore_parents(context, armature, data):
         with utils.Mode(context, 'EDIT'):
             edit_bones = armature.data.edit_bones
 
+            errors = []
+
             for bone in edit_bones:
                 data = datas.get(bone.name)
 
                 if data is not None:
                     (name, use_connect) = data
 
-                    if name == "":
-                        bone.parent = None
+                    if bone.parent is None:
+                        if name == "":
+                            bone.parent = None
+
+                        else:
+                            bone.parent = edit_bones[names[name]]
+
+                        bone.use_connect = use_connect
 
                     else:
-                        bone.parent = edit_bones[names[name]]
+                        errors.append((bone.name, name, bone.parent.name))
 
-                    bone.use_connect = use_connect
+            if len(errors) != 0:
+                for (name, old_parent, new_parent) in errors:
+                    utils.error("[{}] could not set parent to {} because it already has parent {}".format(name, old_parent, new_parent))
 
 
 def remove_bone_constraint(pose_bone):
