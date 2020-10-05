@@ -170,7 +170,7 @@ def update_bone_constraint(pose_bone):
 
 
 # TODO non-recursive version ?
-def is_active_parent(seen, bone):
+def is_active_parent(bone, seen):
     if bone is None:
         return False
 
@@ -189,9 +189,37 @@ def is_active_parent(seen, bone):
                 return True
 
             else:
-                is_active = is_active_parent(seen, bone.parent)
+                is_active = is_active_parent(bone.parent, seen)
                 seen[bone.name] = is_active
                 return is_active
+
+
+def update_bone_error(context, armature, bone, seen):
+    data = bone.rigid_body_bones
+
+    # Cannot use is_bone_enabled
+    if data.enabled:
+        if is_bone_active(data):
+            seen[bone.name] = True
+            data.property_unset("error")
+
+        else:
+            is_active = is_active_parent(bone.parent, seen)
+            seen[bone.name] = is_active
+
+            if is_active:
+                data.error = 'ACTIVE_PARENT'
+                remove_bone(bone)
+                return True
+
+            else:
+                data.property_unset("error")
+                initialize_bone(context, armature, bone)
+
+    else:
+        data.property_unset("error")
+
+    return False
 
 
 @utils.armature_event("change_parents")
@@ -209,29 +237,12 @@ def event_update_errors(context, armature, data):
 
     seen = {}
 
+    data.errors.clear()
+
     for bone in armature.data.bones:
-        data = bone.rigid_body_bones
-
-        # Cannot use is_bone_enabled
-        if data.enabled:
-            if is_bone_active(data):
-                seen[bone.name] = True
-                data.property_unset("error")
-
-            else:
-                is_active = is_active_parent(seen, bone.parent)
-                seen[bone.name] = is_active
-
-                if is_active:
-                    data.error = 'ACTIVE_PARENT'
-                    remove_bone(bone)
-
-                else:
-                    data.property_unset("error")
-                    initialize_bone(context, armature, bone)
-
-        else:
-            data.property_unset("error")
+        if update_bone_error(context, armature, bone, seen):
+            error = data.errors.add()
+            error.name = bone.name
 
 
 @utils.armature_event("update_constraints")

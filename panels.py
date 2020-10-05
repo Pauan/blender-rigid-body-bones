@@ -15,8 +15,24 @@ class ArmaturePanel(bpy.types.Panel):
     def poll(cls, context):
         return utils.is_armature(context)
 
+    def draw_header(self, context):
+        data = context.active_object.data.rigid_body_bones
+        layout = self.layout
+
+        if len(data.errors) != 0:
+            layout.label(text="", icon='ERROR')
+
     def draw(self, context):
-        pass
+        data = context.active_object.data.rigid_body_bones
+        layout = self.layout
+
+        if len(data.errors) != 0:
+            layout.label(text="Invalid bones:")
+
+            box = layout.box()
+
+            for error in data.errors:
+                box.label(text=error.name, icon='BONE_DATA')
 
 
 class ArmatureSettingsPanel(bpy.types.Panel):

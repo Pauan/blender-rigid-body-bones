@@ -2,6 +2,7 @@
 # TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
+
 # TODO when hiding active bone, it should remember its prior hidden state and restore it
 # TODO investigate the performance of bpy_prop_collection and ArmatureBones
 # TODO FIXED and RAGDOLL types
@@ -46,6 +47,7 @@ def add_object_manual_map():
 
 classes = (
     properties.Scene,
+    properties.Error,
     properties.Armature,
     properties.Bone,
 

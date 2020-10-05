@@ -24,8 +24,15 @@ class Scene(bpy.types.PropertyGroup):
         del bpy.types.Scene.rigid_body_bones
 
 
+class Error(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty()
+
+
 class Armature(bpy.types.PropertyGroup):
     mode: bpy.props.StringProperty()
+
+    errors: bpy.props.CollectionProperty(type=Error)
+
     hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
