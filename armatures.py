@@ -4,7 +4,8 @@ from . import bones
 from .bones import (
     restore_bone_parent, store_bone_parent, remove_bone, initialize_bone,
     align_bone, is_bone_enabled, is_bone_active, add_bone_objects,
-    fix_bone_duplicates
+    fix_bone_duplicates, make_empty_rigid_body, make_blank_rigid_body,
+    remove_blank
 )
 
 
@@ -121,18 +122,21 @@ def remove_orphans(collection, exists):
     if collection:
         for object in collection.objects:
             if object.name not in exists:
-                print(object.name)
                 utils.remove_object(object)
 
 
 def make_root_body(context, armature, data):
     if not data.root_body:
-        data.root_body = make_empty_rigid_body(
+        body = make_empty_rigid_body(
             context,
             name=armature.data.name + " [Root]",
             collection=blanks_collection(context, armature),
-            parent=armature,
         )
+
+        body.parent = armature
+        body.parent_type = 'OBJECT'
+
+        data.root_body = body
 
     return data.root_body
 
@@ -426,13 +430,44 @@ def event_fix_duplicates(context, armature, data):
 @utils.armature_event("update_joints")
 def event_update_joints(context, armature, data):
     if data.enabled and armature.mode != 'EDIT':
-        for bone in armature.data.bones:
-            pass
-            #if is_bone_enabled(data) and is_bone_active(data):
-                #pass
+        is_blank = set()
+        has_root = False
 
-            #else:
-                #pass
+        for bone in armature.data.bones:
+            bone_data = bone.rigid_body_bones
+
+            if is_bone_enabled(bone_data) and is_bone_active(bone_data):
+                assert bone_data.hitbox is not None
+
+                constraint = bone_data.constraint.rigid_body_constraint
+                parent = bone.parent
+
+                if parent:
+                    parent_data = parent.rigid_body_bones
+
+                    if is_bone_enabled(parent_data):
+                        assert parent_data.hitbox is not None
+                        constraint.object1 = parent_data.hitbox
+
+                    else:
+                        is_blank.add(parent.name)
+                        constraint.object1 = make_blank_rigid_body(context, armature, parent, parent_data)
+
+                else:
+                    has_root = True
+                    constraint.object1 = make_root_body(context, armature, data)
+
+                constraint.object2 = bone_data.hitbox
+
+        # TODO figure out a way to make this faster
+        for bone in armature.data.bones:
+            bone_data = bone.rigid_body_bones
+
+            if bone_data.blank and bone.name not in is_blank:
+                remove_blank(bone_data)
+
+        if not has_root:
+            remove_root_body(data)
 
 
 @utils.armature_event("remove_orphans")

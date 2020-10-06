@@ -11,12 +11,6 @@ def common_settings(object):
     object.display.show_shadows = False
 
 
-def show_bounds(object, type):
-    object.show_bounds = True
-    object.display_type = 'BOUNDS'
-    object.display_bounds_type = type
-
-
 def update_shape(object, type):
     object.rigid_body.collision_shape = type
 
@@ -26,7 +20,9 @@ def update_shape(object, type):
         object.display_bounds_type = 'BOX'
 
     else:
-        show_bounds(object, type)
+        object.show_bounds = True
+        object.display_type = 'BOUNDS'
+        object.display_bounds_type = type
 
 
 def update_rigid_body(rigid_body, data):
@@ -44,13 +40,10 @@ def update_rigid_body(rigid_body, data):
     rigid_body.deactivate_angular_velocity = data.deactivate_angular_velocity
 
 
-def make_empty_rigid_body(context, name, collection, parent):
+def make_empty_rigid_body(context, name, collection):
     mesh = bpy.data.meshes.new(name=name)
     body = bpy.data.objects.new(name, mesh)
     collection.objects.link(body)
-
-    body.parent = parent
-    body.parent_type = 'OBJECT'
 
     with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
         utils.select(context, [body])
@@ -58,9 +51,8 @@ def make_empty_rigid_body(context, name, collection, parent):
 
     body.rigid_body.kinematic = True
     body.rigid_body.collision_collections[0] = False
-    body.hide_viewport = True
     common_settings(body)
-    show_bounds(body, type='BOX')
+    update_shape(body, type='BOX')
 
     return body
 
@@ -133,6 +125,29 @@ def update_constraint(constraint, data):
 
 def blank_name(bone):
     return bone.name + " [Blank]"
+
+
+def make_blank_rigid_body(context, armature, bone, data):
+    if not data.blank:
+        blank = make_empty_rigid_body(
+            context,
+            name=blank_name(bone),
+            collection=armatures.blanks_collection(context, armature),
+        )
+
+        blank.parent = armature
+        blank.parent_type = 'BONE'
+        blank.parent_bone = bone.name
+
+        data.blank = blank
+
+    return data.blank
+
+
+def remove_blank(data):
+    utils.remove_object(data.blank)
+    data.property_unset("blank")
+
 
 def constraint_name(bone):
     return bone.name + " [Head]"
