@@ -52,15 +52,13 @@ You must have Blender 2.91.0 or higher.
 
 5. Click the `Rigid Body` checkbox to enable physics.
 
-   By default the bone will only move if *you* move it in Pose mode.
-
-   If you instead want the bone to move automatically, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
+   If you want the bone to move automatically, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
 
    You can also enable `Springs` to make the bone bouncy.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
-The `Rigid.Body.Bones.zip` file also contains an `examples` folder which contains example .blend files.
+The `Rigid.Body.Bones.zip` file also contains an `examples` folder which contains example `.blend` files.
 
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
