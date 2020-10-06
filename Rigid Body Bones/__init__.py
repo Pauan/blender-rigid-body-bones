@@ -24,13 +24,13 @@ from . import panels
 from . import properties
 from . import utils
 
-from importlib import reload
-reload(utils)
-reload(properties)
-reload(bones)
-reload(armatures)
-reload(events)
-reload(panels)
+#from importlib import reload
+#reload(utils)
+#reload(properties)
+#reload(bones)
+#reload(armatures)
+#reload(events)
+#reload(panels)
 
 # This allows you to right click on a button and link to documentation
 def add_object_manual_map():

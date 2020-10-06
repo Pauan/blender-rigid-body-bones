@@ -7,7 +7,8 @@ from . import bones
 from . import utils
 
 
-def mode_switch(context):
+def mode_switch():
+    context = bpy.context
     object = context.active_object
 
     if object and object.type == 'ARMATURE':
@@ -39,12 +40,20 @@ def register_subscribers():
     bpy.msgbus.subscribe_rna(
         key=(bpy.types.Object, "mode"),
         owner=owner,
-        args=(bpy.context,),
+        args=(),
         notify=mode_switch,
         options={'PERSISTENT'}
     )
 
-    mode_switch(bpy.context)
+    # TODO use PERSISTENT ?
+    # TODO is there a better way to be notified when the active object changes ?
+    bpy.msgbus.subscribe_rna(
+        key=(bpy.types.LayerObjects, "active"),
+        owner=owner,
+        args=(),
+        notify=mode_switch,
+        options={'PERSISTENT'}
+    )
 
 @persistent
 def load_post(dummy):

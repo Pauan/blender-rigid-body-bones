@@ -41,26 +41,27 @@ def update_rigid_body(rigid_body, data):
 
 
 def make_empty_rigid_body(context, name, collection, parent, parent_bone):
-    mesh = bpy.data.meshes.new(name=name)
-    body = bpy.data.objects.new(name, mesh)
-    collection.objects.link(body)
+    with utils.Viewable(collection):
+        mesh = bpy.data.meshes.new(name=name)
+        body = bpy.data.objects.new(name, mesh)
+        collection.objects.link(body)
 
-    if parent_bone is None:
-        utils.set_parent(body, parent)
+        if parent_bone is None:
+            utils.set_parent(body, parent)
 
-    else:
-        utils.set_bone_parent(body, parent, parent_bone)
+        else:
+            utils.set_bone_parent(body, parent, parent_bone)
 
-    with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-        utils.select(context, [body])
-        bpy.ops.rigidbody.object_add(type='PASSIVE')
+        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+            utils.select(context, [body])
+            bpy.ops.rigidbody.object_add(type='PASSIVE')
 
-    body.rigid_body.kinematic = True
-    body.rigid_body.collision_collections[0] = False
-    common_settings(body)
-    update_shape(body, type='BOX')
+        body.rigid_body.kinematic = True
+        body.rigid_body.collision_collections[0] = False
+        common_settings(body)
+        update_shape(body, type='BOX')
 
-    return body
+        return body
 
 
 def align_constraint(constraint, bone):
@@ -162,24 +163,26 @@ def create_constraint(context, armature, bone):
     data = bone.rigid_body_bones
 
     if not data.constraint:
-        empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
         collection = armatures.constraints_collection(context, armature)
-        collection.objects.link(empty)
 
-        utils.set_parent(empty, armature)
+        with utils.Viewable(collection):
+            empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
+            collection.objects.link(empty)
 
-        align_constraint(empty, bone)
+            utils.set_parent(empty, armature)
 
-        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-            utils.select(context, [empty])
-            bpy.ops.rigidbody.constraint_add(type='FIXED')
+            align_constraint(empty, bone)
 
-        common_settings(empty)
-        empty.empty_display_type = 'CIRCLE'
+            with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+                utils.select(context, [empty])
+                bpy.ops.rigidbody.constraint_add(type='FIXED')
 
-        update_constraint(empty.rigid_body_constraint, data)
+            common_settings(empty)
+            empty.empty_display_type = 'CIRCLE'
 
-        data.constraint = empty
+            update_constraint(empty.rigid_body_constraint, data)
+
+            data.constraint = empty
 
 
 def remove_constraint(bone):
@@ -239,51 +242,57 @@ def hitbox_name(bone, type):
 def make_active_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
-    hitbox = utils.make_cube(
-        name=hitbox_name(bone, 'ACTIVE'),
-        dimensions=hitbox_dimensions(bone),
-        collection=armatures.actives_collection(context, armature),
-    )
+    collection = armatures.actives_collection(context, armature)
 
-    utils.set_parent(hitbox, armature)
+    with utils.Viewable(collection):
+        hitbox = utils.make_cube(
+            name=hitbox_name(bone, 'ACTIVE'),
+            dimensions=hitbox_dimensions(bone),
+            collection=collection,
+        )
 
-    hitbox.rotation_euler = hitbox_rotation(bone, 'ACTIVE')
-    hitbox.location = hitbox_location(bone, 'ACTIVE')
+        utils.set_parent(hitbox, armature)
 
-    with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-        utils.select(context, [hitbox])
-        bpy.ops.rigidbody.object_add(type='ACTIVE')
+        hitbox.rotation_euler = hitbox_rotation(bone, 'ACTIVE')
+        hitbox.location = hitbox_location(bone, 'ACTIVE')
 
-    update_rigid_body(hitbox.rigid_body, data)
-    common_settings(hitbox)
-    update_shape(hitbox, type=data.collision_shape)
+        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+            utils.select(context, [hitbox])
+            bpy.ops.rigidbody.object_add(type='ACTIVE')
 
-    return hitbox
+        update_rigid_body(hitbox.rigid_body, data)
+        common_settings(hitbox)
+        update_shape(hitbox, type=data.collision_shape)
+
+        return hitbox
 
 
 def make_passive_hitbox(context, armature, bone):
     data = bone.rigid_body_bones
 
-    hitbox = utils.make_cube(
-        name=hitbox_name(bone, 'PASSIVE'),
-        dimensions=hitbox_dimensions(bone),
-        collection=armatures.passives_collection(context, armature),
-    )
+    collection = armatures.passives_collection(context, armature)
 
-    utils.set_bone_parent(hitbox, armature, bone.name)
+    with utils.Viewable(collection):
+        hitbox = utils.make_cube(
+            name=hitbox_name(bone, 'PASSIVE'),
+            dimensions=hitbox_dimensions(bone),
+            collection=collection,
+        )
 
-    hitbox.rotation_euler = hitbox_rotation(bone, 'PASSIVE')
-    hitbox.location = hitbox_location(bone, 'PASSIVE')
+        utils.set_bone_parent(hitbox, armature, bone.name)
 
-    with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-        utils.select(context, [hitbox])
-        bpy.ops.rigidbody.object_add(type='PASSIVE')
+        hitbox.rotation_euler = hitbox_rotation(bone, 'PASSIVE')
+        hitbox.location = hitbox_location(bone, 'PASSIVE')
 
-    hitbox.rigid_body.kinematic = True
-    common_settings(hitbox)
-    update_shape(hitbox, type=data.collision_shape)
+        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+            utils.select(context, [hitbox])
+            bpy.ops.rigidbody.object_add(type='PASSIVE')
 
-    return hitbox
+        hitbox.rigid_body.kinematic = True
+        common_settings(hitbox)
+        update_shape(hitbox, type=data.collision_shape)
+
+        return hitbox
 
 
 def create(context, armature, bone):

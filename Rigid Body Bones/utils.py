@@ -62,6 +62,21 @@ class Selectable:
         return False
 
 
+class Viewable:
+    def __init__(self, collection):
+        self.collection = collection
+        self.hidden = False
+
+    def __enter__(self):
+        self.hidden = self.collection.hide_viewport
+        self.collection.hide_viewport = False
+        return self.collection
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.collection.hide_viewport = self.hidden
+        return False
+
+
 class Mode:
     def __init__(self, context, mode):
         self.context = context
