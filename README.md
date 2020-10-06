@@ -38,13 +38,13 @@ You must have Blender 2.91.0 or higher.
 
 1. Select an Armature object:
 
-   ![](usage01)
+   ![][usage01]
 
 2. Go into Pose mode.
 
 3. In the sidebar (keyboard shortcut `N`) open the `Rigid Body Bones` tab:
 
-   ![](usage02)
+   ![][usage02]
 
 4. Select the bone that you want physics for.
 
