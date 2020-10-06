@@ -1,11 +1,19 @@
 import bpy
+import time
+from . import utils
+
 
 def make_event(name):
     def update(self, context):
         print("EVENT", name, "{")
 
+        time_start = time.time()
+
         for f in self.events[name]:
             f(self, context)
+
+        time_end = time.time()
+        utils.print_time(time_start, time_end)
 
         print("}")
 

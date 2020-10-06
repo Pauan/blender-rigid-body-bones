@@ -2,13 +2,9 @@
 # TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
-
 # TODO FIXED and RAGDOLL types
+
 # TODO test duplicating bones
-# TODO test whether storing/restoring parents works properly when deleting bones
-# TODO test whether storing/restoring parents works properly when changing parents
-# TODO test whether storing/restoring parents works properly when changing names
-# TODO test that Active parent error checking works when changing parents in edit mode
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

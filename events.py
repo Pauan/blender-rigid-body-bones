@@ -1,21 +1,13 @@
 import bpy
+import time
 from bpy.app.handlers import persistent
 from . import properties
 from . import armatures
 from . import bones
-
-
-fps = 1 / 60
-
-owner = object()
-
-def timer():
-    armatures.event_timer(bpy.context)
-    return fps
+from . import utils
 
 
 def mode_switch(context):
-    # TODO is active_object correct ?
     object = context.active_object
 
     if object and object.type == 'ARMATURE':
@@ -26,12 +18,19 @@ def mode_switch(context):
 
             print("EVENT", "mode_switch", object.mode, "{")
 
+            time_start = time.time()
+
             for f in properties.Armature.events["mode_switch"]:
                 # TODO pass something other than None ?
                 f(None, context)
 
+            time_end = time.time()
+            utils.print_time(time_start, time_end)
+
             print("}")
 
+
+owner = object()
 
 def register_subscribers():
     bpy.msgbus.clear_by_owner(owner)
@@ -163,6 +162,7 @@ def register():
     properties.Armature.events["enabled"].append(armatures.event_change_parents)
     properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
 
+    properties.Armature.events["mode_switch"].append(armatures.event_update_errors)
     properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
     properties.Armature.events["mode_switch"].append(armatures.event_remove_orphans)
     properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
@@ -181,22 +181,11 @@ def register():
 
     register_subscribers()
 
-    # This re-aligns the hitboxes when the bones move
-    # TODO super gross, figure out a better way
-    #bpy.app.timers.register(
-        #timer,
-        #first_interval=fps,
-        #persistent=True,
-    #)
-
 
 def unregister():
     print("UNREGISTER EVENTS")
 
-    if bpy.app.timers.is_registered(timer):
-        bpy.app.timers.unregister(timer)
-
-    bpy.msgbus.clear_by_owner(owner)
-
     if load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post)
+
+    bpy.msgbus.clear_by_owner(owner)

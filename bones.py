@@ -263,7 +263,7 @@ def create(context, armature, bone):
     data = bone.rigid_body_bones
 
     if not data.hitbox:
-        if data.type == 'ACTIVE':
+        if is_bone_active(data):
             data.hitbox = make_active_hitbox(context, armature, bone)
 
             create_constraint(context, armature, bone)
@@ -308,7 +308,7 @@ def is_bone_active(data):
 
 
 def bone_set_inverse(armature, bone, data):
-    if data.type == 'ACTIVE':
+    if is_bone_active(data):
         pose_bone = armature.pose.bones[bone.name]
         constraint = pose_bone.constraints["Rigid Body Bones [Child Of]"]
         constraint.set_inverse_pending = True

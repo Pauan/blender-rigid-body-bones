@@ -1,5 +1,6 @@
 import bpy
 from . import utils
+from .bones import is_bone_active
 
 
 class ArmaturePanel(bpy.types.Panel):
@@ -119,7 +120,7 @@ class SettingsPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "collision_shape", text="Shape")
 
-        if data.type == 'ACTIVE':
+        if is_bone_active(data):
             flow.separator()
 
             col = flow.column()
@@ -144,7 +145,7 @@ class LimitsPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        return (data.type == 'ACTIVE')
+        return is_bone_active(data)
 
     def draw(self, context):
         pass
@@ -163,7 +164,7 @@ class SpringsPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        return (data.type == 'ACTIVE')
+        return is_bone_active(data)
 
     def draw(self, context):
         pass
@@ -328,7 +329,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
-        if data.type == 'ACTIVE':
+        if is_bone_active(data):
             col = flow.column()
             col.prop(data, "use_breaking")
 
@@ -353,7 +354,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "restitution", text="Bounciness", slider=True)
 
-        if data.type == 'ACTIVE':
+        if is_bone_active(data):
             flow.separator()
 
             col = flow.column()
@@ -394,7 +395,7 @@ class DeactivationPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        return (data.type == 'ACTIVE')
+        return is_bone_active(data)
 
     def draw_header(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
@@ -434,7 +435,7 @@ class OverrideIterationsPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        return (data.type == 'ACTIVE')
+        return is_bone_active(data)
 
     def draw_header(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones

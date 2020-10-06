@@ -16,6 +16,9 @@ def debug(message):
     if True:
         print(message)
 
+def print_time(time_start, time_end):
+    print("  TIME: %.10f ms" % ((time_end - time_start) * 1000.0))
+
 
 def armature_event(name):
     def decorator(f):

@@ -278,16 +278,15 @@ def event_change_parents(context, armature, data):
 
 @utils.armature_event("update_errors")
 def event_update_errors(context, armature, data):
-    assert armature.mode != 'EDIT'
+    if armature.mode != 'EDIT':
+        seen = {}
 
-    seen = {}
+        data.errors.clear()
 
-    data.errors.clear()
-
-    for bone in armature.data.bones:
-        if update_bone_error(context, armature, bone, seen):
-            error = data.errors.add()
-            error.name = bone.name
+        for bone in armature.data.bones:
+            if update_bone_error(context, armature, bone, seen):
+                error = data.errors.add()
+                error.name = bone.name
 
 
 @utils.armature_event("update_constraints")
