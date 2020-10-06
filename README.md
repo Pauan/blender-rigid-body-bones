@@ -2,21 +2,23 @@
 
 3D engines have support for bone physics, this can be used for a wide variety of things:
 
-* Animated hair that reacts to gravity and wind
+* Animated hair that reacts to gravity and wind.
 
-* Ragdoll physics
+* Ragdoll physics.
 
-* Simple cloth physics (faster than using real cloth physics, but not as realistic)
+* Simple cloth physics (faster than using real cloth physics, but not as realistic).
 
-* Breast / butt / muscle jiggle
+* Breast / butt / muscle jiggle.
 
-* Collision detection based on simple hitboxes
+* Collision detection based on simple hitboxes.
 
-Blender can do all of that, however it is ***incredibly*** time consuming and tedious.
+Blender can do all of that, however it is ***incredibly*** time consuming and tedious. And there are a lot of problems that you need to watch out for. If you try to do it by hand, you will waste many hours of time.
 
-This add-on makes it super easy. Rather than spending several minutes setting up physics for each bone, it instead takes a couple seconds.
+With this add-on, rather than spending several *minutes* (per bone), it instead takes a couple *seconds*, and all of the tricky stuff is handled automatically for you.
 
-And best of all, this add-on creates normal Blender rigid bodies, so the performance is excellent, and it continues to work perfectly even after disabling the add-on. Which means you can send the `.blend` file to somebody else and they can use it without needing the add-on installed.
+And best of all, this add-on creates normal Blender rigid bodies, so the performance is excellent, and it continues to work perfectly even after disabling the add-on.
+
+That means you can send the `.blend` file to somebody else and they can use it without needing the add-on installed.
 
 ## Installation
 
@@ -50,13 +52,11 @@ You must have Blender 2.91.0 or higher.
 
 5. Click the `Rigid Body` checkbox.
 
-6. Now you can change the settings as much as you want.
-
    By default the hitbox will move with the bone.
 
    If you instead want the hitbox to cause the bone to move, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
 
-   You can also enable `Springs` to make the bones bouncy.
+   You can also enable `Springs` to make the bone bouncy.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 

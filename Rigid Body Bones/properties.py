@@ -629,7 +629,7 @@ class Bone(bpy.types.PropertyGroup):
     use_limit_lin_x: bpy.props.BoolProperty(
         name="X Translate Limit",
         description="Limit translation on X axis",
-        default=False,
+        default=True,
         options=set(),
         update=make_event("use_limit_lin_x"),
     )
@@ -637,7 +637,7 @@ class Bone(bpy.types.PropertyGroup):
     use_limit_lin_y: bpy.props.BoolProperty(
         name="Y Translate Limit",
         description="Limit translation on Y axis",
-        default=False,
+        default=True,
         options=set(),
         update=make_event("use_limit_lin_y"),
     )
@@ -645,7 +645,7 @@ class Bone(bpy.types.PropertyGroup):
     use_limit_lin_z: bpy.props.BoolProperty(
         name="Z Translate Limit",
         description="Limit translation on Z axis",
-        default=False,
+        default=True,
         options=set(),
         update=make_event("use_limit_lin_z"),
     )
