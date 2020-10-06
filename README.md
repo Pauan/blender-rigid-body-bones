@@ -24,13 +24,13 @@ That means you can send the `.blend` file to somebody else and they can use it w
 
 You must have Blender 2.91.0 or higher.
 
-1. Go to the [Releases page](https://github.com/Pauan/blender-rigid-body-bones/releases) and download the latest release (as a .zip file).
+1. Go to the [Releases page](https://github.com/Pauan/blender-rigid-body-bones/releases) and download the most recent `Rigid.Body.Bones.zip` file.
 
 2. In Blender, go to `Edit -> Preferences...`
 
-3. In the Add-ons tab, click the `Install...` button.
+3. In the `Add-ons` tab, click the `Install...` button.
 
-4. Select the .zip file and click `Install Add-on`.
+4. Select the `Rigid.Body.Bones.zip` file and click `Install Add-on`.
 
 5. Enable the checkbox to the left of `Physics: Rigid Body Bones`.
 
@@ -60,7 +60,7 @@ You must have Blender 2.91.0 or higher.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
-The .zip file also contains an `examples` folder which contains example .blend files.
+The `Rigid.Body.Bones.zip` file also contains an `examples` folder which contains example .blend files.
 
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
