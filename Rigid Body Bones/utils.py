@@ -5,6 +5,8 @@ from math import radians
 from mathutils import Vector, Euler, Matrix
 
 
+DEBUG = False
+
 def log(obj):
     from pprint import PrettyPrinter
     PrettyPrinter(indent = 4).pprint(obj)
@@ -13,7 +15,9 @@ def error(message):
     print(message, file=sys.stderr)
 
 def debug(message):
-    if True:
+    global DEBUG
+
+    if DEBUG:
         print(message)
 
 def print_time(time_start, time_end):

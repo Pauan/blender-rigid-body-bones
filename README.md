@@ -50,17 +50,34 @@ You must have Blender 2.91.0 or higher.
 
 4. Select the bone that you want physics for.
 
-5. Click the `Rigid Body` checkbox.
+5. Click the `Rigid Body` checkbox to enable physics.
 
-   By default the hitbox will move with the bone.
+   By default the bone will only move if *you* move it in Pose mode.
 
-   If you instead want the hitbox to cause the bone to move, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
+   If you instead want the bone to move automatically, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
 
    You can also enable `Springs` to make the bone bouncy.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
-The .zip file also contains an `examples/Simple.blend` file which contains a simple example.
+The .zip file also contains an `examples` folder which contains example .blend files.
 
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
+
+
+### For programmers
+
+If you want to modify this add-on, follow these steps:
+
+1. `git clone https://github.com/Pauan/blender-rigid-body-bones.git`
+
+2. `cd blender-rigid-body-bones`
+
+3. `blender --background --python install.py`
+
+   This will install the add-on locally.
+
+4. Now you can open Blender normally and the add-on will be installed.
+
+5. When you make changes to the code, close Blender and then run `blender --background --python install.py` again.
