@@ -17,7 +17,7 @@ def debug(message):
         print(message)
 
 def print_time(time_start, time_end):
-    print("  TIME: %.10f ms" % ((time_end - time_start) * 1000.0))
+    debug("  TIME: %.10f ms" % ((time_end - time_start) * 1000.0))
 
 
 def armature_event(name):
@@ -26,7 +26,7 @@ def armature_event(name):
             # TODO is active_object correct ?
             armature = context.active_object
             data = armature.data.rigid_body_bones
-            debug("  [{}] {}".format(armature.data.name, name))
+            #debug("  [{}] {}".format(armature.data.name, name))
             return f(context, armature, data)
 
         return event
@@ -40,7 +40,7 @@ def bone_event(name):
             armature = context.active_object
             bone = get_active_bone(armature)
             data = bone.rigid_body_bones
-            debug("  [{}] {}".format(bone.name, name))
+            #debug("  [{}] {}".format(bone.name, name))
             return f(context, armature, bone, data)
 
         return event

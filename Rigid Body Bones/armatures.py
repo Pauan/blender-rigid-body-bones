@@ -17,14 +17,6 @@ def show_hitboxes(collection, data):
         collection.hide_viewport = data.hide_hitboxes
 
 
-def show_constraints(data):
-    if data.mode == 'EDIT':
-        data.constraints.hide_viewport = True
-
-    else:
-        data.constraints.hide_viewport = data.hide_constraints
-
-
 def root_collection(context):
     scene = context.scene
 
@@ -57,7 +49,7 @@ def constraints_collection(context, armature):
         parent = container_collection(context, armature)
         data.constraints = utils.make_collection(armature.data.name + " [Joints]", parent)
         data.constraints.hide_render = True
-        show_constraints(data)
+        data.constraints.hide_viewport = True
 
     return data.constraints
 
@@ -401,12 +393,6 @@ def event_hide_hitboxes(context, armature, data):
 
     if data.passives:
         show_hitboxes(data.passives, data)
-
-
-@utils.armature_event("hide_constraints")
-def event_hide_constraints(context, armature, data):
-    if data.constraints:
-        show_constraints(data)
 
 
 @utils.armature_event("enabled")

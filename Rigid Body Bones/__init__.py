@@ -7,7 +7,8 @@ bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
     "version": (1, 0),
-    "blender": (2, 80, 0),
+    # Minimum version because of https://developer.blender.org/T81345
+    "blender": (2, 91, 0),
     "location": "View3D > Sidebar > Rigid Body Bones",
     "description": "Adds rigid body physics to bones",
     "warning": "",
@@ -65,7 +66,7 @@ classes = (
 )
 
 def register():
-    print("REGISTERING")
+    utils.debug("REGISTERING")
     faulthandler.enable()
     from bpy.utils import register_class
     for cls in classes:
@@ -76,7 +77,7 @@ def register():
     #bpy.utils.register_manual_map(add_object_manual_map)
 
 def unregister():
-    print("UNREGISTERING")
+    utils.debug("UNREGISTERING")
     #bpy.utils.unregister_manual_map(add_object_manual_map)
 
     events.unregister()

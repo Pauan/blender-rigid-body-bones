@@ -17,7 +17,7 @@ def mode_switch():
         if data.mode != object.mode:
             data.mode = object.mode
 
-            print("EVENT", "mode_switch", object.mode, "{")
+            utils.debug("EVENT mode_switch {} {{".format(object.mode))
 
             time_start = time.time()
 
@@ -28,7 +28,7 @@ def mode_switch():
             time_end = time.time()
             utils.print_time(time_start, time_end)
 
-            print("}")
+            utils.debug("}")
 
 
 owner = object()
@@ -61,7 +61,7 @@ def load_post(dummy):
 
 
 def register():
-    print("REGISTER EVENTS")
+    utils.debug("REGISTER EVENTS")
 
     properties.Bone.events["enabled"].append(bones.event_enabled_remove)
     properties.Bone.events["enabled"].append(bones.event_fix_parent)
@@ -174,7 +174,6 @@ def register():
     properties.Armature.events["mode_switch"].append(armatures.event_update_errors)
     properties.Armature.events["mode_switch"].append(armatures.event_remove_orphans)
     properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
-    properties.Armature.events["mode_switch"].append(armatures.event_hide_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_update_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_change_parents)
     properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
@@ -182,8 +181,6 @@ def register():
     properties.Armature.events["hide_active_bones"].append(armatures.event_hide_active_bones)
 
     properties.Armature.events["hide_hitboxes"].append(armatures.event_hide_hitboxes)
-
-    properties.Armature.events["hide_constraints"].append(armatures.event_hide_constraints)
 
 
     # This is needed in order to re-subscribe when the file changes
@@ -193,7 +190,7 @@ def register():
 
 
 def unregister():
-    print("UNREGISTER EVENTS")
+    utils.debug("UNREGISTER EVENTS")
 
     if load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post)

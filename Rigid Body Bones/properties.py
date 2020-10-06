@@ -5,7 +5,7 @@ from . import utils
 
 def make_event(name):
     def update(self, context):
-        print("EVENT", name, "{")
+        utils.debug("EVENT {} {{".format(name))
 
         time_start = time.time()
 
@@ -15,7 +15,7 @@ def make_event(name):
         time_end = time.time()
         utils.print_time(time_start, time_end)
 
-        print("}")
+        utils.debug("}")
 
     return update
 
@@ -55,7 +55,6 @@ class Armature(bpy.types.PropertyGroup):
         "enabled": [],
         "hide_active_bones": [],
         "hide_hitboxes": [],
-        "hide_constraints": [],
     }
 
     enabled: bpy.props.BoolProperty(
@@ -77,13 +76,6 @@ class Armature(bpy.types.PropertyGroup):
         description="Hide bone rigid bodies",
         default=False,
         update=make_event("hide_hitboxes"),
-    )
-
-    hide_constraints: bpy.props.BoolProperty(
-        name="Hide active joints",
-        description="Hide joints for Active bones",
-        default=True,
-        update=make_event("hide_constraints"),
     )
 
     @classmethod
