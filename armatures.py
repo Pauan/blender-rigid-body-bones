@@ -117,7 +117,6 @@ def update_collections(armature, data):
         data.constraints.name = name + " [Joints]"
 
 
-
 def remove_orphans(collection, exists):
     if collection:
         for object in collection.objects:
@@ -305,6 +304,19 @@ def is_active_parent(bone, seen):
                 return is_active
 
 
+def check_bone_error(bone, data, seen):
+    is_active = is_active_parent(bone.parent, seen)
+    seen[bone.name] = is_active
+
+    if is_active:
+        data.error = 'ACTIVE_PARENT'
+
+    else:
+        data.property_unset("error")
+
+    return is_active
+
+
 def update_bone_error(context, armature, bone, seen):
     data = bone.rigid_body_bones
 
@@ -315,24 +327,21 @@ def update_bone_error(context, armature, bone, seen):
             data.property_unset("error")
             # This is needed to initialize duplicates
             initialize_bone(context, armature, bone)
+            return False
 
         else:
-            is_active = is_active_parent(bone.parent, seen)
-            seen[bone.name] = is_active
+            is_error = check_bone_error(bone, data, seen)
 
-            if is_active:
-                data.error = 'ACTIVE_PARENT'
+            if is_error:
                 remove_bone(bone)
-                return True
 
             else:
-                data.property_unset("error")
                 initialize_bone(context, armature, bone)
 
-    else:
-        data.property_unset("error")
+            return is_error
 
-    return False
+    else:
+        return check_bone_error(bone, data, seen)
 
 
 @utils.armature_event("change_parents")
@@ -430,44 +439,53 @@ def event_fix_duplicates(context, armature, data):
 @utils.armature_event("update_joints")
 def event_update_joints(context, armature, data):
     if data.enabled and armature.mode != 'EDIT':
-        is_blank = set()
         has_root = False
+
+        mapping = {}
+
+        for bone in armature.data.bones:
+            bone_data = bone.rigid_body_bones
+
+            assert bone_data.is_property_set("name")
+            mapping[bone_data.name] = bone
+
+            # TODO make this more efficient
+            remove_blank(bone_data)
 
         for bone in armature.data.bones:
             bone_data = bone.rigid_body_bones
 
             if is_bone_enabled(bone_data) and is_bone_active(bone_data):
                 assert bone_data.hitbox is not None
+                assert bone_data.is_property_set("parent")
 
                 constraint = bone_data.constraint.rigid_body_constraint
-                parent = bone.parent
 
-                if parent:
-                    parent_data = parent.rigid_body_bones
-
-                    if is_bone_enabled(parent_data):
-                        assert parent_data.hitbox is not None
-                        constraint.object1 = parent_data.hitbox
-
-                    else:
-                        is_blank.add(parent.name)
-                        constraint.object1 = make_blank_rigid_body(context, armature, parent, parent_data)
-
-                else:
+                if bone_data.parent == "":
                     has_root = True
                     constraint.object1 = make_root_body(context, armature, data)
 
+                else:
+                    parent = mapping[bone_data.parent]
+                    parent_data = parent.rigid_body_bones
+
+                    if parent_data.error == "":
+                        if is_bone_enabled(parent_data):
+                            assert parent_data.hitbox is not None
+                            constraint.object1 = parent_data.hitbox
+
+                        else:
+                            constraint.object1 = make_blank_rigid_body(context, armature, parent, parent_data)
+
+                    else:
+                        constraint.object1 = None
+
                 constraint.object2 = bone_data.hitbox
-
-        # TODO figure out a way to make this faster
-        for bone in armature.data.bones:
-            bone_data = bone.rigid_body_bones
-
-            if bone_data.blank and bone.name not in is_blank:
-                remove_blank(bone_data)
 
         if not has_root:
             remove_root_body(data)
+
+        safe_remove_collections(context, armature)
 
 
 @utils.armature_event("remove_orphans")

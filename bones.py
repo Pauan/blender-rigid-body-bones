@@ -145,8 +145,9 @@ def make_blank_rigid_body(context, armature, bone, data):
 
 
 def remove_blank(data):
-    utils.remove_object(data.blank)
-    data.property_unset("blank")
+    if data.blank:
+        utils.remove_object(data.blank)
+        data.property_unset("blank")
 
 
 def constraint_name(bone):
@@ -289,8 +290,6 @@ def create(context, armature, bone):
             data.hitbox = make_passive_hitbox(context, armature, bone)
             assert data.constraint is None
 
-    assert data.blank is None
-
 
 def remove_bone(bone):
     data = bone.rigid_body_bones
@@ -300,8 +299,7 @@ def remove_bone(bone):
         data.property_unset("hitbox")
 
     remove_constraint(bone)
-
-    assert data.blank is None
+    remove_blank(data)
 
 
 def add_bone_objects(bone, exists):

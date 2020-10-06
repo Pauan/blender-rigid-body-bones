@@ -90,7 +90,7 @@ class BonePanel(bpy.types.Panel):
         layout = self.layout
 
         if data.error == 'ACTIVE_PARENT':
-            layout.label(text="Passive bone cannot have an Active parent", icon='ERROR')
+            layout.label(text="Children of Active must be Active", icon='ERROR')
 
 
 class SettingsPanel(bpy.types.Panel):

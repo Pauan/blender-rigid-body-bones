@@ -60,6 +60,7 @@ def register():
     properties.Bone.events["enabled"].append(bones.event_enabled_add)
     # TODO more efficient function for this event
     properties.Bone.events["enabled"].append(armatures.event_update_constraints)
+    properties.Bone.events["enabled"].append(armatures.event_update_joints)
     # TODO more efficient function for this event
     properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
 
@@ -69,6 +70,7 @@ def register():
     properties.Bone.events["type"].append(bones.event_type_add)
     # TODO more efficient function for this event
     properties.Bone.events["type"].append(armatures.event_update_constraints)
+    properties.Bone.events["type"].append(armatures.event_update_joints)
     # TODO more efficient function for this event
     properties.Bone.events["type"].append(armatures.event_hide_active_bones)
 
@@ -160,16 +162,17 @@ def register():
     properties.Armature.events["enabled"].append(armatures.event_enabled)
     properties.Armature.events["enabled"].append(armatures.event_update_constraints)
     properties.Armature.events["enabled"].append(armatures.event_change_parents)
+    properties.Armature.events["enabled"].append(armatures.event_update_joints)
     properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
 
     properties.Armature.events["mode_switch"].append(armatures.event_fix_duplicates)
     properties.Armature.events["mode_switch"].append(armatures.event_update_errors)
-    properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
     properties.Armature.events["mode_switch"].append(armatures.event_remove_orphans)
     properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
     properties.Armature.events["mode_switch"].append(armatures.event_hide_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_update_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_change_parents)
+    properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
 
     properties.Armature.events["hide_active_bones"].append(armatures.event_hide_active_bones)
 
