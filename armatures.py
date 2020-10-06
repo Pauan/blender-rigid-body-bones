@@ -8,12 +8,12 @@ from .bones import (
 )
 
 
-def show_hitboxes(data):
+def show_hitboxes(collection, data):
     if data.mode == 'EDIT':
-        data.hitboxes.hide_viewport = True
+        collection.hide_viewport = True
 
     else:
-        data.hitboxes.hide_viewport = data.hide_hitboxes
+        collection.hide_viewport = data.hide_hitboxes
 
 
 def show_constraints(data):
@@ -61,16 +61,40 @@ def constraints_collection(context, armature):
     return data.constraints
 
 
-def hitboxes_collection(context, armature):
+def actives_collection(context, armature):
     data = armature.data.rigid_body_bones
 
-    if not data.hitboxes:
+    if not data.actives:
         parent = container_collection(context, armature)
-        data.hitboxes = utils.make_collection(armature.data.name + " [Hitboxes]", parent)
-        data.hitboxes.hide_render = True
-        show_hitboxes(data)
+        data.actives = utils.make_collection(armature.data.name + " [Actives]", parent)
+        data.actives.hide_render = True
+        show_hitboxes(data.actives, data)
 
-    return data.hitboxes
+    return data.actives
+
+
+def passives_collection(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if not data.passives:
+        parent = container_collection(context, armature)
+        data.passives = utils.make_collection(armature.data.name + " [Passives]", parent)
+        data.passives.hide_render = True
+        show_hitboxes(data.passives, data)
+
+    return data.passives
+
+
+def blanks_collection(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if not data.blanks:
+        parent = container_collection(context, armature)
+        data.blanks = utils.make_collection(armature.data.name + " [Blanks]", parent)
+        data.blanks.hide_render = True
+        data.blanks.hide_viewport = True
+
+    return data.blanks
 
 
 def update_collections(armature, data):
@@ -79,8 +103,14 @@ def update_collections(armature, data):
     if data.container:
         data.container.name = name + " [Container]"
 
-    if data.hitboxes:
-        data.hitboxes.name = name + " [Hitboxes]"
+    if data.actives:
+        data.actives.name = name + " [Actives]"
+
+    if data.passives:
+        data.passives.name = name + " [Passives]"
+
+    if data.blanks:
+        data.blanks.name = name + " [Blanks]"
 
     if data.constraints:
         data.constraints.name = name + " [Joints]"
@@ -99,8 +129,8 @@ def make_root_body(context, armature, data):
     if not data.root_body:
         data.root_body = make_empty_rigid_body(
             context,
-            name=armature.data.name + " [Parent]",
-            collection=hitboxes_collection(context, armature),
+            name=armature.data.name + " [Root]",
+            collection=blanks_collection(context, armature),
             parent=armature,
         )
 
@@ -119,8 +149,14 @@ def safe_remove_collections(context, armature):
     if data.constraints and utils.safe_remove_collection(data.constraints):
         data.property_unset("constraints")
 
-    if data.hitboxes and utils.safe_remove_collection(data.hitboxes):
-        data.property_unset("hitboxes")
+    if data.actives and utils.safe_remove_collection(data.actives):
+        data.property_unset("actives")
+
+    if data.passives and utils.safe_remove_collection(data.passives):
+        data.property_unset("passives")
+
+    if data.blanks and utils.safe_remove_collection(data.blanks):
+        data.property_unset("blanks")
 
     if data.container and utils.safe_remove_collection(data.container):
         data.property_unset("container")
@@ -350,8 +386,11 @@ def event_hide_active_bones(context, armature, data):
 
 @utils.armature_event("hide_hitboxes")
 def event_hide_hitboxes(context, armature, data):
-    if data.hitboxes:
-        show_hitboxes(data)
+    if data.actives:
+        show_hitboxes(data.actives, data)
+
+    if data.passives:
+        show_hitboxes(data.passives, data)
 
 
 @utils.armature_event("hide_constraints")
@@ -408,7 +447,9 @@ def event_remove_orphans(context, armature, data):
             exists.add(data.root_body.name)
 
         remove_orphans(data.constraints, exists)
-        remove_orphans(data.hitboxes, exists)
+        remove_orphans(data.actives, exists)
+        remove_orphans(data.passives, exists)
+        remove_orphans(data.blanks, exists)
         # TODO is this a good idea ?
         remove_orphans(data.container, exists)
         safe_remove_collections(context, armature)

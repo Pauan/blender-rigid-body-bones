@@ -131,6 +131,9 @@ def update_constraint(constraint, data):
     constraint.spring_damping_z = data.spring_damping_z
 
 
+def blank_name(bone):
+    return bone.name + " [Blank]"
+
 def constraint_name(bone):
     return bone.name + " [Head]"
 
@@ -212,7 +215,7 @@ def make_active_hitbox(context, armature, bone):
     hitbox = utils.make_cube(
         name=hitbox_name(bone, 'ACTIVE'),
         dimensions=hitbox_dimensions(bone),
-        collection=armatures.hitboxes_collection(context, armature),
+        collection=armatures.actives_collection(context, armature),
     )
 
     hitbox.parent = armature
@@ -238,7 +241,7 @@ def make_passive_hitbox(context, armature, bone):
     hitbox = utils.make_cube(
         name=hitbox_name(bone, 'PASSIVE'),
         dimensions=hitbox_dimensions(bone),
-        collection=armatures.hitboxes_collection(context, armature),
+        collection=armatures.passives_collection(context, armature),
     )
 
     hitbox.parent = armature
@@ -265,11 +268,13 @@ def create(context, armature, bone):
     if not data.hitbox:
         if is_bone_active(data):
             data.hitbox = make_active_hitbox(context, armature, bone)
-
             create_constraint(context, armature, bone)
 
         else:
             data.hitbox = make_passive_hitbox(context, armature, bone)
+            assert data.constraint is None
+
+    assert data.blank is None
 
 
 def remove_bone(bone):
@@ -281,6 +286,8 @@ def remove_bone(bone):
 
     remove_constraint(bone)
 
+    assert data.blank is None
+
 
 def add_bone_objects(bone, exists):
     data = bone.rigid_body_bones
@@ -290,6 +297,9 @@ def add_bone_objects(bone, exists):
 
     if data.constraint:
         exists.add(data.constraint.name)
+
+    if data.blank:
+        exists.add(data.blank.name)
 
 
 def fix_bone_duplicates(context, armature, bone, seen):
@@ -309,6 +319,15 @@ def fix_bone_duplicates(context, armature, bone, seen):
 
         if name in seen:
             data.property_unset("constraint")
+
+        else:
+            seen.add(name)
+
+    if data.blank:
+        name = data.blank.name
+
+        if name in seen:
+            data.property_unset("blank")
 
         else:
             seen.add(name)
@@ -355,6 +374,11 @@ def align_bone(armature, bone):
     if constraint:
         constraint.name = constraint_name(bone)
         align_constraint(constraint, bone)
+
+    blank = data.blank
+
+    if blank:
+        blank.name = blank_name(bone)
 
 
 def store_bone_parent(bone):

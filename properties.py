@@ -42,7 +42,9 @@ class Armature(bpy.types.PropertyGroup):
     errors: bpy.props.CollectionProperty(type=Error)
 
     container: bpy.props.PointerProperty(type=bpy.types.Collection)
-    hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
+    actives: bpy.props.PointerProperty(type=bpy.types.Collection)
+    passives: bpy.props.PointerProperty(type=bpy.types.Collection)
+    blanks: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
 
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -96,6 +98,7 @@ class Armature(bpy.types.PropertyGroup):
 class Bone(bpy.types.PropertyGroup):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
+    blank: bpy.props.PointerProperty(type=bpy.types.Object)
 
     error: bpy.props.StringProperty()
 
