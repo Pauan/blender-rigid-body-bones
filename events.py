@@ -162,10 +162,12 @@ def register():
     properties.Armature.events["enabled"].append(armatures.event_change_parents)
     properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
 
+    properties.Armature.events["mode_switch"].append(armatures.event_fix_duplicates)
     properties.Armature.events["mode_switch"].append(armatures.event_update_errors)
     properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
     properties.Armature.events["mode_switch"].append(armatures.event_remove_orphans)
     properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
+    properties.Armature.events["mode_switch"].append(armatures.event_hide_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_update_constraints)
     properties.Armature.events["mode_switch"].append(armatures.event_change_parents)
 

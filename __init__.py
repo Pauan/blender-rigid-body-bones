@@ -3,8 +3,6 @@
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
 # TODO FIXED and RAGDOLL types
-
-# TODO test duplicating bones
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

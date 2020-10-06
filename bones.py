@@ -292,6 +292,28 @@ def add_bone_objects(bone, exists):
         exists.add(data.constraint.name)
 
 
+def fix_bone_duplicates(context, armature, bone, seen):
+    data = bone.rigid_body_bones
+
+    if data.hitbox:
+        name = data.hitbox.name
+
+        if name in seen:
+            data.property_unset("hitbox")
+
+        else:
+            seen.add(name)
+
+    if data.constraint:
+        name = data.constraint.name
+
+        if name in seen:
+            data.property_unset("constraint")
+
+        else:
+            seen.add(name)
+
+
 def is_bone_enabled(data):
     return data.enabled and data.error == ""
 

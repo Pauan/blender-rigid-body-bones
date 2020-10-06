@@ -3,7 +3,8 @@ from . import utils
 from . import bones
 from .bones import (
     restore_bone_parent, store_bone_parent, remove_bone, initialize_bone,
-    align_bone, is_bone_enabled, is_bone_active, add_bone_objects
+    align_bone, is_bone_enabled, is_bone_active, add_bone_objects,
+    fix_bone_duplicates
 )
 
 
@@ -13,6 +14,14 @@ def show_hitboxes(data):
 
     else:
         data.hitboxes.hide_viewport = data.hide_hitboxes
+
+
+def show_constraints(data):
+    if data.mode == 'EDIT':
+        data.constraints.hide_viewport = True
+
+    else:
+        data.constraints.hide_viewport = data.hide_constraints
 
 
 def root_collection(context):
@@ -29,14 +38,25 @@ def root_collection(context):
     return root
 
 
+def container_collection(context, armature):
+    data = armature.data.rigid_body_bones
+
+    if not data.container:
+        parent = root_collection(context)
+        data.container = utils.make_collection(armature.data.name + " [Container]", parent)
+        data.container.hide_render = True
+
+    return data.container
+
+
 def constraints_collection(context, armature):
     data = armature.data.rigid_body_bones
 
     if not data.constraints:
-        parent = hitboxes_collection(context, armature)
-        data.constraints = utils.make_collection(armature.data.name + " [Constraints]", parent)
+        parent = container_collection(context, armature)
+        data.constraints = utils.make_collection(armature.data.name + " [Joints]", parent)
         data.constraints.hide_render = True
-        data.constraints.hide_viewport = data.hide_constraints
+        show_constraints(data)
 
     return data.constraints
 
@@ -45,7 +65,7 @@ def hitboxes_collection(context, armature):
     data = armature.data.rigid_body_bones
 
     if not data.hitboxes:
-        parent = root_collection(context)
+        parent = container_collection(context, armature)
         data.hitboxes = utils.make_collection(armature.data.name + " [Hitboxes]", parent)
         data.hitboxes.hide_render = True
         show_hitboxes(data)
@@ -56,11 +76,14 @@ def hitboxes_collection(context, armature):
 def update_collections(armature, data):
     name = armature.data.name
 
+    if data.container:
+        data.container.name = name + " [Container]"
+
     if data.hitboxes:
         data.hitboxes.name = name + " [Hitboxes]"
 
     if data.constraints:
-        data.constraints.name = name + " [Constraints]"
+        data.constraints.name = name + " [Joints]"
 
 
 
@@ -98,6 +121,9 @@ def safe_remove_collections(context, armature):
 
     if data.hitboxes and utils.safe_remove_collection(data.hitboxes):
         data.property_unset("hitboxes")
+
+    if data.container and utils.safe_remove_collection(data.container):
+        data.property_unset("container")
 
     root = context.scene.rigid_body_bones.collection
 
@@ -247,6 +273,8 @@ def update_bone_error(context, armature, bone, seen):
         if is_bone_active(data):
             seen[bone.name] = True
             data.property_unset("error")
+            # This is needed to initialize duplicates
+            initialize_bone(context, armature, bone)
 
         else:
             is_active = is_active_parent(bone.parent, seen)
@@ -329,7 +357,7 @@ def event_hide_hitboxes(context, armature, data):
 @utils.armature_event("hide_constraints")
 def event_hide_constraints(context, armature, data):
     if data.constraints:
-        data.constraints.hide_viewport = data.hide_constraints
+        show_constraints(data)
 
 
 @utils.armature_event("enabled")
@@ -345,6 +373,15 @@ def event_enabled(context, armature, data):
 
             remove_root_body(data)
             safe_remove_collections(context, armature)
+
+
+@utils.armature_event("fix_duplicates")
+def event_fix_duplicates(context, armature, data):
+    if data.enabled and armature.mode != 'EDIT':
+        seen = set()
+
+        for bone in armature.data.bones:
+            fix_bone_duplicates(context, armature, bone, seen)
 
 
 @utils.armature_event("update_joints")
@@ -370,6 +407,8 @@ def event_remove_orphans(context, armature, data):
         if data.root_body:
             exists.add(data.root_body.name)
 
-        remove_orphans(data.hitboxes, exists)
         remove_orphans(data.constraints, exists)
+        remove_orphans(data.hitboxes, exists)
+        # TODO is this a good idea ?
+        remove_orphans(data.container, exists)
         safe_remove_collections(context, armature)

@@ -41,8 +41,10 @@ class Armature(bpy.types.PropertyGroup):
 
     errors: bpy.props.CollectionProperty(type=Error)
 
+    container: bpy.props.PointerProperty(type=bpy.types.Collection)
     hitboxes: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
+
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
     parents_stored: bpy.props.BoolProperty(default=False)
 
