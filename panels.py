@@ -151,6 +151,94 @@ class LimitsPanel(bpy.types.Panel):
         pass
 
 
+class LimitsRotatePanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_limits_rotate"
+    bl_label = "Rotate"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_limits"
+    bl_options = set()
+    bl_order = 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        layout = self.layout
+
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "use_limit_ang_x")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_ang_x
+        sub.prop(data, "limit_ang_x_lower", text="X Lower")
+        sub.prop(data, "limit_ang_x_upper", text="Upper")
+
+        col = flow.column()
+        col.prop(data, "use_limit_ang_y")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_ang_y
+        sub.prop(data, "limit_ang_y_lower", text="Y Lower")
+        sub.prop(data, "limit_ang_y_upper", text="Upper")
+
+        col = flow.column()
+        col.prop(data, "use_limit_ang_z")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_ang_z
+        sub.prop(data, "limit_ang_z_lower", text="Z Lower")
+        sub.prop(data, "limit_ang_z_upper", text="Upper")
+
+
+class LimitsTranslatePanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_limits_translate"
+    bl_label = "Translate"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_limits"
+    bl_options = set()
+    bl_order = 1
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        layout = self.layout
+
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(data, "use_limit_lin_x")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_lin_x
+        sub.prop(data, "limit_lin_x_lower", text="X Lower")
+        sub.prop(data, "limit_lin_x_upper", text="Upper")
+
+        col = flow.column()
+        col.prop(data, "use_limit_lin_y")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_lin_y
+        sub.prop(data, "limit_lin_y_lower", text="Y Lower")
+        sub.prop(data, "limit_lin_y_upper", text="Upper")
+
+        col = flow.column()
+        col.prop(data, "use_limit_lin_z")
+
+        sub = col.column(align=True)
+        sub.enabled = data.use_limit_lin_z
+        sub.prop(data, "limit_lin_z_lower", text="Z Lower")
+        sub.prop(data, "limit_lin_z_upper", text="Upper")
+
+
 class SpringsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_bone_springs"
     bl_label = "Springs"

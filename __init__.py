@@ -51,6 +51,8 @@ classes = (
     panels.BonePanel,
     panels.SettingsPanel,
     panels.LimitsPanel,
+    panels.LimitsRotatePanel,
+    panels.LimitsTranslatePanel,
     panels.SpringsPanel,
     panels.SpringsRotatePanel,
     panels.SpringsTranslatePanel,

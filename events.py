@@ -113,50 +113,46 @@ def register():
     properties.Bone.events["deactivate_angular_velocity"].append(bones.event_rigid_body)
 
     properties.Bone.events["disable_collisions"].append(bones.event_constraint)
-
     properties.Bone.events["use_breaking"].append(bones.event_constraint)
-
     properties.Bone.events["breaking_threshold"].append(bones.event_constraint)
-
     properties.Bone.events["use_override_solver_iterations"].append(bones.event_constraint)
-
     properties.Bone.events["solver_iterations"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_ang_x"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_ang_y"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_ang_z"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_ang_x"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_ang_y"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_ang_z"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_ang_x"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_ang_y"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_ang_z"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_x"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_y"].append(bones.event_constraint)
-
     properties.Bone.events["use_spring_z"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_x"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_y"].append(bones.event_constraint)
-
     properties.Bone.events["spring_stiffness_z"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_x"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_y"].append(bones.event_constraint)
-
     properties.Bone.events["spring_damping_z"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_lin_x"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_lin_y"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_lin_z"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_ang_x"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_ang_y"].append(bones.event_constraint)
+    properties.Bone.events["use_limit_ang_z"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_x_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_y_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_z_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_x_upper"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_y_upper"].append(bones.event_constraint)
+    properties.Bone.events["limit_lin_z_upper"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_x_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_y_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_z_lower"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_x_upper"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_y_upper"].append(bones.event_constraint)
+    properties.Bone.events["limit_ang_z_upper"].append(bones.event_constraint)
 
     properties.Armature.events["enabled"].append(armatures.event_remove_orphans)
     properties.Armature.events["enabled"].append(armatures.event_enabled)

@@ -156,6 +156,17 @@ def select(context, objs):
     view_layer.objects.active = objs[-1]
 
 
+def set_parent(child, parent):
+    child.parent = parent
+    child.parent_type = 'OBJECT'
+
+
+def set_bone_parent(child, parent, bone):
+    child.parent = parent
+    child.parent_type = 'BONE'
+    child.parent_bone = bone
+
+
 def make_collection(name, parent):
     collection = bpy.data.collections.new(name)
     parent.children.link(collection)

@@ -40,10 +40,16 @@ def update_rigid_body(rigid_body, data):
     rigid_body.deactivate_angular_velocity = data.deactivate_angular_velocity
 
 
-def make_empty_rigid_body(context, name, collection):
+def make_empty_rigid_body(context, name, collection, parent, parent_bone):
     mesh = bpy.data.meshes.new(name=name)
     body = bpy.data.objects.new(name, mesh)
     collection.objects.link(body)
+
+    if parent_bone is None:
+        utils.set_parent(body, parent)
+
+    else:
+        utils.set_bone_parent(body, parent, parent_bone)
 
     with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
         utils.select(context, [body])
@@ -55,23 +61,6 @@ def make_empty_rigid_body(context, name, collection):
     update_shape(body, type='BOX')
 
     return body
-
-
-def make_empty(context, name, collection, parent):
-    empty = bpy.data.objects.new(name=name, object_data=None)
-    collection.objects.link(empty)
-
-    empty.parent = parent
-    empty.parent_type = 'OBJECT'
-
-    with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-        utils.select(context, [empty])
-        bpy.ops.rigidbody.constraint_add(type='FIXED')
-
-    common_settings(empty)
-    empty.empty_display_type = 'CIRCLE'
-
-    return empty
 
 
 def align_constraint(constraint, bone):
@@ -122,6 +111,25 @@ def update_constraint(constraint, data):
     constraint.spring_damping_y = data.spring_damping_y
     constraint.spring_damping_z = data.spring_damping_z
 
+    constraint.use_limit_lin_x = data.use_limit_lin_x
+    constraint.use_limit_lin_y = data.use_limit_lin_y
+    constraint.use_limit_lin_z = data.use_limit_lin_z
+    constraint.use_limit_ang_x = data.use_limit_ang_x
+    constraint.use_limit_ang_y = data.use_limit_ang_y
+    constraint.use_limit_ang_z = data.use_limit_ang_z
+    constraint.limit_lin_x_lower = data.limit_lin_x_lower
+    constraint.limit_lin_y_lower = data.limit_lin_y_lower
+    constraint.limit_lin_z_lower = data.limit_lin_z_lower
+    constraint.limit_lin_x_upper = data.limit_lin_x_upper
+    constraint.limit_lin_y_upper = data.limit_lin_y_upper
+    constraint.limit_lin_z_upper = data.limit_lin_z_upper
+    constraint.limit_ang_x_lower = data.limit_ang_x_lower
+    constraint.limit_ang_y_lower = data.limit_ang_y_lower
+    constraint.limit_ang_z_lower = data.limit_ang_z_lower
+    constraint.limit_ang_x_upper = data.limit_ang_x_upper
+    constraint.limit_ang_y_upper = data.limit_ang_y_upper
+    constraint.limit_ang_z_upper = data.limit_ang_z_upper
+
 
 def blank_name(bone):
     return bone.name + " [Blank]"
@@ -129,17 +137,13 @@ def blank_name(bone):
 
 def make_blank_rigid_body(context, armature, bone, data):
     if not data.blank:
-        blank = make_empty_rigid_body(
+        data.blank = make_empty_rigid_body(
             context,
             name=blank_name(bone),
             collection=armatures.blanks_collection(context, armature),
+            parent=armature,
+            parent_bone=bone.name,
         )
-
-        blank.parent = armature
-        blank.parent_type = 'BONE'
-        blank.parent_bone = bone.name
-
-        data.blank = blank
 
     return data.blank
 
@@ -158,17 +162,24 @@ def create_constraint(context, armature, bone):
     data = bone.rigid_body_bones
 
     if not data.constraint:
-        constraint = make_empty(
-            context,
-            name=constraint_name(bone),
-            collection=armatures.constraints_collection(context, armature),
-            parent=armature,
-        )
+        empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
+        collection = armatures.constraints_collection(context, armature)
+        collection.objects.link(empty)
 
-        align_constraint(constraint, bone)
-        update_constraint(constraint.rigid_body_constraint, data)
+        utils.set_parent(empty, armature)
 
-        data.constraint = constraint
+        align_constraint(empty, bone)
+
+        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
+            utils.select(context, [empty])
+            bpy.ops.rigidbody.constraint_add(type='FIXED')
+
+        common_settings(empty)
+        empty.empty_display_type = 'CIRCLE'
+
+        update_constraint(empty.rigid_body_constraint, data)
+
+        data.constraint = empty
 
 
 def remove_constraint(bone):
@@ -234,8 +245,7 @@ def make_active_hitbox(context, armature, bone):
         collection=armatures.actives_collection(context, armature),
     )
 
-    hitbox.parent = armature
-    hitbox.parent_type = 'OBJECT'
+    utils.set_parent(hitbox, armature)
 
     hitbox.rotation_euler = hitbox_rotation(bone, 'ACTIVE')
     hitbox.location = hitbox_location(bone, 'ACTIVE')
@@ -260,9 +270,7 @@ def make_passive_hitbox(context, armature, bone):
         collection=armatures.passives_collection(context, armature),
     )
 
-    hitbox.parent = armature
-    hitbox.parent_type = 'BONE'
-    hitbox.parent_bone = bone.name
+    utils.set_bone_parent(hitbox, armature, bone.name)
 
     hitbox.rotation_euler = hitbox_rotation(bone, 'PASSIVE')
     hitbox.location = hitbox_location(bone, 'PASSIVE')

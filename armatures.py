@@ -126,16 +126,13 @@ def remove_orphans(collection, exists):
 
 def make_root_body(context, armature, data):
     if not data.root_body:
-        body = make_empty_rigid_body(
+        data.root_body = make_empty_rigid_body(
             context,
             name=armature.data.name + " [Root]",
             collection=blanks_collection(context, armature),
+            parent=armature,
+            parent_bone=None,
         )
-
-        body.parent = armature
-        body.parent_type = 'OBJECT'
-
-        data.root_body = body
 
     return data.root_body
 

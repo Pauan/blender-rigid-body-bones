@@ -152,6 +152,25 @@ class Bone(bpy.types.PropertyGroup):
         "spring_damping_y": [],
         "spring_damping_z": [],
 
+        "use_limit_lin_x": [],
+        "use_limit_lin_y": [],
+        "use_limit_lin_z": [],
+        "use_limit_ang_x": [],
+        "use_limit_ang_y": [],
+        "use_limit_ang_z": [],
+        "limit_lin_x_lower": [],
+        "limit_lin_y_lower": [],
+        "limit_lin_z_lower": [],
+        "limit_lin_x_upper": [],
+        "limit_lin_y_upper": [],
+        "limit_lin_z_upper": [],
+        "limit_ang_x_lower": [],
+        "limit_ang_y_lower": [],
+        "limit_ang_z_lower": [],
+        "limit_ang_x_upper": [],
+        "limit_ang_y_upper": [],
+        "limit_ang_z_upper": [],
+
         "mass": [],
         "friction": [],
         "restitution": [],
@@ -326,7 +345,6 @@ class Bone(bpy.types.PropertyGroup):
         max=1.0,
         step=1,
         precision=3,
-        subtype='DISTANCE',
         unit='LENGTH',
         options=set(),
         update=make_event("collision_margin"),
@@ -613,6 +631,198 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         update=make_event("spring_damping_z"),
+    )
+
+
+    use_limit_lin_x: bpy.props.BoolProperty(
+        name="X Translate Limit",
+        description="Limit translation on X axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_lin_x"),
+    )
+
+    use_limit_lin_y: bpy.props.BoolProperty(
+        name="Y Translate Limit",
+        description="Limit translation on Y axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_lin_y"),
+    )
+
+    use_limit_lin_z: bpy.props.BoolProperty(
+        name="Z Translate Limit",
+        description="Limit translation on Z axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_lin_z"),
+    )
+
+
+    use_limit_ang_x: bpy.props.BoolProperty(
+        name="X Rotate Limit",
+        description="Limit rotation on X axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_ang_x"),
+    )
+
+    use_limit_ang_y: bpy.props.BoolProperty(
+        name="Y Rotate Limit",
+        description="Limit rotation on Y axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_ang_y"),
+    )
+
+    use_limit_ang_z: bpy.props.BoolProperty(
+        name="Z Rotate Limit",
+        description="Limit rotation on Z axis",
+        default=False,
+        options=set(),
+        update=make_event("use_limit_ang_z"),
+    )
+
+
+    limit_lin_x_lower: bpy.props.FloatProperty(
+        name="Lower X Limit",
+        description="Lower limit of X axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_x_lower"),
+    )
+
+    limit_lin_y_lower: bpy.props.FloatProperty(
+        name="Lower Y Limit",
+        description="Lower limit of Y axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_y_lower"),
+    )
+
+    limit_lin_z_lower: bpy.props.FloatProperty(
+        name="Lower Z Limit",
+        description="Lower limit of Z axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_z_lower"),
+    )
+
+
+    limit_lin_x_upper: bpy.props.FloatProperty(
+        name="Upper X Limit",
+        description="Upper limit of X axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_x_upper"),
+    )
+
+    limit_lin_y_upper: bpy.props.FloatProperty(
+        name="Upper Y Limit",
+        description="Upper limit of Y axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_y_upper"),
+    )
+
+    limit_lin_z_upper: bpy.props.FloatProperty(
+        name="Upper Z Limit",
+        description="Upper limit of Z axis translation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        unit='LENGTH',
+        update=make_event("limit_lin_z_upper"),
+    )
+
+
+    limit_ang_x_lower: bpy.props.FloatProperty(
+        name="Lower X Angle Limit",
+        description="Lower limit of X axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_x_lower"),
+    )
+
+    limit_ang_y_lower: bpy.props.FloatProperty(
+        name="Lower Y Angle Limit",
+        description="Lower limit of Y axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_y_lower"),
+    )
+
+    limit_ang_z_lower: bpy.props.FloatProperty(
+        name="Lower Z Angle Limit",
+        description="Lower limit of Z axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_z_lower"),
+    )
+
+
+    limit_ang_x_upper: bpy.props.FloatProperty(
+        name="Upper X Angle Limit",
+        description="Upper limit of X axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_x_upper"),
+    )
+
+    limit_ang_y_upper: bpy.props.FloatProperty(
+        name="Upper Y Angle Limit",
+        description="Upper limit of Y axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_y_upper"),
+    )
+
+    limit_ang_z_upper: bpy.props.FloatProperty(
+        name="Upper Z Angle Limit",
+        description="Upper limit of Z axis rotation",
+        default=0.0,
+        precision=3,
+        step=10,
+        options=set(),
+        subtype='ANGLE',
+        unit='ROTATION',
+        update=make_event("limit_ang_z_upper"),
     )
 
 
