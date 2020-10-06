@@ -58,9 +58,9 @@ class ArmatureSettingsPanel(bpy.types.Panel):
 
         col = flow.column()
         col.prop(data, "enabled")
+        col.prop(data, "hide_constraints")
         col.prop(data, "hide_active_bones")
         col.prop(data, "hide_hitboxes")
-        col.prop(data, "hide_constraints")
 
 
 class BonePanel(bpy.types.Panel):
@@ -245,7 +245,7 @@ class SpringsTranslatePanel(bpy.types.Panel):
 
         sub = col.column(align=True)
         sub.enabled = data.use_spring_y
-        sub.prop(data, "spring_stiffness_y", text="Stiffness")
+        sub.prop(data, "spring_stiffness_y", text="Y Stiffness")
         sub.prop(data, "spring_damping_y", text="Damping")
 
         col = flow.column()
@@ -253,7 +253,7 @@ class SpringsTranslatePanel(bpy.types.Panel):
 
         sub = col.column(align=True)
         sub.enabled = data.use_spring_z
-        sub.prop(data, "spring_stiffness_z", text="Stiffness")
+        sub.prop(data, "spring_stiffness_z", text="Z Stiffness")
         sub.prop(data, "spring_damping_z", text="Damping")
 
 

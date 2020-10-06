@@ -3,7 +3,7 @@ from . import utils
 from . import bones
 from .bones import (
     restore_bone_parent, store_bone_parent, remove_bone, initialize_bone,
-    align_bone, is_bone_enabled, is_bone_active
+    align_bone, is_bone_enabled, is_bone_active, add_bone_objects
 )
 
 
@@ -53,16 +53,41 @@ def hitboxes_collection(context, armature):
     return data.hitboxes
 
 
+def update_collections(armature, data):
+    name = armature.data.name
+
+    if data.hitboxes:
+        data.hitboxes.name = name + " [Hitboxes]"
+
+    if data.constraints:
+        data.constraints.name = name + " [Constraints]"
+
+
+
+def remove_orphans(collection, exists):
+    if collection:
+        for object in collection.objects:
+            if object.name not in exists:
+                print(object.name)
+                utils.remove_object(object)
+
+
 def make_root_body(context, armature, data):
     if not data.root_body:
         data.root_body = make_empty_rigid_body(
             context,
-            name=armature.data.name + " [Root]",
+            name=armature.data.name + " [Parent]",
             collection=hitboxes_collection(context, armature),
             parent=armature,
         )
 
     return data.root_body
+
+
+def remove_root_body(data):
+    if data.root_body:
+        utils.remove_object(data.root_body)
+        data.property_unset("root_body")
 
 
 def safe_remove_collections(context, armature):
@@ -93,6 +118,8 @@ def store_parents(context, armature, data):
                 active.add(bone.name)
 
             align_bone(armature, bone)
+
+        update_collections(armature, data)
 
         # TODO if this triggers a mode_switch event then it can break everything
         with utils.Mode(context, 'EDIT'):
@@ -284,7 +311,14 @@ def event_hide_active_bones(context, armature, data):
 
         for bone in armature.data.bones:
             data = bone.rigid_body_bones
-            bone.hide = armature_enabled and is_bone_enabled(data) and is_bone_active(data)
+
+            if armature_enabled and is_bone_enabled(data) and is_bone_active(data):
+                data.is_hidden = bone.hide
+                bone.hide = True
+
+            elif data.is_property_set("is_hidden"):
+                bone.hide = data.is_hidden
+                data.property_unset("is_hidden")
 
 
 @utils.armature_event("hide_hitboxes")
@@ -310,8 +344,33 @@ def event_enabled(context, armature, data):
             for bone in armature.data.bones:
                 remove_bone(bone)
 
-            if data.root_body:
-                utils.remove_object(data.root_body)
-                data.property_unset("root_body")
-
+            remove_root_body(data)
             safe_remove_collections(context, armature)
+
+
+@utils.armature_event("update_joints")
+def event_update_joints(context, armature, data):
+    if data.enabled and armature.mode != 'EDIT':
+        for bone in armature.data.bones:
+            pass
+            #if is_bone_enabled(data) and is_bone_active(data):
+                #pass
+
+            #else:
+                #pass
+
+
+@utils.armature_event("remove_orphans")
+def event_remove_orphans(context, armature, data):
+    with utils.ModeCAS(context, 'EDIT', 'POSE'):
+        exists = set()
+
+        for bone in armature.data.bones:
+            add_bone_objects(bone, exists)
+
+        if data.root_body:
+            exists.add(data.root_body.name)
+
+        remove_orphans(data.hitboxes, exists)
+        remove_orphans(data.constraints, exists)
+        safe_remove_collections(context, armature)

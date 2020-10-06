@@ -68,8 +68,8 @@ class Armature(bpy.types.PropertyGroup):
     )
 
     hide_constraints: bpy.props.BoolProperty(
-        name="Hide constraints",
-        description="Hide bone constraints",
+        name="Hide active joints",
+        description="Hide joints for Active bones",
         default=True,
         update=make_event("hide_constraints"),
     )
@@ -96,13 +96,15 @@ class Bone(bpy.types.PropertyGroup):
     # TODO replace with PointerProperty
     parent: bpy.props.StringProperty(
         name="Parent",
-        description="Parent bone for constraint",
+        description="Parent bone for joint",
     )
 
     use_connect: bpy.props.BoolProperty(
         name="Connected",
         description="When bone has a parent, bone's head is stuck to the parent's tail",
     )
+
+    is_hidden: bpy.props.BoolProperty(default=False)
 
     events = {
         "enabled": [],

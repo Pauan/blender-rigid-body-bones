@@ -282,6 +282,16 @@ def remove_bone(bone):
     remove_constraint(bone)
 
 
+def add_bone_objects(bone, exists):
+    data = bone.rigid_body_bones
+
+    if data.hitbox:
+        exists.add(data.hitbox.name)
+
+    if data.constraint:
+        exists.add(data.constraint.name)
+
+
 def is_bone_enabled(data):
     return data.enabled and data.error == ""
 

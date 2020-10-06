@@ -3,10 +3,12 @@
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
 
-# TODO when hiding active bone, it should remember its prior hidden state and restore it
 # TODO FIXED and RAGDOLL types
-# TODO cleanup hitboxes when the bone is deleted
 # TODO test duplicating bones
+# TODO test whether storing/restoring parents works properly when deleting bones
+# TODO test whether storing/restoring parents works properly when changing parents
+# TODO test whether storing/restoring parents works properly when changing names
+# TODO test that Active parent error checking works when changing parents in edit mode
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
