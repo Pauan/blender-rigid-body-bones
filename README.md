@@ -36,11 +36,15 @@ You must have Blender 2.91.0 or higher.
 
 ## How to use
 
-1. Select an Armature object.
+1. Select an Armature object:
+
+   ![](usage01)
 
 2. Go into Pose mode.
 
-3. In the sidebar (keyboard shortcut `N`) open the `Rigid Body Bones` tab.
+3. In the sidebar (keyboard shortcut `N`) open the `Rigid Body Bones` tab:
+
+   ![](usage02)
 
 4. Select the bone that you want physics for.
 
@@ -57,3 +61,6 @@ You must have Blender 2.91.0 or higher.
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
 The .zip file also contains an `examples/Simple.blend` file which contains a simple example.
+
+[usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
+[usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
