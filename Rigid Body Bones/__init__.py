@@ -14,6 +14,8 @@ bl_info = {
     "warning": "",
     "doc_url": "",
     "category": "Physics",
+    "wiki_url": "https://github.com/Pauan/blender-rigid-body-bones",
+    "tracker_url": "https://github.com/Pauan/blender-rigid-body-bones/issues",
 }
 
 import faulthandler
