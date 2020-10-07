@@ -98,27 +98,16 @@ def register():
     properties.Bone.events["scale"].append(bones.event_scale)
 
     properties.Bone.events["mass"].append(bones.event_rigid_body)
-
     properties.Bone.events["friction"].append(bones.event_rigid_body)
-
     properties.Bone.events["restitution"].append(bones.event_rigid_body)
-
     properties.Bone.events["linear_damping"].append(bones.event_rigid_body)
-
     properties.Bone.events["angular_damping"].append(bones.event_rigid_body)
-
     properties.Bone.events["use_margin"].append(bones.event_rigid_body)
-
     properties.Bone.events["collision_margin"].append(bones.event_rigid_body)
-
     properties.Bone.events["collision_collections"].append(bones.event_rigid_body)
-
     properties.Bone.events["use_deactivation"].append(bones.event_rigid_body)
-
     properties.Bone.events["use_start_deactivated"].append(bones.event_rigid_body)
-
     properties.Bone.events["deactivate_linear_velocity"].append(bones.event_rigid_body)
-
     properties.Bone.events["deactivate_angular_velocity"].append(bones.event_rigid_body)
 
     properties.Bone.events["disable_collisions"].append(bones.event_constraint)

@@ -1,8 +1,12 @@
+# <pep8 compliant>
+
 # TODO support undo/redo
 # TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
 # TODO FIXED and RAGDOLL types
+
+# TODO verify that the simulation is updated properly when moving bones around/changing settings (it might need to use Viewable)
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

@@ -64,7 +64,7 @@ The `Rigid.Body.Bones.zip` file also contains an `examples` folder which contain
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
 
 
-### For programmers
+## For programmers
 
 If you want to modify this add-on, follow these steps:
 

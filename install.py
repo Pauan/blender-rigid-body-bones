@@ -16,3 +16,4 @@ with zipfile.ZipFile(zip_path, "w") as zip:
 
 bpy.ops.preferences.addon_install(filepath=zip_path, overwrite=True)
 bpy.ops.preferences.addon_enable(module="Rigid Body Bones")
+bpy.ops.wm.save_userpref()
