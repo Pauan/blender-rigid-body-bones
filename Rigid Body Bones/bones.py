@@ -106,8 +106,8 @@ def make_constraint(context, armature, collection, bone, data):
     utils.select_active(context, empty)
     bpy.ops.rigidbody.constraint_add(type='FIXED')
 
-    common_settings(empty)
-    empty.empty_display_type = 'CIRCLE'
+    empty.hide_render = True
+    empty.empty_display_size = 0.0
 
     return empty
 
@@ -206,7 +206,6 @@ def update_constraint(constraint, data):
 def align_constraint(constraint, bone):
     constraint.location = bone.head_local
     constraint.rotation_euler = bone.matrix_local.to_euler()
-    constraint.empty_display_size = bone.length * 0.2
 
 
 def hitbox_dimensions(bone):
@@ -326,3 +325,52 @@ def delete_parent(data):
     data.property_unset("name")
     data.property_unset("parent")
     data.property_unset("use_connect")
+
+
+def remove_pose_constraint(pose_bone):
+    constraint = pose_bone.constraints.get("Rigid Body Bones [Child Of]")
+
+    if constraint is not None:
+        # TODO can this remove an index instead, to make it faster ?
+        pose_bone.constraints.remove(constraint)
+
+
+def update_pose_constraint(pose_bone):
+    index = None
+    found = None
+
+    constraints = pose_bone.constraints
+
+    # TODO can this be replaced with a collection method ?
+    for i, constraint in enumerate(constraints):
+        if constraint.name == "Rigid Body Bones [Child Of]":
+            found = constraint
+            index = i
+            break
+
+    data = pose_bone.bone.rigid_body_bones
+
+    if is_bone_enabled(data) and is_bone_active(data):
+        hitbox = data.active
+
+        assert hitbox is not None
+
+        if found is None:
+            index = len(constraints)
+            found = constraints.new(type='CHILD_OF')
+            found.name = "Rigid Body Bones [Child Of]"
+
+        # TODO verify that this properly sets the inverse
+        # TODO reset the locrotscale ?
+        found.set_inverse_pending = True
+
+        assert index is not None
+
+        if index != 0:
+            constraints.move(index, 0)
+
+        found.target = hitbox
+
+    elif found is not None:
+        # TODO can this remove an index instead, to make it faster ?
+        constraints.remove(found)

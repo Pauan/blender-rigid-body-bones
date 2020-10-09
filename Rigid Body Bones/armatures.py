@@ -6,7 +6,8 @@ from .bones import (
     make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
-    update_rigid_body, update_shape, passive_name
+    update_rigid_body, update_shape, passive_name, remove_pose_constraint,
+    update_pose_constraint,
 )
 
 
@@ -154,55 +155,6 @@ def remove_root_body(top):
     if top.root_body:
         utils.remove_object(top.root_body)
         top.property_unset("root_body")
-
-
-def remove_pose_constraint(pose_bone):
-    constraint = pose_bone.constraints.get("Rigid Body Bones [Child Of]")
-
-    if constraint is not None:
-        # TODO can this remove an index instead, to make it faster ?
-        pose_bone.constraints.remove(constraint)
-
-
-def update_pose_constraint(pose_bone):
-    index = None
-    found = None
-
-    constraints = pose_bone.constraints
-
-    # TODO can this be replaced with a collection method ?
-    for i, constraint in enumerate(constraints):
-        if constraint.name == "Rigid Body Bones [Child Of]":
-            found = constraint
-            index = i
-            break
-
-    data = pose_bone.bone.rigid_body_bones
-
-    if is_bone_enabled(data) and is_bone_active(data):
-        hitbox = data.active
-
-        assert hitbox is not None
-
-        if found is None:
-            index = len(constraints)
-            found = constraints.new(type='CHILD_OF')
-            found.name = "Rigid Body Bones [Child Of]"
-
-        # TODO verify that this properly sets the inverse
-        # TODO reset the locrotscale ?
-        found.set_inverse_pending = True
-
-        assert index is not None
-
-        if index != 0:
-            constraints.move(index, 0)
-
-        found.target = hitbox
-
-    elif found is not None:
-        # TODO can this remove an index instead, to make it faster ?
-        constraints.remove(found)
 
 
 class Update(bpy.types.Operator):
@@ -513,7 +465,6 @@ class Update(bpy.types.Operator):
 
             else:
                 show_collection(top.blanks)
-                top.blanks.hide_viewport = True
 
 
         if top.constraints:
@@ -522,7 +473,6 @@ class Update(bpy.types.Operator):
 
             else:
                 show_collection(top.constraints)
-                top.constraints.hide_viewport = True
 
 
         if top.container:

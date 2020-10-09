@@ -16,61 +16,60 @@ def event_update(context):
     bpy.ops.rigid_body_bones.update()
 
 
-# TODO set inverse ?
-# TODO show collections
 @utils.event("rigid_body")
 @utils.if_armature_enabled
 def event_rigid_body(context, armature, top):
-    for bone in armature.data.bones:
-        data = bone.rigid_body_bones
+    with utils.ShowCollections(context, top):
+        for bone in armature.data.bones:
+            data = bone.rigid_body_bones
 
-        if data.active:
-            bones.update_rigid_body(data.active.rigid_body, data)
+            if data.active:
+                bones.update_rigid_body(data.active.rigid_body, data)
 
-        elif data.passive:
-            bones.update_rigid_body(data.passive.rigid_body, data)
+            elif data.passive:
+                bones.update_rigid_body(data.passive.rigid_body, data)
 
 
-# TODO set inverse ?
-# TODO show collections
 @utils.event("rigid_body_constraint")
 @utils.if_armature_enabled
 def event_rigid_body_constraint(context, armature, top):
-    for bone in armature.data.bones:
-        data = bone.rigid_body_bones
+    with utils.ShowCollections(context, top):
+        for bone in armature.data.bones:
+            data = bone.rigid_body_bones
 
-        if data.constraint:
-            bones.update_constraint(data.constraint.rigid_body_constraint, data)
+            if data.constraint:
+                bones.update_constraint(data.constraint.rigid_body_constraint, data)
 
 
-# TODO set inverse ?
-# TODO show collections
 @utils.event("align")
 @utils.if_armature_enabled
 def event_align(context, armature, top):
-    for bone in armature.data.bones:
-        data = bone.rigid_body_bones
+    with utils.ShowCollections(context, top):
+        for pose_bone in armature.pose.bones:
+            bone = pose_bone.bone
+            data = bone.rigid_body_bones
 
-        if data.active:
-            bones.align_hitbox(data.active, bone, data)
+            if data.active:
+                bones.align_hitbox(data.active, bone, data)
 
-        elif data.passive:
-            bones.align_hitbox(data.passive, bone, data)
+            elif data.passive:
+                bones.align_hitbox(data.passive, bone, data)
+
+            bones.update_pose_constraint(pose_bone)
 
 
-# TODO set inverse ?
-# TODO show collections
 @utils.event("collision_shape")
 @utils.if_armature_enabled
 def event_collision_shape(context, armature, top):
-    for bone in armature.data.bones:
-        data = bone.rigid_body_bones
+    with utils.ShowCollections(context, top):
+        for bone in armature.data.bones:
+            data = bone.rigid_body_bones
 
-        if data.active:
-            bones.update_shape(data.active, type=data.collision_shape)
+            if data.active:
+                bones.update_shape(data.active, type=data.collision_shape)
 
-        elif data.passive:
-            bones.update_shape(data.passive, type=data.collision_shape)
+            elif data.passive:
+                bones.update_shape(data.passive, type=data.collision_shape)
 
 
 @utils.event("hide_hitboxes")

@@ -93,6 +93,43 @@ class Selected:
         return False
 
 
+class ShowCollection:
+    def __init__(self, collection):
+        self.collection = collection
+        self.hidden = None
+
+    def show(self):
+        if self.collection:
+            self.hidden = self.collection.hide_viewport
+            self.collection.hide_viewport = False
+
+    def hide(self):
+        if self.collection:
+            self.collection.hide_viewport = self.hidden
+
+
+class ShowCollections:
+    def __init__(self, context, top):
+        self.collections = [
+            ShowCollection(context.scene.rigid_body_bones.collection),
+            ShowCollection(top.container),
+            ShowCollection(top.actives),
+            ShowCollection(top.passives),
+            ShowCollection(top.blanks),
+            ShowCollection(top.constraints),
+        ]
+
+    def __enter__(self):
+        for c in self.collections:
+            c.show()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        for c in self.collections:
+            c.hide()
+
+        return False
+
+
 def get_active_bone(armature):
     return armature.data.bones.active
 
