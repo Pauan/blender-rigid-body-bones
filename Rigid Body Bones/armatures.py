@@ -11,11 +11,6 @@ from .bones import (
 )
 
 
-def show_collection(collection):
-    collection.hide_select = False
-    collection.hide_viewport = False
-
-
 def root_collection(context):
     scene = context.scene
 
@@ -24,9 +19,8 @@ def root_collection(context):
     if not collection:
         collection = utils.make_collection("RigidBodyBones", scene.collection)
         collection.hide_render = True
+        collection.hide_select = False
         scene.rigid_body_bones.collection = collection
-
-    show_collection(collection)
 
     return collection
 
@@ -44,8 +38,6 @@ def container_collection(context, armature, top):
 
     else:
         collection.name = name
-
-    show_collection(collection)
 
     return collection
 
@@ -69,8 +61,6 @@ def actives_collection(context, armature, top):
     else:
         collection.name = name
 
-    show_collection(collection)
-
     return collection
 
 
@@ -85,8 +75,6 @@ def passives_collection(context, armature, top):
 
     else:
         collection.name = name
-
-    show_collection(collection)
 
     return collection
 
@@ -103,8 +91,6 @@ def blanks_collection(context, armature, top):
     else:
         collection.name = name
 
-    show_collection(collection)
-
     return collection
 
 
@@ -119,8 +105,6 @@ def constraints_collection(context, armature, top):
 
     else:
         collection.name = name
-
-    show_collection(collection)
 
     return collection
 
@@ -428,17 +412,8 @@ class Update(bpy.types.Operator):
                 edit_bone.parent = None
 
 
-    def update_hitboxes(self, top, collection):
-        show_collection(collection)
-
-        collection.hide_viewport = top.hide_hitboxes
-
-
     # This cleans up any objects which are left behind after a bone
     # has been deleted.
-    #
-    # The calls to show_collection are needed in order to cause
-    # Blender to update the rigid body simulation.
     def after_bones(self, context, armature, top):
         exists = self.exists
 
@@ -448,7 +423,7 @@ class Update(bpy.types.Operator):
                 top.property_unset("actives")
 
             else:
-                self.update_hitboxes(top, top.actives)
+                top.actives.hide_viewport = top.hide_hitboxes
 
 
         if top.passives:
@@ -456,31 +431,22 @@ class Update(bpy.types.Operator):
                 top.property_unset("passives")
 
             else:
-                self.update_hitboxes(top, top.passives)
+                top.passives.hide_viewport = top.hide_hitboxes
 
 
         if top.blanks:
             if remove_orphans(top.blanks, exists):
                 top.property_unset("blanks")
 
-            else:
-                show_collection(top.blanks)
-
 
         if top.constraints:
             if remove_orphans(top.constraints, exists):
                 top.property_unset("constraints")
 
-            else:
-                show_collection(top.constraints)
-
 
         if top.container:
             if remove_orphans(top.container, exists):
                 top.property_unset("container")
-
-            else:
-                show_collection(top.container)
 
 
         scene = context.scene.rigid_body_bones
@@ -490,7 +456,6 @@ class Update(bpy.types.Operator):
                 scene.property_unset("collection")
 
             else:
-                show_collection(scene.collection)
                 scene.collection.hide_select = True
 
 
@@ -517,6 +482,14 @@ class Update(bpy.types.Operator):
     def process_pose(self, context, armature, top):
         with utils.Selected(context):
             top.errors.clear()
+
+            scene = context.scene.rigid_body_bones
+
+            # This is needed in order to select the objects,
+            # otherwise it's not possible to add rigid bodies
+            # to them.
+            if scene.collection:
+                scene.collection.hide_select = False
 
             for bone in armature.data.bones:
                 self.process_bone(context, armature, top, bone)
