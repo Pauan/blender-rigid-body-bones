@@ -86,7 +86,32 @@ def event_hide_active_bones(context, armature, top):
         bones.hide_active_bone(bone, data, top.hide_active_bones)
 
 
+def event_dirty(self, context):
+    global dirty
+    dirty = True
+
+
+dirty = False
+timer_delay = 0.1
+
+def timer():
+    global dirty
+
+    if dirty:
+        context = bpy.context
+
+        armature = context.active_object
+
+        if armature and armature.type == 'ARMATURE':
+            dirty = False
+            event_update(None, context)
+
+    return timer_delay
+
+
 def mode_switch():
+    global dirty
+
     context = bpy.context
 
     armature = context.active_object
@@ -98,7 +123,7 @@ def mode_switch():
 
         if top.mode != mode:
             top.mode = mode
-
+            #dirty = True
             event_update(None, context)
 
 
@@ -129,9 +154,20 @@ def register():
 
     register_subscribers()
 
+    # This is used to run the event_update function asynchronously,
+    # during the main event loop.
+    bpy.app.timers.register(
+        timer,
+        first_interval=timer_delay,
+        persistent=True,
+    )
+
 
 def unregister():
     utils.debug("UNREGISTER EVENTS")
+
+    if bpy.app.timers.is_registered(timer):
+        bpy.app.timers.unregister(timer)
 
     if load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post)

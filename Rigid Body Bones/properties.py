@@ -1,6 +1,6 @@
 import bpy
 from .events import (
-    event_update, event_rigid_body, event_rigid_body_constraint, event_align,
+    event_dirty, event_rigid_body, event_rigid_body_constraint, event_align,
     event_collision_shape, event_hide_hitboxes, event_hide_active_bones
 )
 
@@ -40,7 +40,7 @@ class Armature(bpy.types.PropertyGroup):
         name="Enable rigid bodies",
         description="Enable rigid body physics for the armature",
         default=True,
-        update=event_update,
+        update=event_dirty,
     )
 
     hide_active_bones: bpy.props.BoolProperty(
@@ -98,7 +98,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable rigid body for the bone",
         default=False,
         options=set(),
-        update=event_update,
+        update=event_dirty,
     )
 
     type: bpy.props.EnumProperty(
@@ -110,7 +110,7 @@ class Bone(bpy.types.PropertyGroup):
             ('PASSIVE', "Passive", "Rigid body follows the bone", 0),
             ('ACTIVE', "Active", "Bone follows the rigid body", 1),
         ],
-        update=event_update,
+        update=event_dirty,
     )
 
     location: bpy.props.FloatVectorProperty(

@@ -323,8 +323,6 @@ class Update(bpy.types.Operator):
 
         self.fix_duplicates(data)
 
-        self.update_bone(context, armature, top, bone, data)
-
         self.fix_parents(armature, top, bone, data)
 
         self.hide_active(top, bone, data)
@@ -418,35 +416,20 @@ class Update(bpy.types.Operator):
         exists = self.exists
 
 
-        if top.actives:
-            if remove_orphans(top.actives, exists):
-                top.property_unset("actives")
+        if top.actives and remove_orphans(top.actives, exists):
+            top.property_unset("actives")
 
-            else:
-                top.actives.hide_viewport = top.hide_hitboxes
+        if top.passives and remove_orphans(top.passives, exists):
+            top.property_unset("passives")
 
+        if top.blanks and remove_orphans(top.blanks, exists):
+            top.property_unset("blanks")
 
-        if top.passives:
-            if remove_orphans(top.passives, exists):
-                top.property_unset("passives")
+        if top.constraints and remove_orphans(top.constraints, exists):
+            top.property_unset("constraints")
 
-            else:
-                top.passives.hide_viewport = top.hide_hitboxes
-
-
-        if top.blanks:
-            if remove_orphans(top.blanks, exists):
-                top.property_unset("blanks")
-
-
-        if top.constraints:
-            if remove_orphans(top.constraints, exists):
-                top.property_unset("constraints")
-
-
-        if top.container:
-            if remove_orphans(top.container, exists):
-                top.property_unset("container")
+        if top.container and remove_orphans(top.container, exists):
+            top.property_unset("container")
 
 
         scene = context.scene.rigid_body_bones
@@ -468,6 +451,7 @@ class Update(bpy.types.Operator):
             bone = pose_bone.bone
             data = bone.rigid_body_bones
 
+            # TODO is this allowed in an update handler ?
             remove_pose_constraint(pose_bone)
 
             self.fix_parents(armature, top, bone, data)
@@ -480,9 +464,18 @@ class Update(bpy.types.Operator):
 
 
     def process_pose(self, context, armature, top):
-        with utils.Selected(context):
-            top.errors.clear()
+        top.errors.clear()
 
+        for bone in armature.data.bones:
+            self.process_bone(context, armature, top, bone)
+
+        if top.actives:
+            top.actives.hide_viewport = top.hide_hitboxes
+
+        if top.passives:
+            top.passives.hide_viewport = top.hide_hitboxes
+
+        with utils.Selected(context):
             scene = context.scene.rigid_body_bones
 
             # This is needed in order to select the objects,
@@ -492,7 +485,8 @@ class Update(bpy.types.Operator):
                 scene.collection.hide_select = False
 
             for bone in armature.data.bones:
-                self.process_bone(context, armature, top, bone)
+                data = bone.rigid_body_bones
+                self.update_bone(context, armature, top, bone, data)
 
             self.update_constraints(context, armature, top)
 
