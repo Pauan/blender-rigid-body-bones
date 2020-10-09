@@ -22,6 +22,7 @@ bl_info = {
     "tracker_url": "https://github.com/Pauan/blender-rigid-body-bones/issues",
 }
 
+from . import armatures
 from . import events
 from . import panels
 from . import properties
@@ -32,6 +33,8 @@ classes = (
     properties.Error,
     properties.Armature,
     properties.Bone,
+
+    armatures.Update,
 
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,

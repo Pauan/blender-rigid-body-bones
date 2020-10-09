@@ -1,34 +1,110 @@
 import bpy
-import time
 from bpy.app.handlers import persistent
-from . import properties
-from . import armatures
-from . import bones
 from . import utils
+from . import bones
+
+
+def simplify_modes(mode):
+    if mode == 'EDIT':
+        return mode
+    else:
+        return 'POSE'
+
+
+@utils.event("update")
+def event_update(context):
+    bpy.ops.rigid_body_bones.update()
+
+
+# TODO set inverse ?
+# TODO show collections
+@utils.event("rigid_body")
+@utils.if_armature_enabled
+def event_rigid_body(context, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+
+        if data.active:
+            bones.update_rigid_body(data.active.rigid_body, data)
+
+        elif data.passive:
+            bones.update_rigid_body(data.passive.rigid_body, data)
+
+
+# TODO set inverse ?
+# TODO show collections
+@utils.event("rigid_body_constraint")
+@utils.if_armature_enabled
+def event_rigid_body_constraint(context, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+
+        if data.constraint:
+            bones.update_constraint(data.constraint.rigid_body_constraint, data)
+
+
+# TODO set inverse ?
+# TODO show collections
+@utils.event("align")
+@utils.if_armature_enabled
+def event_align(context, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+
+        if data.active:
+            bones.align_hitbox(data.active, bone, data)
+
+        elif data.passive:
+            bones.align_hitbox(data.passive, bone, data)
+
+
+# TODO set inverse ?
+# TODO show collections
+@utils.event("collision_shape")
+@utils.if_armature_enabled
+def event_collision_shape(context, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+
+        if data.active:
+            bones.update_shape(data.active, type=data.collision_shape)
+
+        elif data.passive:
+            bones.update_shape(data.passive, type=data.collision_shape)
+
+
+@utils.event("hide_hitboxes")
+@utils.if_armature_enabled
+def event_hide_hitboxes(context, armature, top):
+    if top.actives:
+        top.actives.hide_viewport = top.hide_hitboxes
+
+    if top.passives:
+        top.passives.hide_viewport = top.hide_hitboxes
+
+
+@utils.event("hide_active_bones")
+@utils.if_armature_enabled
+def event_hide_active_bones(context, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
+        bones.hide_active_bone(bone, data, top.hide_active_bones)
 
 
 def mode_switch():
     context = bpy.context
-    object = context.active_object
 
-    if object and object.type == 'ARMATURE':
-        data = object.data.rigid_body_bones
+    armature = context.active_object
 
-        if data.mode != object.mode:
-            data.mode = object.mode
+    if armature and armature.type == 'ARMATURE':
+        top = armature.data.rigid_body_bones
 
-            utils.debug("EVENT mode_switch {} {{".format(object.mode))
+        mode = simplify_modes(armature.mode)
 
-            time_start = time.time()
+        if top.mode != mode:
+            top.mode = mode
 
-            for f in properties.Armature.events["mode_switch"]:
-                # TODO pass something other than None ?
-                f(None, context)
-
-            time_end = time.time()
-            utils.print_time(time_start, time_end)
-
-            utils.debug("}")
+            event_update(None, context)
 
 
 owner = object()
@@ -36,22 +112,12 @@ owner = object()
 def register_subscribers():
     bpy.msgbus.clear_by_owner(owner)
 
-    # TODO use PERSISTENT ?
     bpy.msgbus.subscribe_rna(
         key=(bpy.types.Object, "mode"),
         owner=owner,
         args=(),
         notify=mode_switch,
-        options={'PERSISTENT'}
-    )
-
-    # TODO use PERSISTENT ?
-    # TODO is there a better way to be notified when the active object changes ?
-    bpy.msgbus.subscribe_rna(
-        key=(bpy.types.LayerObjects, "active"),
-        owner=owner,
-        args=(),
-        notify=mode_switch,
+        # TODO does this need PERSISTENT ?
         options={'PERSISTENT'}
     )
 
@@ -62,115 +128,6 @@ def load_post(dummy):
 
 def register():
     utils.debug("REGISTER EVENTS")
-
-    properties.Bone.events["enabled"].append(bones.event_enabled_remove)
-    properties.Bone.events["enabled"].append(bones.event_fix_parent)
-    properties.Bone.events["enabled"].append(armatures.event_update_errors)
-    properties.Bone.events["enabled"].append(bones.event_enabled_add)
-    # TODO more efficient function for this event
-    properties.Bone.events["enabled"].append(armatures.event_update_constraints)
-    properties.Bone.events["enabled"].append(armatures.event_update_joints)
-    # TODO more efficient function for this event
-    properties.Bone.events["enabled"].append(armatures.event_hide_active_bones)
-
-    properties.Bone.events["type"].append(bones.event_type_remove)
-    properties.Bone.events["type"].append(bones.event_fix_parent)
-    properties.Bone.events["type"].append(armatures.event_update_errors)
-    properties.Bone.events["type"].append(bones.event_type_add)
-    # TODO more efficient function for this event
-    properties.Bone.events["type"].append(armatures.event_update_constraints)
-    properties.Bone.events["type"].append(armatures.event_update_joints)
-    # TODO more efficient function for this event
-    properties.Bone.events["type"].append(armatures.event_hide_active_bones)
-
-    properties.Bone.events["collision_shape"].append(bones.event_collision_shape)
-
-    properties.Bone.events["origin"].append(bones.event_location)
-
-    properties.Bone.events["location"].append(bones.event_location)
-
-    properties.Bone.events["rotation"].append(bones.event_location)
-
-    properties.Bone.events["scale"].append(bones.event_location)
-
-    properties.Bone.events["rotation"].append(bones.event_rotation)
-
-    properties.Bone.events["scale"].append(bones.event_scale)
-
-    properties.Bone.events["mass"].append(bones.event_rigid_body)
-    properties.Bone.events["friction"].append(bones.event_rigid_body)
-    properties.Bone.events["restitution"].append(bones.event_rigid_body)
-    properties.Bone.events["linear_damping"].append(bones.event_rigid_body)
-    properties.Bone.events["angular_damping"].append(bones.event_rigid_body)
-    properties.Bone.events["use_margin"].append(bones.event_rigid_body)
-    properties.Bone.events["collision_margin"].append(bones.event_rigid_body)
-    properties.Bone.events["collision_collections"].append(bones.event_rigid_body)
-    properties.Bone.events["use_deactivation"].append(bones.event_rigid_body)
-    properties.Bone.events["use_start_deactivated"].append(bones.event_rigid_body)
-    properties.Bone.events["deactivate_linear_velocity"].append(bones.event_rigid_body)
-    properties.Bone.events["deactivate_angular_velocity"].append(bones.event_rigid_body)
-
-    properties.Bone.events["disable_collisions"].append(bones.event_constraint)
-    properties.Bone.events["use_breaking"].append(bones.event_constraint)
-    properties.Bone.events["breaking_threshold"].append(bones.event_constraint)
-    properties.Bone.events["use_override_solver_iterations"].append(bones.event_constraint)
-    properties.Bone.events["solver_iterations"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_ang_x"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_ang_y"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_ang_z"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_ang_x"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_ang_y"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_ang_z"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_ang_x"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_ang_y"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_ang_z"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_x"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_y"].append(bones.event_constraint)
-    properties.Bone.events["use_spring_z"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_x"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_y"].append(bones.event_constraint)
-    properties.Bone.events["spring_stiffness_z"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_x"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_y"].append(bones.event_constraint)
-    properties.Bone.events["spring_damping_z"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_lin_x"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_lin_y"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_lin_z"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_ang_x"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_ang_y"].append(bones.event_constraint)
-    properties.Bone.events["use_limit_ang_z"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_x_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_y_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_z_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_x_upper"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_y_upper"].append(bones.event_constraint)
-    properties.Bone.events["limit_lin_z_upper"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_x_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_y_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_z_lower"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_x_upper"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_y_upper"].append(bones.event_constraint)
-    properties.Bone.events["limit_ang_z_upper"].append(bones.event_constraint)
-
-    properties.Armature.events["enabled"].append(armatures.event_remove_orphans)
-    properties.Armature.events["enabled"].append(armatures.event_enabled)
-    properties.Armature.events["enabled"].append(armatures.event_update_constraints)
-    properties.Armature.events["enabled"].append(armatures.event_change_parents)
-    properties.Armature.events["enabled"].append(armatures.event_update_joints)
-    properties.Armature.events["enabled"].append(armatures.event_hide_active_bones)
-
-    properties.Armature.events["mode_switch"].append(armatures.event_fix_duplicates)
-    properties.Armature.events["mode_switch"].append(armatures.event_update_errors)
-    properties.Armature.events["mode_switch"].append(armatures.event_remove_orphans)
-    properties.Armature.events["mode_switch"].append(armatures.event_hide_hitboxes)
-    properties.Armature.events["mode_switch"].append(armatures.event_update_constraints)
-    properties.Armature.events["mode_switch"].append(armatures.event_change_parents)
-    properties.Armature.events["mode_switch"].append(armatures.event_update_joints)
-
-    properties.Armature.events["hide_active_bones"].append(armatures.event_hide_active_bones)
-
-    properties.Armature.events["hide_hitboxes"].append(armatures.event_hide_hitboxes)
-
 
     # This is needed in order to re-subscribe when the file changes
     bpy.app.handlers.load_post.append(load_post)

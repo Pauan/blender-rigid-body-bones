@@ -1,14 +1,115 @@
 import bpy
 from math import radians
 from mathutils import Vector, Euler
-from . import armatures
 from . import utils
+
+
+def is_bone_enabled(data):
+    return data.enabled and data.error == ""
+
+def is_bone_active(data):
+    return data.type == 'ACTIVE'
+
+
+def active_name(bone):
+    return bone.name + " [Active]"
+
+def passive_name(bone):
+    return bone.name + " [Passive]"
+
+def blank_name(bone):
+    return bone.name + " [Blank]"
+
+def constraint_name(bone):
+    return bone.name + " [Head]"
 
 
 def common_settings(object):
     object.hide_render = True
     object.show_in_front = True
     object.display.show_shadows = False
+
+
+def make_active_hitbox(context, armature, collection, bone, data):
+    hitbox = utils.make_mesh_object(
+        name=active_name(bone),
+        collection=collection,
+    )
+
+    utils.set_parent(hitbox, armature)
+
+    utils.select_active(context, hitbox)
+    bpy.ops.rigidbody.object_add(type='ACTIVE')
+
+    common_settings(hitbox)
+
+    return hitbox
+
+
+def make_passive_hitbox(context, armature, collection, bone, data):
+    hitbox = utils.make_mesh_object(
+        name=passive_name(bone),
+        collection=collection,
+    )
+
+    utils.set_bone_parent(hitbox, armature, bone.name)
+
+    utils.select_active(context, hitbox)
+    bpy.ops.rigidbody.object_add(type='PASSIVE')
+
+    hitbox.rigid_body.kinematic = True
+    common_settings(hitbox)
+
+    return hitbox
+
+
+def make_empty_rigid_body(context, name, collection, parent, parent_bone):
+    body = utils.make_mesh_object(
+        name=name,
+        collection=collection,
+    )
+
+    if parent_bone is None:
+        utils.set_parent(body, parent)
+
+    else:
+        utils.set_bone_parent(body, parent, parent_bone)
+
+    utils.select_active(context, body)
+    bpy.ops.rigidbody.object_add(type='PASSIVE')
+
+    body.rigid_body.kinematic = True
+    body.rigid_body.collision_collections[0] = False
+
+    common_settings(body)
+    update_shape(body, type='BOX')
+
+    return body
+
+
+def make_blank_rigid_body(context, armature, collection, bone, data):
+    return make_empty_rigid_body(
+        context,
+        name=blank_name(bone),
+        collection=collection,
+        parent=armature,
+        parent_bone=bone.name,
+    )
+
+
+def make_constraint(context, armature, collection, bone, data):
+    empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
+    collection.objects.link(empty)
+
+    utils.set_parent(empty, armature)
+
+    utils.select_active(context, empty)
+    bpy.ops.rigidbody.constraint_add(type='FIXED')
+
+    common_settings(empty)
+    empty.empty_display_type = 'CIRCLE'
+
+    return empty
 
 
 def update_shape(object, type):
@@ -38,36 +139,6 @@ def update_rigid_body(rigid_body, data):
     rigid_body.use_start_deactivated = data.use_start_deactivated
     rigid_body.deactivate_linear_velocity = data.deactivate_linear_velocity
     rigid_body.deactivate_angular_velocity = data.deactivate_angular_velocity
-
-
-def make_empty_rigid_body(context, name, collection, parent, parent_bone):
-    with utils.Viewable(collection):
-        mesh = bpy.data.meshes.new(name=name)
-        body = bpy.data.objects.new(name, mesh)
-        collection.objects.link(body)
-
-        if parent_bone is None:
-            utils.set_parent(body, parent)
-
-        else:
-            utils.set_bone_parent(body, parent, parent_bone)
-
-        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-            utils.select(context, [body])
-            bpy.ops.rigidbody.object_add(type='PASSIVE')
-
-        body.rigid_body.kinematic = True
-        body.rigid_body.collision_collections[0] = False
-        common_settings(body)
-        update_shape(body, type='BOX')
-
-        return body
-
-
-def align_constraint(constraint, bone):
-    constraint.location = bone.head_local
-    constraint.rotation_euler = bone.matrix_local.to_euler()
-    constraint.empty_display_size = bone.length * 0.2
 
 
 def is_spring(data):
@@ -132,65 +203,10 @@ def update_constraint(constraint, data):
     constraint.limit_ang_z_upper = data.limit_ang_z_upper
 
 
-def blank_name(bone):
-    return bone.name + " [Blank]"
-
-
-def make_blank_rigid_body(context, armature, bone, data):
-    if not data.blank:
-        data.blank = make_empty_rigid_body(
-            context,
-            name=blank_name(bone),
-            collection=armatures.blanks_collection(context, armature),
-            parent=armature,
-            parent_bone=bone.name,
-        )
-
-    return data.blank
-
-
-def remove_blank(data):
-    if data.blank:
-        utils.remove_object(data.blank)
-        data.property_unset("blank")
-
-
-def constraint_name(bone):
-    return bone.name + " [Head]"
-
-
-def create_constraint(context, armature, bone):
-    data = bone.rigid_body_bones
-
-    if not data.constraint:
-        collection = armatures.constraints_collection(context, armature)
-
-        with utils.Viewable(collection):
-            empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
-            collection.objects.link(empty)
-
-            utils.set_parent(empty, armature)
-
-            align_constraint(empty, bone)
-
-            with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-                utils.select(context, [empty])
-                bpy.ops.rigidbody.constraint_add(type='FIXED')
-
-            common_settings(empty)
-            empty.empty_display_type = 'CIRCLE'
-
-            update_constraint(empty.rigid_body_constraint, data)
-
-            data.constraint = empty
-
-
-def remove_constraint(bone):
-    data = bone.rigid_body_bones
-
-    if data.constraint:
-        utils.remove_object(data.constraint)
-        data.property_unset("constraint")
+def align_constraint(constraint, bone):
+    constraint.location = bone.head_local
+    constraint.rotation_euler = bone.matrix_local.to_euler()
+    constraint.empty_display_size = bone.length * 0.2
 
 
 def hitbox_dimensions(bone):
@@ -199,9 +215,7 @@ def hitbox_dimensions(bone):
     return dimensions
 
 
-def hitbox_location(bone, type):
-    data = bone.rigid_body_bones
-
+def hitbox_location(bone, data):
     length = bone.length
     origin = length * (data.origin - 0.5)
 
@@ -211,15 +225,15 @@ def hitbox_location(bone, type):
     location.y += origin - (length * 0.5)
     location += data.location
 
-    if type == 'ACTIVE':
+    if is_bone_active(data):
         location.rotate(bone.matrix_local.to_euler())
         location += bone.tail_local
 
     return location
 
 
-def hitbox_rotation(bone, type):
-    if type == 'ACTIVE':
+def hitbox_rotation(bone, data):
+    if is_bone_active(data):
         rotation = bone.rigid_body_bones.rotation.copy()
         rotation.rotate(bone.matrix_local.to_euler())
         rotation.rotate_axis('X', radians(90.0))
@@ -231,189 +245,62 @@ def hitbox_rotation(bone, type):
         return rotation
 
 
-def hitbox_name(bone, type):
-    if type == 'ACTIVE':
-        return bone.name + " [Active]"
+def align_hitbox(hitbox, bone, data):
+    hitbox.location = hitbox_location(bone, data)
+    hitbox.rotation_euler = hitbox_rotation(bone, data)
+    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone))
+
+
+def update_hitbox_name(hitbox, name):
+    hitbox.name = name
+    hitbox.data.name = name
+
+
+def get_hitbox(data):
+    if data.active:
+        return data.active
+
+    elif data.passive:
+        return data.passive
 
     else:
-        return bone.name + " [Passive]"
+        return None
 
 
-def make_active_hitbox(context, armature, bone):
-    data = bone.rigid_body_bones
+def remove_active(data):
+    if data.active:
+        utils.remove_object(data.active)
+        data.property_unset("active")
 
-    collection = armatures.actives_collection(context, armature)
+def remove_passive(data):
+    if data.passive:
+        utils.remove_object(data.passive)
+        data.property_unset("passive")
 
-    with utils.Viewable(collection):
-        hitbox = utils.make_cube(
-            name=hitbox_name(bone, 'ACTIVE'),
-            dimensions=hitbox_dimensions(bone),
-            collection=collection,
-        )
-
-        utils.set_parent(hitbox, armature)
-
-        hitbox.rotation_euler = hitbox_rotation(bone, 'ACTIVE')
-        hitbox.location = hitbox_location(bone, 'ACTIVE')
-
-        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-            utils.select(context, [hitbox])
-            bpy.ops.rigidbody.object_add(type='ACTIVE')
-
-        update_rigid_body(hitbox.rigid_body, data)
-        common_settings(hitbox)
-        update_shape(hitbox, type=data.collision_shape)
-
-        return hitbox
-
-
-def make_passive_hitbox(context, armature, bone):
-    data = bone.rigid_body_bones
-
-    collection = armatures.passives_collection(context, armature)
-
-    with utils.Viewable(collection):
-        hitbox = utils.make_cube(
-            name=hitbox_name(bone, 'PASSIVE'),
-            dimensions=hitbox_dimensions(bone),
-            collection=collection,
-        )
-
-        utils.set_bone_parent(hitbox, armature, bone.name)
-
-        hitbox.rotation_euler = hitbox_rotation(bone, 'PASSIVE')
-        hitbox.location = hitbox_location(bone, 'PASSIVE')
-
-        with utils.Selected(context), utils.Selectable(armatures.root_collection(context)):
-            utils.select(context, [hitbox])
-            bpy.ops.rigidbody.object_add(type='PASSIVE')
-
-        hitbox.rigid_body.kinematic = True
-        common_settings(hitbox)
-        update_shape(hitbox, type=data.collision_shape)
-
-        return hitbox
-
-
-def create(context, armature, bone):
-    data = bone.rigid_body_bones
-
-    if not data.hitbox:
-        if is_bone_active(data):
-            data.hitbox = make_active_hitbox(context, armature, bone)
-            create_constraint(context, armature, bone)
-
-        else:
-            data.hitbox = make_passive_hitbox(context, armature, bone)
-            assert data.constraint is None
-
-
-def remove_bone(bone):
-    data = bone.rigid_body_bones
-
-    if data.hitbox:
-        utils.remove_object(data.hitbox)
-        data.property_unset("hitbox")
-
-    remove_constraint(bone)
-    remove_blank(data)
-
-
-def add_bone_objects(bone, exists):
-    data = bone.rigid_body_bones
-
-    if data.hitbox:
-        exists.add(data.hitbox.name)
-
-    if data.constraint:
-        exists.add(data.constraint.name)
-
+def remove_blank(data):
     if data.blank:
-        exists.add(data.blank.name)
+        utils.remove_object(data.blank)
+        data.property_unset("blank")
 
-
-def fix_bone_duplicates(context, armature, bone, seen):
-    data = bone.rigid_body_bones
-
-    if data.hitbox:
-        name = data.hitbox.name
-
-        if name in seen:
-            data.property_unset("hitbox")
-
-        else:
-            seen.add(name)
-
+def remove_constraint(data):
     if data.constraint:
-        name = data.constraint.name
-
-        if name in seen:
-            data.property_unset("constraint")
-
-        else:
-            seen.add(name)
-
-    if data.blank:
-        name = data.blank.name
-
-        if name in seen:
-            data.property_unset("blank")
-
-        else:
-            seen.add(name)
+        utils.remove_object(data.constraint)
+        data.property_unset("constraint")
 
 
-def is_bone_enabled(data):
-    return data.enabled and data.error == ""
+def hide_active_bone(bone, data, should_hide):
+    if should_hide and is_bone_enabled(data) and is_bone_active(data):
+        if not data.is_property_set("is_hidden"):
+            data.is_hidden = bone.hide
+
+        bone.hide = True
+
+    elif data.is_property_set("is_hidden"):
+        bone.hide = data.is_hidden
+        data.property_unset("is_hidden")
 
 
-def initialize_bone(context, armature, bone):
-    data = bone.rigid_body_bones
-
-    if is_bone_enabled(data):
-        create(context, armature, bone)
-
-
-def is_bone_active(data):
-    return data.type == 'ACTIVE'
-
-
-def bone_set_inverse(armature, bone, data):
-    if is_bone_active(data):
-        pose_bone = armature.pose.bones[bone.name]
-        constraint = pose_bone.constraints["Rigid Body Bones [Child Of]"]
-        constraint.set_inverse_pending = True
-
-
-def align_bone(armature, bone):
-    data = bone.rigid_body_bones
-
-    hitbox = data.hitbox
-
-    if hitbox:
-        name = hitbox_name(bone, data.type)
-        hitbox.name = name
-        hitbox.data.name = name
-        hitbox.location = hitbox_location(bone, data.type)
-        hitbox.rotation_euler = hitbox_rotation(bone, data.type)
-        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone))
-        bone_set_inverse(armature, bone, data)
-
-    constraint = data.constraint
-
-    if constraint:
-        constraint.name = constraint_name(bone)
-        align_constraint(constraint, bone)
-
-    blank = data.blank
-
-    if blank:
-        blank.name = blank_name(bone)
-
-
-def store_bone_parent(bone):
-    data = bone.rigid_body_bones
-
+def store_parent(bone, data):
     assert not data.is_property_set("name")
     assert not data.is_property_set("parent")
     assert not data.is_property_set("use_connect")
@@ -430,126 +317,12 @@ def store_bone_parent(bone):
 
     data.use_connect = bone.use_connect
 
-    return is_bone_enabled(data) and is_bone_active(data)
 
-
-def restore_bone_parent(bone, names, datas):
-    data = bone.rigid_body_bones
-
+def delete_parent(data):
     assert data.is_property_set("name")
     assert data.is_property_set("parent")
     assert data.is_property_set("use_connect")
-
-    names[data.name] = bone.name
-
-    if is_bone_enabled(data) and is_bone_active(data):
-        datas[bone.name] = (data.parent, data.use_connect)
 
     data.property_unset("name")
     data.property_unset("parent")
     data.property_unset("use_connect")
-
-
-@utils.bone_event("type_add")
-def event_type_add(context, armature, bone, data):
-    initialize_bone(context, armature, bone)
-
-@utils.bone_event("type_remove")
-def event_type_remove(context, armature, bone, data):
-    remove_bone(bone)
-
-
-@utils.bone_event("collision_shape")
-def event_collision_shape(context, armature, bone, data):
-    if data.hitbox:
-        update_shape(data.hitbox, data.collision_shape)
-
-
-@utils.bone_event("location")
-def event_location(context, armature, bone, data):
-    if data.hitbox:
-        data.hitbox.location = hitbox_location(bone, data.type)
-        bone_set_inverse(armature, bone, data)
-
-@utils.bone_event("rotation")
-def event_rotation(context, armature, bone, data):
-    if data.hitbox:
-        data.hitbox.rotation_euler = hitbox_rotation(bone, data.type)
-        bone_set_inverse(armature, bone, data)
-
-@utils.bone_event("scale")
-def event_scale(context, armature, bone, data):
-    if data.hitbox:
-        utils.set_mesh_cube(data.hitbox.data, hitbox_dimensions(bone))
-        bone_set_inverse(armature, bone, data)
-
-@utils.bone_event("rigid_body")
-def event_rigid_body(context, armature, bone, data):
-    if data.hitbox:
-        update_rigid_body(data.hitbox.rigid_body, data)
-
-@utils.bone_event("constraint")
-def event_constraint(context, armature, bone, data):
-    if data.constraint:
-        update_constraint(data.constraint.rigid_body_constraint, data)
-
-
-@utils.bone_event("enabled_add")
-def event_enabled_add(context, armature, bone, data):
-    if is_bone_enabled(data):
-        create(context, armature, bone)
-
-@utils.bone_event("enabled_remove")
-def event_enabled_remove(context, armature, bone, data):
-    if not is_bone_enabled(data):
-        remove_bone(bone)
-        armatures.safe_remove_collections(context, armature)
-
-
-@utils.bone_event("fix_parent")
-def event_fix_parent(context, armature, bone, data):
-    assert data.is_property_set("name")
-    assert data.is_property_set("parent")
-    assert data.is_property_set("use_connect")
-
-    # Cannot use is_bone_enabled because then it won't work if:
-    #   1. Changing type from Passive -> Active
-    #   2. There was an error when it was Passive
-    if data.enabled and is_bone_active(data):
-        if bone.parent is not None:
-            name = bone.name
-
-            with utils.Mode(context, 'EDIT'):
-                armature.data.edit_bones[name].parent = None
-
-    else:
-        if bone.parent is None:
-            parent = data.parent
-            use_connect = data.use_connect
-
-            if parent == "" and bone.use_connect == use_connect:
-                return
-
-            name = bone.name
-            parent_name = None
-
-            if parent != "":
-                # TODO make this faster somehow ?
-                for bone in armature.data.bones:
-                    if bone.rigid_body_bones.name == parent:
-                        parent_name = bone.name
-                        break
-
-                assert parent_name is not None
-
-            with utils.Mode(context, 'EDIT'):
-                edit_bones = armature.data.edit_bones
-                edit_bone = edit_bones[name]
-
-                if parent_name is None:
-                    assert edit_bone.parent is None
-
-                else:
-                    edit_bone.parent = edit_bones[parent_name]
-
-                edit_bone.use_connect = use_connect

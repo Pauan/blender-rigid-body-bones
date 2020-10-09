@@ -1,11 +1,12 @@
 import sys
+import time
 import bpy
 import bmesh
 from math import radians
 from mathutils import Vector, Euler, Matrix
 
 
-DEBUG = False
+DEBUG = True
 
 def log(obj):
     from pprint import PrettyPrinter
@@ -24,61 +25,33 @@ def print_time(time_start, time_end):
     debug("  TIME: %.10f ms" % ((time_end - time_start) * 1000.0))
 
 
-def armature_event(name):
+def event(name):
     def decorator(f):
-        def event(self, context):
-            # TODO is active_object correct ?
-            armature = context.active_object
-            data = armature.data.rigid_body_bones
-            #debug("  [{}] {}".format(armature.data.name, name))
-            return f(context, armature, data)
+        def update(self, context):
+            debug("EVENT {} {{".format(name))
 
-        return event
+            time_start = time.time()
+
+            f(context)
+
+            time_end = time.time()
+            print_time(time_start, time_end)
+
+            debug("}")
+
+        return update
     return decorator
 
 
-def bone_event(name):
-    def decorator(f):
-        def event(self, context):
-            # TODO is active_object correct ?
-            armature = context.active_object
-            bone = get_active_bone(armature)
-            data = bone.rigid_body_bones
-            #debug("  [{}] {}".format(bone.name, name))
-            return f(context, armature, bone, data)
+def if_armature_enabled(f):
+    def update(context):
+        armature = context.active_object
+        top = armature.data.rigid_body_bones
 
-        return event
-    return decorator
+        if top.enabled and armature.mode != 'EDIT':
+            f(context, armature, top)
 
-
-class Selectable:
-    def __init__(self, collection):
-        self.collection = collection
-        self.hidden = False
-
-    def __enter__(self):
-        self.hidden = self.collection.hide_select
-        self.collection.hide_select = False
-        return self.collection
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.collection.hide_select = self.hidden
-        return False
-
-
-class Viewable:
-    def __init__(self, collection):
-        self.collection = collection
-        self.hidden = False
-
-    def __enter__(self):
-        self.hidden = self.collection.hide_viewport
-        self.collection.hide_viewport = False
-        return self.collection
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.collection.hide_viewport = self.hidden
-        return False
+    return update
 
 
 class Mode:
@@ -93,25 +66,6 @@ class Mode:
 
     def __exit__(self, exc_type, exc_value, traceback):
         bpy.ops.object.mode_set(mode=self.old_mode)
-        return False
-
-
-class ModeCAS:
-    def __init__(self, context, old_mode, new_mode):
-        self.context = context
-        self.old_mode = old_mode
-        self.new_mode = new_mode
-        self.matched = False
-
-    def __enter__(self):
-        if self.context.active_object.mode == self.old_mode:
-            self.matched = True
-            bpy.ops.object.mode_set(mode=self.new_mode)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.matched:
-            bpy.ops.object.mode_set(mode=self.old_mode)
-
         return False
 
 
@@ -163,16 +117,9 @@ def is_armature_enabled(context):
     return context.active_object.data.rigid_body_bones.enabled
 
 
-def select(context, objs):
-    view_layer = context.view_layer
-
-    for obj in view_layer.objects.selected:
-        obj.select_set(False)
-
-    for obj in objs:
-        obj.select_set(True)
-
-    view_layer.objects.active = objs[-1]
+def select_active(context, obj):
+    obj.select_set(True)
+    context.view_layer.objects.active = obj
 
 
 def set_parent(child, parent):
@@ -218,9 +165,8 @@ def set_mesh_cube(mesh, dimensions):
     bm.free()
 
 
-def make_cube(name, dimensions, collection):
+def make_mesh_object(name, collection):
     mesh = bpy.data.meshes.new(name=name)
-    set_mesh_cube(mesh, dimensions)
     cube = bpy.data.objects.new(name, mesh)
     collection.objects.link(cube)
     return cube

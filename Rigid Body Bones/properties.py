@@ -1,23 +1,8 @@
 import bpy
-import time
-from . import utils
-
-
-def make_event(name):
-    def update(self, context):
-        utils.debug("EVENT {} {{".format(name))
-
-        time_start = time.time()
-
-        for f in self.events[name]:
-            f(self, context)
-
-        time_end = time.time()
-        utils.print_time(time_start, time_end)
-
-        utils.debug("}")
-
-    return update
+from .events import (
+    event_update, event_rigid_body, event_rigid_body_constraint, event_align,
+    event_collision_shape, event_hide_hitboxes, event_hide_active_bones
+)
 
 
 class Scene(bpy.types.PropertyGroup):
@@ -50,33 +35,28 @@ class Armature(bpy.types.PropertyGroup):
     root_body: bpy.props.PointerProperty(type=bpy.types.Object)
     parents_stored: bpy.props.BoolProperty(default=False)
 
-    events = {
-        "mode_switch": [],
-        "enabled": [],
-        "hide_active_bones": [],
-        "hide_hitboxes": [],
-    }
 
     enabled: bpy.props.BoolProperty(
         name="Enable rigid bodies",
         description="Enable rigid body physics for the armature",
         default=True,
-        update=make_event("enabled"),
+        update=event_update,
     )
 
     hide_active_bones: bpy.props.BoolProperty(
         name="Hide active bones",
         description="Hide bones which have an Active rigid body",
         default=False,
-        update=make_event("hide_active_bones"),
+        update=event_hide_active_bones,
     )
 
     hide_hitboxes: bpy.props.BoolProperty(
         name="Hide rigid bodies",
         description="Hide bone rigid bodies",
         default=False,
-        update=make_event("hide_hitboxes"),
+        update=event_hide_hitboxes,
     )
+
 
     @classmethod
     def register(cls):
@@ -88,9 +68,10 @@ class Armature(bpy.types.PropertyGroup):
 
 
 class Bone(bpy.types.PropertyGroup):
-    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
-    hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
+    active: bpy.props.PointerProperty(type=bpy.types.Object)
+    passive: bpy.props.PointerProperty(type=bpy.types.Object)
     blank: bpy.props.PointerProperty(type=bpy.types.Object)
+    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
 
     error: bpy.props.StringProperty()
 
@@ -111,80 +92,13 @@ class Bone(bpy.types.PropertyGroup):
 
     is_hidden: bpy.props.BoolProperty(default=False)
 
-    events = {
-        "enabled": [],
-        "type": [],
-        "collision_shape": [],
-        "location": [],
-        "rotation": [],
-        "scale": [],
-        "origin": [],
-
-        "disable_collisions": [],
-        "use_breaking": [],
-        "breaking_threshold": [],
-
-        "use_spring_ang_x": [],
-        "use_spring_ang_y": [],
-        "use_spring_ang_z": [],
-        "spring_stiffness_ang_x": [],
-        "spring_stiffness_ang_y": [],
-        "spring_stiffness_ang_z": [],
-        "spring_damping_ang_x": [],
-        "spring_damping_ang_y": [],
-        "spring_damping_ang_z": [],
-
-        "use_spring_x": [],
-        "use_spring_y": [],
-        "use_spring_z": [],
-        "spring_stiffness_x": [],
-        "spring_stiffness_y": [],
-        "spring_stiffness_z": [],
-        "spring_damping_x": [],
-        "spring_damping_y": [],
-        "spring_damping_z": [],
-
-        "use_limit_lin_x": [],
-        "use_limit_lin_y": [],
-        "use_limit_lin_z": [],
-        "use_limit_ang_x": [],
-        "use_limit_ang_y": [],
-        "use_limit_ang_z": [],
-        "limit_lin_x_lower": [],
-        "limit_lin_y_lower": [],
-        "limit_lin_z_lower": [],
-        "limit_lin_x_upper": [],
-        "limit_lin_y_upper": [],
-        "limit_lin_z_upper": [],
-        "limit_ang_x_lower": [],
-        "limit_ang_y_lower": [],
-        "limit_ang_z_lower": [],
-        "limit_ang_x_upper": [],
-        "limit_ang_y_upper": [],
-        "limit_ang_z_upper": [],
-
-        "mass": [],
-        "friction": [],
-        "restitution": [],
-        "linear_damping": [],
-        "angular_damping": [],
-        "use_margin": [],
-        "collision_margin": [],
-        "collision_collections": [],
-        "use_deactivation": [],
-        "use_start_deactivated": [],
-        "deactivate_linear_velocity": [],
-        "deactivate_angular_velocity": [],
-        "use_override_solver_iterations": [],
-        "solver_iterations": [],
-    }
 
     enabled: bpy.props.BoolProperty(
         name="Enable Rigid Body",
         description="Enable rigid body for the bone",
         default=False,
         options=set(),
-        update=make_event("enabled"),
+        update=event_update,
     )
 
     type: bpy.props.EnumProperty(
@@ -196,7 +110,7 @@ class Bone(bpy.types.PropertyGroup):
             ('PASSIVE', "Passive", "Rigid body follows the bone", 0),
             ('ACTIVE', "Active", "Bone follows the rigid body", 1),
         ],
-        update=make_event("type"),
+        update=event_update,
     )
 
     location: bpy.props.FloatVectorProperty(
@@ -209,7 +123,7 @@ class Bone(bpy.types.PropertyGroup):
         subtype='XYZ',
         unit='LENGTH',
         options=set(),
-        update=make_event("location"),
+        update=event_align,
     )
 
     rotation: bpy.props.FloatVectorProperty(
@@ -222,7 +136,7 @@ class Bone(bpy.types.PropertyGroup):
         subtype='EULER',
         unit='ROTATION',
         options=set(),
-        update=make_event("rotation"),
+        update=event_align,
     )
 
     scale: bpy.props.FloatVectorProperty(
@@ -234,7 +148,7 @@ class Bone(bpy.types.PropertyGroup):
         step=1,
         subtype='XYZ',
         options=set(),
-        update=make_event("scale"),
+        update=event_align,
     )
 
     origin: bpy.props.FloatProperty(
@@ -245,7 +159,7 @@ class Bone(bpy.types.PropertyGroup):
         soft_max=1.0,
         precision=3,
         options=set(),
-        update=make_event("origin"),
+        update=event_align,
     )
 
     mass: bpy.props.FloatProperty(
@@ -257,7 +171,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         unit='MASS',
         options=set(),
-        update=make_event("mass"),
+        update=event_rigid_body,
     )
 
     collision_shape: bpy.props.EnumProperty(
@@ -274,7 +188,7 @@ class Bone(bpy.types.PropertyGroup):
             #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", "MESH_ICOSPHERE", 5),
             #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", "MESH_MONKEY", 6),
         ],
-        update=make_event("collision_shape"),
+        update=event_collision_shape,
     )
 
     friction: bpy.props.FloatProperty(
@@ -285,7 +199,7 @@ class Bone(bpy.types.PropertyGroup):
         soft_max=1.0,
         precision=3,
         options=set(),
-        update=make_event("friction"),
+        update=event_rigid_body,
     )
 
     restitution: bpy.props.FloatProperty(
@@ -296,7 +210,7 @@ class Bone(bpy.types.PropertyGroup):
         soft_max=1.0,
         precision=3,
         options=set(),
-        update=make_event("restitution"),
+        update=event_rigid_body,
     )
 
     linear_damping: bpy.props.FloatProperty(
@@ -307,7 +221,7 @@ class Bone(bpy.types.PropertyGroup):
         max=1.0,
         precision=3,
         options=set(),
-        update=make_event("linear_damping"),
+        update=event_rigid_body,
     )
 
     angular_damping: bpy.props.FloatProperty(
@@ -318,7 +232,7 @@ class Bone(bpy.types.PropertyGroup):
         max=1.0,
         precision=3,
         options=set(),
-        update=make_event("angular_damping"),
+        update=event_rigid_body,
     )
 
     use_margin: bpy.props.BoolProperty(
@@ -326,7 +240,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Use custom collision margin",
         default=False,
         options=set(),
-        update=make_event("use_margin"),
+        update=event_rigid_body,
     )
 
     collision_margin: bpy.props.FloatProperty(
@@ -339,7 +253,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         unit='LENGTH',
         options=set(),
-        update=make_event("collision_margin"),
+        update=event_rigid_body,
     )
 
     collision_collections: bpy.props.BoolVectorProperty(
@@ -352,7 +266,7 @@ class Bone(bpy.types.PropertyGroup):
         subtype='LAYER_MEMBER',
         size=20,
         options=set(),
-        update=make_event("collision_collections"),
+        update=event_rigid_body,
     )
 
     use_deactivation: bpy.props.BoolProperty(
@@ -360,7 +274,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable deactivation of resting rigid body (increases performance and stability but can cause glitches)",
         default=False,
         options=set(),
-        update=make_event("use_deactivation"),
+        update=event_rigid_body,
     )
 
     use_start_deactivated: bpy.props.BoolProperty(
@@ -368,7 +282,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Deactivate rigid body at the start of the simulation",
         default=False,
         options=set(),
-        update=make_event("use_start_deactivated"),
+        update=event_rigid_body,
     )
 
     deactivate_linear_velocity: bpy.props.FloatProperty(
@@ -381,7 +295,7 @@ class Bone(bpy.types.PropertyGroup):
         # TODO use subtype ?
         unit='VELOCITY',
         options=set(),
-        update=make_event("deactivate_linear_velocity"),
+        update=event_rigid_body,
     )
 
     deactivate_angular_velocity: bpy.props.FloatProperty(
@@ -394,7 +308,7 @@ class Bone(bpy.types.PropertyGroup):
         # TODO use subtype ?
         unit='VELOCITY',
         options=set(),
-        update=make_event("deactivate_angular_velocity"),
+        update=event_rigid_body,
     )
 
     use_override_solver_iterations: bpy.props.BoolProperty(
@@ -402,7 +316,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Override the number of solver iterations for the limits",
         default=False,
         options=set(),
-        update=make_event("use_override_solver_iterations"),
+        update=event_rigid_body_constraint,
     )
 
     solver_iterations: bpy.props.IntProperty(
@@ -413,7 +327,7 @@ class Bone(bpy.types.PropertyGroup):
         max=1000,
         step=1,
         options=set(),
-        update=make_event("solver_iterations"),
+        update=event_rigid_body_constraint,
     )
 
     disable_collisions: bpy.props.BoolProperty(
@@ -421,7 +335,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Disable collisions with the parent bone",
         default=True,
         options=set(),
-        update=make_event("disable_collisions"),
+        update=event_rigid_body_constraint,
     )
 
     use_breaking: bpy.props.BoolProperty(
@@ -429,7 +343,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limits can be broken if it receives an impulse above the threshold",
         default=False,
         options=set(),
-        update=make_event("use_breaking"),
+        update=event_rigid_body_constraint,
     )
 
     breaking_threshold: bpy.props.FloatProperty(
@@ -440,7 +354,7 @@ class Bone(bpy.types.PropertyGroup):
         step=100,
         precision=2,
         options=set(),
-        update=make_event("breaking_threshold"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -449,7 +363,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on X rotational axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_ang_x"),
+        update=event_rigid_body_constraint,
     )
 
     use_spring_ang_y: bpy.props.BoolProperty(
@@ -457,7 +371,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on Y rotational axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_ang_y"),
+        update=event_rigid_body_constraint,
     )
 
     use_spring_ang_z: bpy.props.BoolProperty(
@@ -465,7 +379,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on Z rotational axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_ang_z"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_ang_x: bpy.props.FloatProperty(
@@ -476,7 +390,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_ang_x"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_ang_y: bpy.props.FloatProperty(
@@ -487,7 +401,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_ang_y"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_ang_z: bpy.props.FloatProperty(
@@ -498,7 +412,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_ang_z"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_ang_x: bpy.props.FloatProperty(
@@ -509,7 +423,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_ang_x"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_ang_y: bpy.props.FloatProperty(
@@ -520,7 +434,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_ang_y"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_ang_z: bpy.props.FloatProperty(
@@ -531,7 +445,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_ang_z"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -540,7 +454,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on X translate axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_x"),
+        update=event_rigid_body_constraint,
     )
 
     use_spring_y: bpy.props.BoolProperty(
@@ -548,7 +462,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on Y translate axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_y"),
+        update=event_rigid_body_constraint,
     )
 
     use_spring_z: bpy.props.BoolProperty(
@@ -556,7 +470,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Enable spring on Z translate axis",
         default=False,
         options=set(),
-        update=make_event("use_spring_z"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_x: bpy.props.FloatProperty(
@@ -567,7 +481,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_x"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_y: bpy.props.FloatProperty(
@@ -578,7 +492,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_y"),
+        update=event_rigid_body_constraint,
     )
 
     spring_stiffness_z: bpy.props.FloatProperty(
@@ -589,7 +503,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=1,
         options=set(),
-        update=make_event("spring_stiffness_z"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_x: bpy.props.FloatProperty(
@@ -600,7 +514,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_x"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_y: bpy.props.FloatProperty(
@@ -611,7 +525,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_y"),
+        update=event_rigid_body_constraint,
     )
 
     spring_damping_z: bpy.props.FloatProperty(
@@ -622,7 +536,7 @@ class Bone(bpy.types.PropertyGroup):
         precision=3,
         step=10,
         options=set(),
-        update=make_event("spring_damping_z"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -631,7 +545,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit translation on X axis",
         default=True,
         options=set(),
-        update=make_event("use_limit_lin_x"),
+        update=event_rigid_body_constraint,
     )
 
     use_limit_lin_y: bpy.props.BoolProperty(
@@ -639,7 +553,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit translation on Y axis",
         default=True,
         options=set(),
-        update=make_event("use_limit_lin_y"),
+        update=event_rigid_body_constraint,
     )
 
     use_limit_lin_z: bpy.props.BoolProperty(
@@ -647,7 +561,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit translation on Z axis",
         default=True,
         options=set(),
-        update=make_event("use_limit_lin_z"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -656,7 +570,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit rotation on X axis",
         default=False,
         options=set(),
-        update=make_event("use_limit_ang_x"),
+        update=event_rigid_body_constraint,
     )
 
     use_limit_ang_y: bpy.props.BoolProperty(
@@ -664,7 +578,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit rotation on Y axis",
         default=False,
         options=set(),
-        update=make_event("use_limit_ang_y"),
+        update=event_rigid_body_constraint,
     )
 
     use_limit_ang_z: bpy.props.BoolProperty(
@@ -672,7 +586,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Limit rotation on Z axis",
         default=False,
         options=set(),
-        update=make_event("use_limit_ang_z"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -684,7 +598,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_x_lower"),
+        update=event_rigid_body_constraint,
     )
 
     limit_lin_y_lower: bpy.props.FloatProperty(
@@ -695,7 +609,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_y_lower"),
+        update=event_rigid_body_constraint,
     )
 
     limit_lin_z_lower: bpy.props.FloatProperty(
@@ -706,7 +620,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_z_lower"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -718,7 +632,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_x_upper"),
+        update=event_rigid_body_constraint,
     )
 
     limit_lin_y_upper: bpy.props.FloatProperty(
@@ -729,7 +643,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_y_upper"),
+        update=event_rigid_body_constraint,
     )
 
     limit_lin_z_upper: bpy.props.FloatProperty(
@@ -740,7 +654,7 @@ class Bone(bpy.types.PropertyGroup):
         step=10,
         options=set(),
         unit='LENGTH',
-        update=make_event("limit_lin_z_upper"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -753,7 +667,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_x_lower"),
+        update=event_rigid_body_constraint,
     )
 
     limit_ang_y_lower: bpy.props.FloatProperty(
@@ -765,7 +679,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_y_lower"),
+        update=event_rigid_body_constraint,
     )
 
     limit_ang_z_lower: bpy.props.FloatProperty(
@@ -777,7 +691,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_z_lower"),
+        update=event_rigid_body_constraint,
     )
 
 
@@ -790,7 +704,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_x_upper"),
+        update=event_rigid_body_constraint,
     )
 
     limit_ang_y_upper: bpy.props.FloatProperty(
@@ -802,7 +716,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_y_upper"),
+        update=event_rigid_body_constraint,
     )
 
     limit_ang_z_upper: bpy.props.FloatProperty(
@@ -814,7 +728,7 @@ class Bone(bpy.types.PropertyGroup):
         options=set(),
         subtype='ANGLE',
         unit='ROTATION',
-        update=make_event("limit_ang_z_upper"),
+        update=event_rigid_body_constraint,
     )
 
 

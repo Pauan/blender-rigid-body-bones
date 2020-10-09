@@ -1,243 +1,177 @@
 import bpy
 from . import utils
-from . import bones
 from .bones import (
-    restore_bone_parent, store_bone_parent, remove_bone, initialize_bone,
-    align_bone, is_bone_enabled, is_bone_active, add_bone_objects,
-    fix_bone_duplicates, make_empty_rigid_body, make_blank_rigid_body,
-    remove_blank
+    active_name, align_constraint, align_hitbox, blank_name, constraint_name,
+    delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
+    make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
+    make_passive_hitbox, remove_active, remove_blank, remove_constraint,
+    remove_passive, store_parent, update_constraint, update_hitbox_name,
+    update_rigid_body, update_shape, passive_name
 )
 
 
-def show_hitboxes(collection, data):
-    if data.mode == 'EDIT':
-        collection.hide_viewport = True
-
-    else:
-        collection.hide_viewport = data.hide_hitboxes
+def show_collection(collection):
+    collection.hide_select = False
+    collection.hide_viewport = False
 
 
 def root_collection(context):
     scene = context.scene
 
-    root = scene.rigid_body_bones.collection
+    collection = scene.rigid_body_bones.collection
 
-    if not root:
-        root = utils.make_collection("RigidBodyBones", scene.collection)
-        root.hide_select = True
-        root.hide_render = True
-        scene.rigid_body_bones.collection = root
+    if not collection:
+        collection = utils.make_collection("RigidBodyBones", scene.collection)
+        collection.hide_render = True
+        scene.rigid_body_bones.collection = collection
 
-    return root
+    show_collection(collection)
+
+    return collection
 
 
-def container_collection(context, armature):
-    data = armature.data.rigid_body_bones
+def container_collection(context, armature, top):
+    collection = top.container
 
-    if not data.container:
+    name = armature.data.name + " [Container]"
+
+    if not collection:
         parent = root_collection(context)
-        data.container = utils.make_collection(armature.data.name + " [Container]", parent)
-        data.container.hide_render = True
+        collection = utils.make_collection(name, parent)
+        collection.hide_render = True
+        top.container = collection
 
-    return data.container
+    else:
+        collection.name = name
 
+    show_collection(collection)
 
-def constraints_collection(context, armature):
-    data = armature.data.rigid_body_bones
-
-    if not data.constraints:
-        parent = container_collection(context, armature)
-        data.constraints = utils.make_collection(armature.data.name + " [Joints]", parent)
-        data.constraints.hide_render = True
-        data.constraints.hide_viewport = True
-
-    return data.constraints
+    return collection
 
 
-def actives_collection(context, armature):
-    data = armature.data.rigid_body_bones
-
-    if not data.actives:
-        parent = container_collection(context, armature)
-        data.actives = utils.make_collection(armature.data.name + " [Actives]", parent)
-        data.actives.hide_render = True
-        show_hitboxes(data.actives, data)
-
-    return data.actives
+def child_collection(context, armature, top, name):
+    parent = container_collection(context, armature, top)
+    collection = utils.make_collection(name, parent)
+    collection.hide_render = True
+    return collection
 
 
-def passives_collection(context, armature):
-    data = armature.data.rigid_body_bones
+def actives_collection(context, armature, top):
+    collection = top.actives
 
-    if not data.passives:
-        parent = container_collection(context, armature)
-        data.passives = utils.make_collection(armature.data.name + " [Passives]", parent)
-        data.passives.hide_render = True
-        show_hitboxes(data.passives, data)
+    name = armature.data.name + " [Actives]"
 
-    return data.passives
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.actives = collection
 
+    else:
+        collection.name = name
 
-def blanks_collection(context, armature):
-    data = armature.data.rigid_body_bones
+    show_collection(collection)
 
-    if not data.blanks:
-        parent = container_collection(context, armature)
-        data.blanks = utils.make_collection(armature.data.name + " [Blanks]", parent)
-        data.blanks.hide_render = True
-        data.blanks.hide_viewport = True
-
-    return data.blanks
+    return collection
 
 
-def update_collections(armature, data):
-    name = armature.data.name
+def passives_collection(context, armature, top):
+    collection = top.passives
 
-    if data.container:
-        data.container.name = name + " [Container]"
+    name = armature.data.name + " [Passives]"
 
-    if data.actives:
-        data.actives.name = name + " [Actives]"
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.passives = collection
 
-    if data.passives:
-        data.passives.name = name + " [Passives]"
+    else:
+        collection.name = name
 
-    if data.blanks:
-        data.blanks.name = name + " [Blanks]"
+    show_collection(collection)
 
-    if data.constraints:
-        data.constraints.name = name + " [Joints]"
+    return collection
+
+
+def blanks_collection(context, armature, top):
+    collection = top.blanks
+
+    name = armature.data.name + " [Blanks]"
+
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.blanks = collection
+
+    else:
+        collection.name = name
+
+    show_collection(collection)
+
+    return collection
+
+
+def constraints_collection(context, armature, top):
+    collection = top.constraints
+
+    name = armature.data.name + " [Joints]"
+
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.constraints = collection
+
+    else:
+        collection.name = name
+
+    show_collection(collection)
+
+    return collection
 
 
 def remove_orphans(collection, exists):
-    if collection:
-        for object in collection.objects:
-            if object.name not in exists:
-                utils.remove_object(object)
+    for object in collection.objects:
+        if object.name not in exists:
+            utils.remove_object(object)
+
+    return utils.safe_remove_collection(collection)
 
 
-def make_root_body(context, armature, data):
-    if not data.root_body:
-        data.root_body = make_empty_rigid_body(
+def make_root_body(context, armature, top):
+    name = armature.data.name + " [Root]"
+
+    if not top.root_body:
+        top.root_body = make_empty_rigid_body(
             context,
-            name=armature.data.name + " [Root]",
-            collection=blanks_collection(context, armature),
+            name=name,
+            collection=blanks_collection(context, armature, top),
             parent=armature,
             parent_bone=None,
         )
 
-    return data.root_body
+    else:
+        top.root_body.name = name
+
+    return top.root_body
 
 
-def remove_root_body(data):
-    if data.root_body:
-        utils.remove_object(data.root_body)
-        data.property_unset("root_body")
+def remove_root_body(top):
+    if top.root_body:
+        utils.remove_object(top.root_body)
+        top.property_unset("root_body")
 
 
-def safe_remove_collections(context, armature):
-    data = armature.data.rigid_body_bones
-
-    if data.constraints and utils.safe_remove_collection(data.constraints):
-        data.property_unset("constraints")
-
-    if data.actives and utils.safe_remove_collection(data.actives):
-        data.property_unset("actives")
-
-    if data.passives and utils.safe_remove_collection(data.passives):
-        data.property_unset("passives")
-
-    if data.blanks and utils.safe_remove_collection(data.blanks):
-        data.property_unset("blanks")
-
-    if data.container and utils.safe_remove_collection(data.container):
-        data.property_unset("container")
-
-    root = context.scene.rigid_body_bones.collection
-
-    if root and utils.safe_remove_collection(root):
-        context.scene.rigid_body_bones.property_unset("collection")
-
-
-def store_parents(context, armature, data):
-    assert armature.mode != 'EDIT'
-
-    if not data.parents_stored:
-        data.parents_stored = True
-
-        active = set()
-
-        for bone in armature.data.bones:
-            if store_bone_parent(bone):
-                active.add(bone.name)
-
-            align_bone(armature, bone)
-
-        update_collections(armature, data)
-
-        # TODO if this triggers a mode_switch event then it can break everything
-        with utils.Mode(context, 'EDIT'):
-            for bone in armature.data.edit_bones:
-                if bone.name in active:
-                    bone.parent = None
-
-
-def restore_parents(context, armature, data):
-    if data.parents_stored:
-        data.property_unset("parents_stored")
-
-        # Fast O(1) lookup rather than O(n) lookup
-        # This converts an O(n^2) algorithm into an O(2n) algorithm
-        names = {}
-        datas = {}
-
-        # TODO if this triggers a mode_switch event then it can break everything
-        with utils.ModeCAS(context, 'EDIT', 'POSE'):
-            for bone in armature.data.bones:
-                restore_bone_parent(bone, names, datas)
-
-        # TODO if this triggers a mode_switch event then it can break everything
-        with utils.Mode(context, 'EDIT'):
-            edit_bones = armature.data.edit_bones
-
-            errors = []
-
-            for bone in edit_bones:
-                data = datas.get(bone.name)
-
-                if data is not None:
-                    (name, use_connect) = data
-
-                    if bone.parent is None:
-                        if name == "":
-                            bone.parent = None
-
-                        else:
-                            bone.parent = edit_bones[names[name]]
-
-                        bone.use_connect = use_connect
-
-                    else:
-                        errors.append((bone.name, name, bone.parent.name))
-
-            if len(errors) != 0:
-                for (name, old_parent, new_parent) in errors:
-                    utils.error("[{}] could not set parent to {} because it already has parent {}".format(name, old_parent, new_parent))
-
-
-def remove_bone_constraint(pose_bone):
+def remove_pose_constraint(pose_bone):
     constraint = pose_bone.constraints.get("Rigid Body Bones [Child Of]")
 
     if constraint is not None:
+        # TODO can this remove an index instead, to make it faster ?
         pose_bone.constraints.remove(constraint)
 
 
-def update_bone_constraint(pose_bone):
+def update_pose_constraint(pose_bone):
     index = None
     found = None
 
+    constraints = pose_bone.constraints
+
     # TODO can this be replaced with a collection method ?
-    for i, constraint in enumerate(pose_bone.constraints):
+    for i, constraint in enumerate(constraints):
         if constraint.name == "Rigid Body Bones [Child Of]":
             found = constraint
             index = i
@@ -246,246 +180,474 @@ def update_bone_constraint(pose_bone):
     data = pose_bone.bone.rigid_body_bones
 
     if is_bone_enabled(data) and is_bone_active(data):
-        hitbox = data.hitbox
+        hitbox = data.active
 
         assert hitbox is not None
 
         if found is None:
-            index = len(pose_bone.constraints)
-            found = pose_bone.constraints.new(type='CHILD_OF')
+            index = len(constraints)
+            found = constraints.new(type='CHILD_OF')
             found.name = "Rigid Body Bones [Child Of]"
-            # TODO verify that this properly sets the inverse
-            found.set_inverse_pending = True
+
+        # TODO verify that this properly sets the inverse
+        # TODO reset the locrotscale ?
+        found.set_inverse_pending = True
 
         assert index is not None
 
         if index != 0:
-            pose_bone.constraints.move(index, 0)
+            constraints.move(index, 0)
 
         found.target = hitbox
 
     elif found is not None:
-        pose_bone.constraints.remove(found)
+        # TODO can this remove an index instead, to make it faster ?
+        constraints.remove(found)
 
 
-# TODO non-recursive version ?
-def is_active_parent(bone, seen):
-    if bone is None:
-        return False
+class Update(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.update"
+    bl_label = "Update Rigid Body Bones"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'REGISTER', 'UNDO'}
 
-    else:
-        is_active = seen.get(bone.name)
 
-        if is_active is not None:
-            return is_active
+    def fix_duplicates(self, data):
+        duplicates = self.duplicates
 
-        else:
-            data = bone.rigid_body_bones
+        if data.active:
+            name = data.active.name
 
-            # Cannot use is_bone_enabled
-            if data.enabled and is_bone_active(data):
-                seen[bone.name] = True
-                return True
+            if name in duplicates:
+                data.property_unset("active")
 
             else:
-                is_active = is_active_parent(bone.parent, seen)
-                seen[bone.name] = is_active
-                return is_active
+                duplicates.add(name)
+
+        if data.passive:
+            name = data.passive.name
+
+            if name in duplicates:
+                data.property_unset("passive")
+
+            else:
+                duplicates.add(name)
+
+        if data.blank:
+            name = data.blank.name
+
+            if name in duplicates:
+                data.property_unset("blank")
+
+            else:
+                duplicates.add(name)
+
+        if data.constraint:
+            name = data.constraint.name
+
+            if name in duplicates:
+                data.property_unset("constraint")
+
+            else:
+                duplicates.add(name)
 
 
-def check_bone_error(bone, data, seen):
-    is_active = is_active_parent(bone.parent, seen)
-    seen[bone.name] = is_active
-
-    if is_active:
-        data.error = 'ACTIVE_PARENT'
-
-    else:
-        data.property_unset("error")
-
-    return is_active
-
-
-def update_bone_error(context, armature, bone, seen):
-    data = bone.rigid_body_bones
-
-    # Cannot use is_bone_enabled
-    if data.enabled:
-        if is_bone_active(data):
-            seen[bone.name] = True
-            data.property_unset("error")
-            # This is needed to initialize duplicates
-            initialize_bone(context, armature, bone)
+    # TODO non-recursive version ?
+    def is_active_parent(self, bone):
+        if bone is None:
             return False
 
         else:
-            is_error = check_bone_error(bone, data, seen)
+            is_active = self.active_cache.get(bone.name)
 
-            if is_error:
-                remove_bone(bone)
+            if is_active is not None:
+                return is_active
 
             else:
-                initialize_bone(context, armature, bone)
+                data = bone.rigid_body_bones
 
-            return is_error
-
-    else:
-        return check_bone_error(bone, data, seen)
-
-
-@utils.armature_event("change_parents")
-def event_change_parents(context, armature, data):
-    if not data.enabled or armature.mode == 'EDIT':
-        restore_parents(context, armature, data)
-
-    else:
-        store_parents(context, armature, data)
-
-
-@utils.armature_event("update_errors")
-def event_update_errors(context, armature, data):
-    if armature.mode != 'EDIT':
-        seen = {}
-
-        data.errors.clear()
-
-        for bone in armature.data.bones:
-            if update_bone_error(context, armature, bone, seen):
-                error = data.errors.add()
-                error.name = bone.name
-
-
-@utils.armature_event("update_constraints")
-def event_update_constraints(context, armature, data):
-    if data.enabled:
-        if armature.mode != 'EDIT':
-            # Create/update/remove Child Of constraints
-            for pose_bone in armature.pose.bones:
-                update_bone_constraint(pose_bone)
-
-    else:
-        # Remove Child Of constraints
-        for pose_bone in armature.pose.bones:
-            remove_bone_constraint(pose_bone)
-
-
-@utils.armature_event("hide_active_bones")
-def event_hide_active_bones(context, armature, data):
-    with utils.ModeCAS(context, 'EDIT', 'POSE'):
-        armature_enabled = data.enabled and data.hide_active_bones
-
-        for bone in armature.data.bones:
-            data = bone.rigid_body_bones
-
-            if armature_enabled and is_bone_enabled(data) and is_bone_active(data):
-                data.is_hidden = bone.hide
-                bone.hide = True
-
-            elif data.is_property_set("is_hidden"):
-                bone.hide = data.is_hidden
-                data.property_unset("is_hidden")
-
-
-@utils.armature_event("hide_hitboxes")
-def event_hide_hitboxes(context, armature, data):
-    if data.actives:
-        show_hitboxes(data.actives, data)
-
-    if data.passives:
-        show_hitboxes(data.passives, data)
-
-
-@utils.armature_event("enabled")
-def event_enabled(context, armature, data):
-    with utils.ModeCAS(context, 'EDIT', 'POSE'):
-        if data.enabled:
-            for bone in armature.data.bones:
-                initialize_bone(context, armature, bone)
-
-        else:
-            for bone in armature.data.bones:
-                remove_bone(bone)
-
-            remove_root_body(data)
-            safe_remove_collections(context, armature)
-
-
-@utils.armature_event("fix_duplicates")
-def event_fix_duplicates(context, armature, data):
-    if data.enabled and armature.mode != 'EDIT':
-        seen = set()
-
-        for bone in armature.data.bones:
-            fix_bone_duplicates(context, armature, bone, seen)
-
-
-@utils.armature_event("update_joints")
-def event_update_joints(context, armature, data):
-    if data.enabled and armature.mode != 'EDIT':
-        has_root = False
-
-        mapping = {}
-
-        for bone in armature.data.bones:
-            bone_data = bone.rigid_body_bones
-
-            assert bone_data.is_property_set("name")
-            mapping[bone_data.name] = bone
-
-            # TODO make this more efficient
-            remove_blank(bone_data)
-
-        for bone in armature.data.bones:
-            bone_data = bone.rigid_body_bones
-
-            if is_bone_enabled(bone_data) and is_bone_active(bone_data):
-                assert bone_data.hitbox is not None
-                assert bone_data.is_property_set("parent")
-
-                constraint = bone_data.constraint.rigid_body_constraint
-
-                if bone_data.parent == "":
-                    has_root = True
-                    constraint.object1 = make_root_body(context, armature, data)
+                # Cannot use is_bone_enabled
+                if data.enabled and is_bone_active(data):
+                    self.active_cache[bone.name] = True
+                    return True
 
                 else:
-                    parent = mapping[bone_data.parent]
-                    parent_data = parent.rigid_body_bones
+                    is_active = self.is_active_parent(bone.parent)
+                    self.active_cache[bone.name] = is_active
+                    return is_active
 
-                    if parent_data.error == "":
-                        if is_bone_enabled(parent_data):
-                            assert parent_data.hitbox is not None
-                            constraint.object1 = parent_data.hitbox
 
-                        else:
-                            constraint.object1 = make_blank_rigid_body(context, armature, parent, parent_data)
+    def update_error(self, top, bone, data):
+        # Cannot use is_bone_enabled
+        if data.enabled and is_bone_active(data):
+            self.active_cache[bone.name] = True
+            data.property_unset("error")
+
+        else:
+            is_active = self.is_active_parent(bone.parent)
+            self.active_cache[bone.name] = is_active
+
+            if is_active:
+                data.error = 'ACTIVE_PARENT'
+                error = top.errors.add()
+                error.name = bone.name
+
+            else:
+                data.property_unset("error")
+
+
+    def process_parent(self, armature, top, bone, data):
+        if data.is_property_set("parent"):
+            assert data.is_property_set("name")
+            assert data.is_property_set("use_connect")
+
+            self.names[data.name] = bone.name
+            self.bones[data.name] = bone
+
+            if top.enabled and not self.is_edit_mode and is_bone_enabled(data) and is_bone_active(data):
+                self.remove_parents.add(bone.name)
+
+            elif bone.parent is None:
+                self.restore_parents[bone.name] = (data.parent, data.use_connect)
+
+
+    def hide_active(self, top, bone, data):
+        hide_active_bone(bone, data, top.enabled and top.hide_active_bones)
+
+
+    def update_bone(self, context, armature, top, bone, data):
+        # TODO figure out a way to not always remove blanks
+        remove_blank(data)
+
+        if top.enabled and is_bone_enabled(data):
+            if is_bone_active(data):
+                remove_passive(data)
+
+                if not data.active:
+                    collection = actives_collection(context, armature, top)
+                    data.active = make_active_hitbox(context, armature, collection, bone, data)
+
+                else:
+                    update_hitbox_name(data.active, active_name(bone))
+
+                if not data.constraint:
+                    collection = constraints_collection(context, armature, top)
+                    data.constraint = make_constraint(context, armature, collection, bone, data)
+
+                else:
+                    data.constraint.name = constraint_name(bone)
+
+                align_hitbox(data.active, bone, data)
+                update_shape(data.active, type=data.collision_shape)
+                update_rigid_body(data.active.rigid_body, data)
+
+                align_constraint(data.constraint, bone)
+                update_constraint(data.constraint.rigid_body_constraint, data)
+
+                self.exists.add(data.active.name)
+                self.exists.add(data.constraint.name)
+
+            else:
+                remove_active(data)
+                remove_constraint(data)
+
+                if not data.passive:
+                    collection = passives_collection(context, armature, top)
+                    data.passive = make_passive_hitbox(context, armature, collection, bone, data)
+
+                else:
+                    update_hitbox_name(data.passive, passive_name(bone))
+
+                align_hitbox(data.passive, bone, data)
+                update_shape(data.passive, type=data.collision_shape)
+                update_rigid_body(data.passive.rigid_body, data)
+
+                self.exists.add(data.passive.name)
+
+        else:
+            remove_active(data)
+            remove_passive(data)
+            remove_constraint(data)
+
+
+    def fix_parents(self, armature, top, bone, data):
+        if self.store_parents:
+            store_parent(bone, data)
+
+        self.process_parent(armature, top, bone, data)
+
+        if self.delete_parents:
+            delete_parent(data)
+
+
+    def process_bone(self, context, armature, top, bone):
+        data = bone.rigid_body_bones
+
+        self.update_error(top, bone, data)
+
+        self.fix_duplicates(data)
+
+        self.update_bone(context, armature, top, bone, data)
+
+        self.fix_parents(armature, top, bone, data)
+
+        self.hide_active(top, bone, data)
+
+
+    def update_joint(self, context, armature, top, bone):
+        data = bone.rigid_body_bones
+
+        if is_bone_enabled(data) and is_bone_active(data):
+            assert data.active is not None
+            assert data.is_property_set("parent")
+
+            constraint = data.constraint.rigid_body_constraint
+
+            if data.parent == "":
+                self.has_root_body = True
+                constraint.object1 = make_root_body(context, armature, top)
+
+            else:
+                parent = self.bones[data.parent]
+                parent_data = parent.rigid_body_bones
+
+                if parent_data.error == "":
+                    if is_bone_enabled(parent_data):
+                        hitbox = get_hitbox(parent_data)
+                        assert hitbox is not None
+                        constraint.object1 = hitbox
 
                     else:
-                        constraint.object1 = None
+                        if not parent_data.blank:
+                            collection = blanks_collection(context, armature, top)
+                            parent_data.blank = make_blank_rigid_body(context, armature, collection, parent, parent_data)
 
-                constraint.object2 = bone_data.hitbox
+                        else:
+                            parent_data.blank.name = blank_name(parent)
 
-        if not has_root:
-            remove_root_body(data)
+                        self.exists.add(parent_data.blank.name)
+                        constraint.object1 = parent_data.blank
 
-        safe_remove_collections(context, armature)
+                else:
+                    constraint.object1 = None
+
+            constraint.object2 = data.active
 
 
-@utils.armature_event("remove_orphans")
-def event_remove_orphans(context, armature, data):
-    with utils.ModeCAS(context, 'EDIT', 'POSE'):
-        exists = set()
+    def update_constraints(self, context, armature, top):
+        if top.enabled:
+            # Create/update/remove Child Of constraints
+            for pose_bone in armature.pose.bones:
+                update_pose_constraint(pose_bone)
+                self.update_joint(context, armature, top, pose_bone.bone)
 
-        for bone in armature.data.bones:
-            add_bone_objects(bone, exists)
+        else:
+            # Remove Child Of constraints
+            for pose_bone in armature.pose.bones:
+                remove_pose_constraint(pose_bone)
 
-        if data.root_body:
-            exists.add(data.root_body.name)
+        if self.has_root_body:
+            self.exists.add(top.root_body.name)
 
-        remove_orphans(data.constraints, exists)
-        remove_orphans(data.actives, exists)
-        remove_orphans(data.passives, exists)
-        remove_orphans(data.blanks, exists)
-        # TODO is this a good idea ?
-        remove_orphans(data.container, exists)
-        safe_remove_collections(context, armature)
+        else:
+            remove_root_body(top)
+
+
+    def change_parents(self, context, armature):
+        edit_bones = armature.data.edit_bones
+
+        for edit_bone in edit_bones:
+            name = edit_bone.name
+            data = self.restore_parents.get(name)
+
+            # Restore parent
+            if data is not None:
+                (parent_name, use_connect) = data
+
+                assert edit_bone.parent is None
+
+                if parent_name != "":
+                    edit_bone.parent = edit_bones[self.names[parent_name]]
+
+                edit_bone.use_connect = use_connect
+
+            # Remove parent
+            elif name in self.remove_parents:
+                edit_bone.parent = None
+
+
+    def update_hitboxes(self, top, collection):
+        show_collection(collection)
+
+        collection.hide_viewport = top.hide_hitboxes
+
+
+    # This cleans up any objects which are left behind after a bone
+    # has been deleted.
+    #
+    # The calls to show_collection are needed in order to cause
+    # Blender to update the rigid body simulation.
+    def after_bones(self, context, armature, top):
+        exists = self.exists
+
+
+        if top.actives:
+            if remove_orphans(top.actives, exists):
+                top.property_unset("actives")
+
+            else:
+                self.update_hitboxes(top, top.actives)
+
+
+        if top.passives:
+            if remove_orphans(top.passives, exists):
+                top.property_unset("passives")
+
+            else:
+                self.update_hitboxes(top, top.passives)
+
+
+        if top.blanks:
+            if remove_orphans(top.blanks, exists):
+                top.property_unset("blanks")
+
+            else:
+                show_collection(top.blanks)
+                top.blanks.hide_viewport = True
+
+
+        if top.constraints:
+            if remove_orphans(top.constraints, exists):
+                top.property_unset("constraints")
+
+            else:
+                show_collection(top.constraints)
+                top.constraints.hide_viewport = True
+
+
+        if top.container:
+            if remove_orphans(top.container, exists):
+                top.property_unset("container")
+
+            else:
+                show_collection(top.container)
+
+
+        scene = context.scene.rigid_body_bones
+
+        if scene.collection:
+            if utils.safe_remove_collection(scene.collection):
+                scene.property_unset("collection")
+
+            else:
+                show_collection(scene.collection)
+                scene.collection.hide_select = True
+
+
+        # Not safe to access bones after changing mode
+        self.bones = None
+
+
+    def process_edit(self, context, armature, top):
+        for pose_bone in armature.pose.bones:
+            bone = pose_bone.bone
+            data = bone.rigid_body_bones
+
+            remove_pose_constraint(pose_bone)
+
+            self.fix_parents(armature, top, bone, data)
+
+        if top.actives:
+            top.actives.hide_viewport = True
+
+        if top.passives:
+            top.passives.hide_viewport = True
+
+
+    def process_pose(self, context, armature, top):
+        with utils.Selected(context):
+            top.errors.clear()
+
+            for bone in armature.data.bones:
+                self.process_bone(context, armature, top, bone)
+
+            self.update_constraints(context, armature, top)
+
+            self.after_bones(context, armature, top)
+
+
+    @classmethod
+    def poll(cls, context):
+        return utils.is_armature(context)
+
+
+    def execute(self, context):
+        armature = context.active_object
+        top = armature.data.rigid_body_bones
+
+
+        # Fast lookup for stored bone names -> new name
+        self.names = {}
+
+        # Fast lookup for stored bone names -> bone
+        self.bones = {}
+
+        # Data for bones which should have their parent restored
+        self.restore_parents = {}
+
+        # Names of bones which should have their parent removed
+        self.remove_parents = set()
+
+        # Whether to destructively delete/store the bone parent data
+        self.delete_parents = False
+        self.store_parents = False
+
+        self.is_edit_mode = (top.mode == 'EDIT')
+
+
+        if self.is_edit_mode or not top.enabled:
+            if top.parents_stored:
+                top.property_unset("parents_stored")
+                self.delete_parents = True
+
+        else:
+            if not top.parents_stored:
+                top.parents_stored = True
+                self.store_parents = True
+
+
+        if self.is_edit_mode:
+            assert armature.mode == 'EDIT'
+
+            # TODO if this triggers a mode_switch event then it can break everything
+            with utils.Mode(context, 'POSE'):
+                self.process_edit(context, armature, top)
+
+            self.change_parents(context, armature)
+
+
+        else:
+            assert armature.mode != 'EDIT'
+
+
+            # Names of objects which exist
+            self.exists = set()
+
+            # Names of objects for testing for duplicates
+            self.duplicates = set()
+
+            # Cache of whether a bone has an active parent or not
+            self.active_cache = {}
+
+            # Whether the root body should exist or not
+            self.has_root_body = False
+
+
+            self.process_pose(context, armature, top)
+
+            # TODO if this triggers a mode_switch event then it can break everything
+            with utils.Mode(context, 'EDIT'):
+                self.change_parents(context, armature)
+
+
+        return {'FINISHED'}
