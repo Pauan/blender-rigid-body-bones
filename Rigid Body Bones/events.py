@@ -11,6 +11,10 @@ def simplify_modes(mode):
         return 'POSE'
 
 
+def event_dirty(self, context):
+    mark_dirty()
+
+
 @utils.event("update")
 def event_update(context):
     bpy.ops.rigid_body_bones.update()
@@ -86,34 +90,39 @@ def event_hide_active_bones(context, armature, top):
         bones.hide_active_bone(bone, data, top.hide_active_bones)
 
 
-def event_dirty(self, context):
-    global dirty
-    dirty = True
-
-
 dirty = False
-timer_delay = 0.1
 
-def timer():
+
+# This is used to run the update operator during the next
+# main event tick.
+#
+# It also causes multiple update operations to be batched
+# into one operation, which makes Alt updating work correctly.
+def mark_dirty():
     global dirty
 
-    if dirty:
-        context = bpy.context
+    if not dirty:
+        dirty = True
+        bpy.app.timers.register(next_tick)
 
-        armature = context.active_object
 
-        if armature and armature.type == 'ARMATURE':
-            dirty = False
-            event_update(None, context)
+def next_tick():
+    global dirty
 
-    return timer_delay
+    dirty = False
+
+    context = bpy.context
+    armature = context.active_object
+
+    # TODO what if the active object changed before it was ready ?
+    if armature and armature.type == 'ARMATURE':
+        event_update(None, context)
 
 
 def mode_switch():
     global dirty
 
     context = bpy.context
-
     armature = context.active_object
 
     if armature and armature.type == 'ARMATURE':
@@ -123,8 +132,7 @@ def mode_switch():
 
         if top.mode != mode:
             top.mode = mode
-            #dirty = True
-            event_update(None, context)
+            mark_dirty()
 
 
 owner = object()
@@ -154,20 +162,12 @@ def register():
 
     register_subscribers()
 
-    # This is used to run the event_update function asynchronously,
-    # during the main event loop.
-    bpy.app.timers.register(
-        timer,
-        first_interval=timer_delay,
-        persistent=True,
-    )
-
 
 def unregister():
     utils.debug("UNREGISTER EVENTS")
 
-    if bpy.app.timers.is_registered(timer):
-        bpy.app.timers.unregister(timer)
+    if bpy.app.timers.is_registered(next_tick):
+        bpy.app.timers.unregister(next_tick)
 
     if load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post)
