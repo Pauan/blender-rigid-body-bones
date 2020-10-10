@@ -189,18 +189,23 @@ def update_constraint(constraint, data):
     constraint.use_limit_ang_x = data.use_limit_ang_x
     constraint.use_limit_ang_y = data.use_limit_ang_y
     constraint.use_limit_ang_z = data.use_limit_ang_z
+
     constraint.limit_lin_x_lower = data.limit_lin_x_lower
     constraint.limit_lin_y_lower = data.limit_lin_y_lower
     constraint.limit_lin_z_lower = data.limit_lin_z_lower
     constraint.limit_lin_x_upper = data.limit_lin_x_upper
     constraint.limit_lin_y_upper = data.limit_lin_y_upper
     constraint.limit_lin_z_upper = data.limit_lin_z_upper
-    constraint.limit_ang_x_lower = data.limit_ang_x_lower
-    constraint.limit_ang_y_lower = data.limit_ang_y_lower
-    constraint.limit_ang_z_lower = data.limit_ang_z_lower
-    constraint.limit_ang_x_upper = data.limit_ang_x_upper
-    constraint.limit_ang_y_upper = data.limit_ang_y_upper
-    constraint.limit_ang_z_upper = data.limit_ang_z_upper
+
+    # For some strange reason, Blender flips the min/max for the angular limits
+    constraint.limit_ang_x_lower = -data.limit_ang_x_upper
+    constraint.limit_ang_x_upper = -data.limit_ang_x_lower
+
+    constraint.limit_ang_y_lower = -data.limit_ang_y_upper
+    constraint.limit_ang_y_upper = -data.limit_ang_y_lower
+
+    constraint.limit_ang_z_lower = -data.limit_ang_z_upper
+    constraint.limit_ang_z_upper = -data.limit_ang_z_lower
 
 
 def align_constraint(constraint, bone):

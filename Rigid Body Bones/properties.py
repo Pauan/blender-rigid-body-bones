@@ -189,7 +189,7 @@ class Bone(bpy.types.PropertyGroup):
             ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
             ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
             ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
-            ('CONE', "Cone", "", "MESH_CONE", 4),
+            #('CONE', "Cone", "", "MESH_CONE", 4),
             #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", "MESH_ICOSPHERE", 5),
             #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", "MESH_MONKEY", 6),
         ],
