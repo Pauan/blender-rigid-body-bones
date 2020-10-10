@@ -120,6 +120,7 @@ def next_tick():
 
             if dirty.armature:
                 utils.select_active(context, dirty.armature)
+                assert context.active_object.name == dirty.armature.name
                 bpy.ops.rigid_body_bones.update()
 
     scene.dirties.clear()

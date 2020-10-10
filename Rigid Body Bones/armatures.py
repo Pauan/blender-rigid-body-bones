@@ -240,7 +240,6 @@ class Update(bpy.types.Operator):
             assert data.is_property_set("use_connect")
 
             self.names[data.name] = bone.name
-            self.bones[data.name] = bone
 
             # Can't use is_bone_enabled because this runs before update_error
             if top.enabled and not self.is_edit_mode and data.enabled and is_bone_active(data):
@@ -252,6 +251,29 @@ class Update(bpy.types.Operator):
 
     def hide_active(self, top, bone, data):
         hide_active_bone(bone, data, top.enabled and top.hide_active_bones)
+
+
+    def update_active_constraint(self, context, armature, top, bone, data):
+        assert data.is_property_set("parent")
+
+        constraint = data.constraint.rigid_body_constraint
+
+        constraint.object2 = data.active
+
+        if data.parent == "":
+            self.has_root_body = True
+            constraint.object1 = make_root_body(context, armature, top)
+
+        # Will be processed later, by update_joint
+        else:
+            parent = self.active_children.get(data.parent)
+
+            if parent is None:
+                parent = []
+                self.active_children[data.parent] = parent
+
+            # TODO is this safe if a reallocation happens ?
+            parent.append(constraint)
 
 
     def update_bone(self, context, armature, top, bone, data):
@@ -279,6 +301,8 @@ class Update(bpy.types.Operator):
 
                 align_constraint(data.constraint, bone)
                 update_constraint(data.constraint.rigid_body_constraint, data)
+
+                self.update_active_constraint(context, armature, top, bone, data)
 
                 self.exists.add(data.active.name)
                 self.exists.add(data.constraint.name)
@@ -331,41 +355,46 @@ class Update(bpy.types.Operator):
     def update_joint(self, context, armature, top, bone):
         data = bone.rigid_body_bones
 
-        if is_bone_enabled(data) and is_bone_active(data):
-            assert data.active is not None
-            assert data.is_property_set("parent")
+        assert data.is_property_set("name")
 
-            constraint = data.constraint.rigid_body_constraint
+        children = self.active_children.get(data.name)
 
-            if data.parent == "":
-                self.has_root_body = True
-                constraint.object1 = make_root_body(context, armature, top)
+        if children:
+            if is_bone_enabled(data):
+                remove_blank(data)
 
-            else:
-                parent = self.bones[data.parent]
-                parent_data = parent.rigid_body_bones
+                hitbox = get_hitbox(data)
 
-                if parent_data.error == "":
-                    if is_bone_enabled(parent_data):
-                        hitbox = get_hitbox(parent_data)
-                        assert hitbox is not None
-                        constraint.object1 = hitbox
+                assert hitbox is not None
 
-                    else:
-                        if not parent_data.blank:
-                            collection = blanks_collection(context, armature, top)
-                            parent_data.blank = make_blank_rigid_body(context, armature, collection, parent, parent_data)
+                for constraint in children:
+                    constraint.object1 = hitbox
 
-                        else:
-                            parent_data.blank.name = blank_name(parent)
+            elif data.error != "":
+                remove_blank(data)
 
-                        self.exists.add(parent_data.blank.name)
-                        constraint.object1 = parent_data.blank
-
-                else:
+                # This is needed in order to avoid cyclic dependencies with invalid Passives
+                for constraint in children:
                     constraint.object1 = None
 
-            constraint.object2 = data.active
+            else:
+                blank = data.blank
+
+                if not blank:
+                    collection = blanks_collection(context, armature, top)
+                    blank = make_blank_rigid_body(context, armature, collection, bone, data)
+                    data.blank = blank
+
+                else:
+                    blank.name = blank_name(bone)
+
+                self.exists.add(blank.name)
+
+                for constraint in children:
+                    constraint.object1 = blank
+
+        else:
+            remove_blank(data)
 
 
     def update_constraints(self, context, armature, top):
@@ -379,6 +408,7 @@ class Update(bpy.types.Operator):
             # Remove Child Of constraints
             for pose_bone in armature.pose.bones:
                 remove_pose_constraint(pose_bone)
+                remove_blank(pose_bone.bone.rigid_body_bones)
 
         if self.has_root_body:
             self.exists.add(top.root_body.name)
@@ -472,28 +502,27 @@ class Update(bpy.types.Operator):
 
         for bone in armature.data.bones:
             data = bone.rigid_body_bones
-
             self.fix_parents(armature, top, bone, data)
 
-            # TODO figure out a way to not always remove blanks
-            remove_blank(data)
+
+        # This must happen before process_bone
+        with utils.Mode(context, 'EDIT'):
+            self.change_parents(context, armature)
 
 
-        for pose_bone in armature.pose.bones:
-            bone = pose_bone.bone
+        for bone in armature.data.bones:
             self.process_bone(context, armature, top, bone)
 
+
+        self.update_constraints(context, armature, top)
+
+        self.remove_orphans(context, armature, top)
 
         if top.actives:
             top.actives.hide_viewport = top.hide_hitboxes
 
         if top.passives:
             top.passives.hide_viewport = top.hide_hitboxes
-
-
-        self.update_constraints(context, armature, top)
-
-        self.remove_orphans(context, armature, top)
 
 
     @classmethod
@@ -509,9 +538,6 @@ class Update(bpy.types.Operator):
         # Fast lookup for stored bone names -> new name
         self.names = {}
 
-        # Fast lookup for stored bone names -> bone
-        self.bones = {}
-
         # Data for bones which should have their parent restored
         self.restore_parents = {}
 
@@ -525,16 +551,18 @@ class Update(bpy.types.Operator):
         self.is_edit_mode = (top.mode == 'EDIT')
 
 
-        if self.is_edit_mode or not top.enabled:
+        if self.is_edit_mode:
             assert armature.mode == 'EDIT'
+        else:
+            assert armature.mode != 'EDIT'
 
+
+        if self.is_edit_mode or not top.enabled:
             if top.parents_stored:
                 top.property_unset("parents_stored")
                 self.delete_parents = True
 
         else:
-            assert armature.mode != 'EDIT'
-
             if not top.parents_stored:
                 top.parents_stored = True
                 self.store_parents = True
@@ -547,6 +575,9 @@ class Update(bpy.types.Operator):
             self.change_parents(context, armature)
 
         else:
+            # Fast lookup for stored bone names -> list of active children
+            self.active_children = {}
+
             # Names of objects which exist
             self.exists = set()
 
@@ -560,9 +591,6 @@ class Update(bpy.types.Operator):
             self.has_root_body = False
 
             self.process_pose(context, armature, top)
-
-            with utils.Mode(context, 'EDIT'):
-                self.change_parents(context, armature)
 
 
         return {'FINISHED'}
