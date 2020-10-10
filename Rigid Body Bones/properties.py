@@ -5,7 +5,12 @@ from .events import (
 )
 
 
+class Dirty(bpy.types.PropertyGroup):
+    armature: bpy.props.PointerProperty(type=bpy.types.Object)
+
+
 class Scene(bpy.types.PropertyGroup):
+    dirties: bpy.props.CollectionProperty(type=Dirty)
     collection: bpy.props.PointerProperty(type=bpy.types.Collection)
 
     @classmethod

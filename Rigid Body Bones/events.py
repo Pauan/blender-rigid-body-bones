@@ -12,12 +12,7 @@ def simplify_modes(mode):
 
 
 def event_dirty(self, context):
-    mark_dirty()
-
-
-@utils.event("update")
-def event_update(context):
-    bpy.ops.rigid_body_bones.update()
+    mark_dirty(context)
 
 
 @utils.event("rigid_body")
@@ -90,49 +85,58 @@ def event_hide_active_bones(context, armature, top):
         bones.hide_active_bone(bone, data, top.hide_active_bones)
 
 
-dirty = False
-
-
 # This is used to run the update operator during the next
 # main event tick.
 #
 # It also causes multiple update operations to be batched
 # into one operation, which makes Alt updating work correctly.
-def mark_dirty():
-    global dirty
+def mark_dirty(context):
+    assert utils.is_armature(context)
 
-    if not dirty:
-        dirty = True
+    armature = context.active_object
+    scene = context.scene.rigid_body_bones
+
+    # Don't add duplicate objects
+    for dirty in scene.dirties:
+        print(dirty.armature)
+
+        if dirty.armature and dirty.armature.name == armature.name:
+            return
+
+    dirty = scene.dirties.add()
+    dirty.armature = armature
+
+    if len(scene.dirties) > 0:
         bpy.app.timers.register(next_tick)
 
 
 def next_tick():
-    global dirty
-
-    dirty = False
-
     context = bpy.context
-    armature = context.active_object
+    scene = context.scene.rigid_body_bones
 
-    # TODO what if the active object changed before it was ready ?
-    if armature and armature.type == 'ARMATURE':
-        event_update(None, context)
+    with utils.Selected(context):
+        for dirty in scene.dirties:
+            print("UPDATE", dirty.armature)
+
+            if dirty.armature:
+                utils.select_active(context, dirty.armature)
+                bpy.ops.rigid_body_bones.update()
+
+    scene.dirties.clear()
 
 
 def mode_switch():
-    global dirty
-
     context = bpy.context
-    armature = context.active_object
 
-    if armature and armature.type == 'ARMATURE':
+    if utils.is_armature(context):
+        armature = context.active_object
         top = armature.data.rigid_body_bones
 
         mode = simplify_modes(armature.mode)
 
         if top.mode != mode:
             top.mode = mode
-            mark_dirty()
+            mark_dirty(context)
 
 
 owner = object()

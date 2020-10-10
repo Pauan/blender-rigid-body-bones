@@ -141,6 +141,8 @@ def remove_root_body(top):
         top.property_unset("root_body")
 
 
+# This must be an operator, because it creates/destroys data blocks (e.g. objects).
+# It must run asynchronously, in a separate tick. This is handled by `events.mark_dirty`.
 class Update(bpy.types.Operator):
     bl_idname = "rigid_body_bones.update"
     bl_label = "Update Rigid Body Bones"
@@ -240,7 +242,8 @@ class Update(bpy.types.Operator):
             self.names[data.name] = bone.name
             self.bones[data.name] = bone
 
-            if top.enabled and not self.is_edit_mode and is_bone_enabled(data) and is_bone_active(data):
+            # Can't use is_bone_enabled because this runs before update_error
+            if top.enabled and not self.is_edit_mode and data.enabled and is_bone_active(data):
                 self.remove_parents.add(bone.name)
 
             elif bone.parent is None:
@@ -252,9 +255,6 @@ class Update(bpy.types.Operator):
 
 
     def update_bone(self, context, armature, top, bone, data):
-        # TODO figure out a way to not always remove blanks
-        remove_blank(data)
-
         if top.enabled and is_bone_enabled(data):
             if is_bone_active(data):
                 remove_passive(data)
@@ -323,9 +323,9 @@ class Update(bpy.types.Operator):
 
         self.fix_duplicates(data)
 
-        self.fix_parents(armature, top, bone, data)
-
         self.hide_active(top, bone, data)
+
+        self.update_bone(context, armature, top, bone, data)
 
 
     def update_joint(self, context, armature, top, bone):
@@ -412,9 +412,8 @@ class Update(bpy.types.Operator):
 
     # This cleans up any objects which are left behind after a bone
     # has been deleted.
-    def after_bones(self, context, armature, top):
+    def remove_orphans(self, context, armature, top):
         exists = self.exists
-
 
         if top.actives and remove_orphans(top.actives, exists):
             top.property_unset("actives")
@@ -442,16 +441,11 @@ class Update(bpy.types.Operator):
                 scene.collection.hide_select = True
 
 
-        # Not safe to access bones after changing mode
-        self.bones = None
-
-
     def process_edit(self, context, armature, top):
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones
 
-            # TODO is this allowed in an update handler ?
             remove_pose_constraint(pose_bone)
 
             self.fix_parents(armature, top, bone, data)
@@ -466,8 +460,29 @@ class Update(bpy.types.Operator):
     def process_pose(self, context, armature, top):
         top.errors.clear()
 
+
+        scene = context.scene.rigid_body_bones
+
+        # This is needed in order to select the objects,
+        # otherwise it's not possible to add rigid bodies
+        # to them.
+        if scene.collection:
+            scene.collection.hide_select = False
+
+
         for bone in armature.data.bones:
+            data = bone.rigid_body_bones
+
+            self.fix_parents(armature, top, bone, data)
+
+            # TODO figure out a way to not always remove blanks
+            remove_blank(data)
+
+
+        for pose_bone in armature.pose.bones:
+            bone = pose_bone.bone
             self.process_bone(context, armature, top, bone)
+
 
         if top.actives:
             top.actives.hide_viewport = top.hide_hitboxes
@@ -475,22 +490,10 @@ class Update(bpy.types.Operator):
         if top.passives:
             top.passives.hide_viewport = top.hide_hitboxes
 
-        with utils.Selected(context):
-            scene = context.scene.rigid_body_bones
 
-            # This is needed in order to select the objects,
-            # otherwise it's not possible to add rigid bodies
-            # to them.
-            if scene.collection:
-                scene.collection.hide_select = False
+        self.update_constraints(context, armature, top)
 
-            for bone in armature.data.bones:
-                data = bone.rigid_body_bones
-                self.update_bone(context, armature, top, bone, data)
-
-            self.update_constraints(context, armature, top)
-
-            self.after_bones(context, armature, top)
+        self.remove_orphans(context, armature, top)
 
 
     @classmethod
@@ -523,30 +526,27 @@ class Update(bpy.types.Operator):
 
 
         if self.is_edit_mode or not top.enabled:
+            assert armature.mode == 'EDIT'
+
             if top.parents_stored:
                 top.property_unset("parents_stored")
                 self.delete_parents = True
 
         else:
+            assert armature.mode != 'EDIT'
+
             if not top.parents_stored:
                 top.parents_stored = True
                 self.store_parents = True
 
 
         if self.is_edit_mode:
-            assert armature.mode == 'EDIT'
-
-            # TODO if this triggers a mode_switch event then it can break everything
             with utils.Mode(context, 'POSE'):
                 self.process_edit(context, armature, top)
 
             self.change_parents(context, armature)
 
-
         else:
-            assert armature.mode != 'EDIT'
-
-
             # Names of objects which exist
             self.exists = set()
 
@@ -559,10 +559,8 @@ class Update(bpy.types.Operator):
             # Whether the root body should exist or not
             self.has_root_body = False
 
-
             self.process_pose(context, armature, top)
 
-            # TODO if this triggers a mode_switch event then it can break everything
             with utils.Mode(context, 'EDIT'):
                 self.change_parents(context, armature)
 

@@ -6,7 +6,7 @@
 # TODO support convex hull and mesh shapes
 # TODO FIXED and RAGDOLL types
 
-# TODO verify that the simulation is updated properly when moving bones around/changing settings (it might need to use Viewable)
+# TODO fix the error handling code (e.g. changing Active -> Passive, or having an Active -> None -> Active chain)
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -29,6 +29,7 @@ from . import properties
 from . import utils
 
 classes = (
+    properties.Dirty,
     properties.Scene,
     properties.Error,
     properties.Armature,
