@@ -180,24 +180,24 @@ class LimitsRotatePanel(bpy.types.Panel):
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_x
-        sub.prop(data, "limit_ang_x_lower", text="X Lower")
-        sub.prop(data, "limit_ang_x_upper", text="Upper")
+        sub.prop(data, "limit_ang_x_lower", text="X Min")
+        sub.prop(data, "limit_ang_x_upper", text="Max")
 
         col = flow.column()
         col.prop(data, "use_limit_ang_y")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_y
-        sub.prop(data, "limit_ang_y_lower", text="Y Lower")
-        sub.prop(data, "limit_ang_y_upper", text="Upper")
+        sub.prop(data, "limit_ang_y_lower", text="Y Min")
+        sub.prop(data, "limit_ang_y_upper", text="Max")
 
         col = flow.column()
         col.prop(data, "use_limit_ang_z")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_z
-        sub.prop(data, "limit_ang_z_lower", text="Z Lower")
-        sub.prop(data, "limit_ang_z_upper", text="Upper")
+        sub.prop(data, "limit_ang_z_lower", text="Z Min")
+        sub.prop(data, "limit_ang_z_upper", text="Max")
 
 
 class LimitsTranslatePanel(bpy.types.Panel):
@@ -224,24 +224,24 @@ class LimitsTranslatePanel(bpy.types.Panel):
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_x
-        sub.prop(data, "limit_lin_x_lower", text="X Lower")
-        sub.prop(data, "limit_lin_x_upper", text="Upper")
+        sub.prop(data, "limit_lin_x_lower", text="X Min")
+        sub.prop(data, "limit_lin_x_upper", text="Max")
 
         col = flow.column()
         col.prop(data, "use_limit_lin_y")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_y
-        sub.prop(data, "limit_lin_y_lower", text="Y Lower")
-        sub.prop(data, "limit_lin_y_upper", text="Upper")
+        sub.prop(data, "limit_lin_y_lower", text="Y Min")
+        sub.prop(data, "limit_lin_y_upper", text="Max")
 
         col = flow.column()
         col.prop(data, "use_limit_lin_z")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_z
-        sub.prop(data, "limit_lin_z_lower", text="Z Lower")
-        sub.prop(data, "limit_lin_z_upper", text="Upper")
+        sub.prop(data, "limit_lin_z_lower", text="Z Min")
+        sub.prop(data, "limit_lin_z_upper", text="Max")
 
 
 class SpringsPanel(bpy.types.Panel):

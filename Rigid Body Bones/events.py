@@ -98,8 +98,6 @@ def mark_dirty(context):
 
     # Don't add duplicate objects
     for dirty in scene.dirties:
-        print(dirty.armature)
-
         if dirty.armature and dirty.armature.name == armature.name:
             return
 
@@ -116,8 +114,6 @@ def next_tick():
 
     with utils.Selected(context):
         for dirty in scene.dirties:
-            print("UPDATE", dirty.armature)
-
             if dirty.armature:
                 utils.select_active(context, dirty.armature)
                 assert context.active_object.name == dirty.armature.name

@@ -1,12 +1,12 @@
 # <pep8 compliant>
 
-# TODO support undo/redo
 # TODO support animating settings (https://developer.blender.org/T48975)
-# TODO support alt click to change all selected objects
 # TODO support convex hull and mesh shapes
+# TODO support cone shape
 # TODO FIXED and RAGDOLL types
 
-# TODO fix the error handling code (e.g. changing Active -> Passive, or having an Active -> None -> Active chain)
+# TODO cleanup when deleting the armature
+# TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
