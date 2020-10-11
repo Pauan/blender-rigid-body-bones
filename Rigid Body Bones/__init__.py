@@ -5,7 +5,6 @@
 # TODO support cone shape
 # TODO FIXED and RAGDOLL types
 
-# TODO prevent installation when blender version is too low
 # TODO cleanup when deleting the armature
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
@@ -23,6 +22,11 @@ bl_info = {
     "wiki_url": "https://github.com/Pauan/blender-rigid-body-bones#readme",
     "tracker_url": "https://github.com/Pauan/blender-rigid-body-bones/issues",
 }
+
+import bpy
+
+if bpy.app.version < (2, 91, 0):
+    raise Exception("Rigid Body Bones requires Blender 2.91.0 or higher")
 
 from . import armatures
 from . import events
