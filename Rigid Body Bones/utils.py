@@ -6,7 +6,7 @@ from math import radians
 from mathutils import Vector, Euler, Matrix
 
 
-DEBUG = True
+DEBUG = False
 
 def log(obj):
     from pprint import PrettyPrinter

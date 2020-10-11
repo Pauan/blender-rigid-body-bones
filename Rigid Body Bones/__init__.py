@@ -8,6 +8,7 @@
 # TODO cleanup when deleting the armature
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
+# TODO different scale settings for different collision shapes
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

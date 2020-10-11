@@ -56,7 +56,7 @@ You must have Blender 2.91.0 or higher.
 
    If you want the bone to move automatically, change the `Type` to `Active`. You will probably want to change the `Limits` as well.
 
-   You can also enable `Springs` to make the bone bouncy.
+   You can also enable `Springs` to make the bone bouncy. And you can change the position of the hitbox in `Offset`.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
