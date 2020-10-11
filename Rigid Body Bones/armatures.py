@@ -1,5 +1,6 @@
 import bpy
 from . import utils
+from . import events
 from .bones import (
     active_name, align_constraint, align_hitbox, blank_name, constraint_name,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
@@ -7,7 +8,7 @@ from .bones import (
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
     update_rigid_body, update_shape, passive_name, remove_pose_constraint,
-    update_pose_constraint,
+    update_pose_constraint, copy_properties,
 )
 
 
@@ -630,5 +631,31 @@ class CleanupArmatures(bpy.types.Operator):
 
         if remove_collection_orphans(scene.collection, exists):
             scene.property_unset("collection")
+
+        return {'FINISHED'}
+
+
+class CopyFromActive(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.copy_from_active"
+    bl_label = "Copy from Active"
+    bl_description = "Copy Rigid Body settings from active bone to selected bones"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+
+    def execute(self, context):
+        armature = context.active_object
+        active = utils.get_active_bone(armature)
+        active_data = active.rigid_body_bones
+
+        with events.StopEvents():
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+
+                if bone.name != active.name:
+                    copy_properties(active_data, bone.rigid_body_bones)
 
         return {'FINISHED'}

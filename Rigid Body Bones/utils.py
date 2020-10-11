@@ -25,6 +25,24 @@ def print_time(time_start, time_end):
     debug("  TIME: %.10f ms" % ((time_end - time_start) * 1000.0))
 
 
+def timed(name):
+    def decorator(f):
+        def update(*args):
+            debug("EVENT {} {{".format(name))
+
+            time_start = time.time()
+
+            f(*args)
+
+            time_end = time.time()
+            print_time(time_start, time_end)
+
+            debug("}")
+
+        return update
+    return decorator
+
+
 def event(name):
     def decorator(f):
         def update(self, context):

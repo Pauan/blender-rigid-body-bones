@@ -9,6 +9,12 @@
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
+
+# TODO compound shape
+# TODO investigate if compound shape can be used to implement convex hull and mesh shapes
+# TODO add in Calculate Mass operator
+# TODO add in Bake to Keyframes operator
+# TODO add in Apply Transformation operator ?
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -44,7 +50,9 @@ classes = (
 
     armatures.Update,
     armatures.CleanupArmatures,
+    armatures.CopyFromActive,
 
+    panels.RigidBodyMenu,
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,
     panels.BonePanel,

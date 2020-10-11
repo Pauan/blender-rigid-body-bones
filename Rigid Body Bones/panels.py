@@ -11,6 +11,29 @@ def enabled_icon(enabled):
         return 'REMOVE'
 
 
+def rigid_body_menu(self, context):
+    self.layout.menu("VIEW3D_MT_pose_rigid_body")
+
+class RigidBodyMenu(bpy.types.Menu):
+    bl_idname = "VIEW3D_MT_pose_rigid_body"
+    bl_label = "Rigid Body"
+
+    @classmethod
+    def register(cls):
+        bpy.types.VIEW3D_MT_pose.append(rigid_body_menu)
+
+    @classmethod
+    def unregister(cls):
+        bpy.types.VIEW3D_MT_pose.remove(rigid_body_menu)
+
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+
+    def draw(self, context):
+        self.layout.operator("rigid_body_bones.copy_from_active")
+
+
 class ArmaturePanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_armature"
     bl_label = "Armature"

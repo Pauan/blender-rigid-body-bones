@@ -379,3 +379,67 @@ def update_pose_constraint(pose_bone):
     elif found is not None:
         # TODO can this remove an index instead, to make it faster ?
         constraints.remove(found)
+
+
+# TODO better way of doing this
+def copy_properties(active, data):
+    data.enabled = active.enabled
+    data.type = active.type
+    data.location = active.location
+    data.rotation = active.rotation
+    data.scale = active.scale
+    data.origin = active.origin
+    data.mass = active.mass
+    data.collision_shape = active.collision_shape
+    data.friction = active.friction
+    data.restitution = active.restitution
+    data.linear_damping = active.linear_damping
+    data.angular_damping = active.angular_damping
+    data.use_margin = active.use_margin
+    data.collision_margin = active.collision_margin
+    data.collision_collections = active.collision_collections
+    data.use_deactivation = active.use_deactivation
+    data.use_start_deactivated = active.use_start_deactivated
+    data.deactivate_linear_velocity = active.deactivate_linear_velocity
+    data.deactivate_angular_velocity = active.deactivate_angular_velocity
+    data.use_override_solver_iterations = active.use_override_solver_iterations
+    data.solver_iterations = active.solver_iterations
+    data.disable_collisions = active.disable_collisions
+    data.use_breaking = active.use_breaking
+    data.breaking_threshold = active.breaking_threshold
+    data.use_spring_ang_x = active.use_spring_ang_x
+    data.use_spring_ang_y = active.use_spring_ang_y
+    data.use_spring_ang_z = active.use_spring_ang_z
+    data.spring_stiffness_ang_x = active.spring_stiffness_ang_x
+    data.spring_stiffness_ang_y = active.spring_stiffness_ang_y
+    data.spring_stiffness_ang_z = active.spring_stiffness_ang_z
+    data.spring_damping_ang_x = active.spring_damping_ang_x
+    data.spring_damping_ang_y = active.spring_damping_ang_y
+    data.spring_damping_ang_z = active.spring_damping_ang_z
+    data.use_spring_x = active.use_spring_x
+    data.use_spring_y = active.use_spring_y
+    data.use_spring_z = active.use_spring_z
+    data.spring_stiffness_x = active.spring_stiffness_x
+    data.spring_stiffness_y = active.spring_stiffness_y
+    data.spring_stiffness_z = active.spring_stiffness_z
+    data.spring_damping_x = active.spring_damping_x
+    data.spring_damping_y = active.spring_damping_y
+    data.spring_damping_z = active.spring_damping_z
+    data.use_limit_lin_x = active.use_limit_lin_x
+    data.use_limit_lin_y = active.use_limit_lin_y
+    data.use_limit_lin_z = active.use_limit_lin_z
+    data.use_limit_ang_x = active.use_limit_ang_x
+    data.use_limit_ang_y = active.use_limit_ang_y
+    data.use_limit_ang_z = active.use_limit_ang_z
+    data.limit_lin_x_lower = active.limit_lin_x_lower
+    data.limit_lin_y_lower = active.limit_lin_y_lower
+    data.limit_lin_z_lower = active.limit_lin_z_lower
+    data.limit_lin_x_upper = active.limit_lin_x_upper
+    data.limit_lin_y_upper = active.limit_lin_y_upper
+    data.limit_lin_z_upper = active.limit_lin_z_upper
+    data.limit_ang_x_lower = active.limit_ang_x_lower
+    data.limit_ang_y_lower = active.limit_ang_y_lower
+    data.limit_ang_z_lower = active.limit_ang_z_lower
+    data.limit_ang_x_upper = active.limit_ang_x_upper
+    data.limit_ang_y_upper = active.limit_ang_y_upper
+    data.limit_ang_z_upper = active.limit_ang_z_upper
