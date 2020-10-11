@@ -157,6 +157,18 @@ def safe_remove_collection(collection):
         return False
 
 
+def remove_collection_recursive(collection):
+    for child in collection.objects:
+        remove_object(child)
+
+    for sub in collection.children:
+        remove_collection_recursive(sub)
+
+    assert len(collection.children) == 0 and len(collection.objects) == 0
+
+    bpy.data.collections.remove(collection)
+
+
 def set_mesh_cube(mesh, dimensions):
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0, calc_uvs=False)

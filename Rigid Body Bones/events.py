@@ -137,6 +137,14 @@ def mode_switch():
             mark_dirty(context)
 
 
+# This is needed to cleanup the rigid body objects when the armature is deleted
+def cleanup_armatures():
+    if bpy.ops.rigid_body_bones.cleanup_armatures.poll():
+        bpy.ops.rigid_body_bones.cleanup_armatures()
+
+    return 5.0
+
+
 owner = object()
 
 def register_subscribers():
@@ -162,11 +170,16 @@ def register():
     # This is needed in order to re-subscribe when the file changes
     bpy.app.handlers.load_post.append(load_post)
 
+    bpy.app.timers.register(cleanup_armatures, persistent=True)
+
     register_subscribers()
 
 
 def unregister():
     utils.debug("UNREGISTER EVENTS")
+
+    if bpy.app.timers.is_registered(cleanup_armatures):
+        bpy.app.timers.unregister(cleanup_armatures)
 
     if bpy.app.timers.is_registered(next_tick):
         bpy.app.timers.unregister(next_tick)

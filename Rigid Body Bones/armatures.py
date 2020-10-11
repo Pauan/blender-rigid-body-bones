@@ -117,6 +117,14 @@ def remove_orphans(collection, exists):
     return utils.safe_remove_collection(collection)
 
 
+def remove_collection_orphans(collection, exists):
+    for sub in collection.children:
+        if sub.name not in exists:
+            utils.remove_collection_recursive(sub)
+
+    return utils.safe_remove_collection(collection)
+
+
 def make_root_body(context, armature, top):
     name = armature.data.name + " [Root]"
 
@@ -592,5 +600,35 @@ class Update(bpy.types.Operator):
 
             self.process_pose(context, armature, top)
 
+
+        return {'FINISHED'}
+
+
+# This cleans up any orphan objects when an armature is deleted
+class CleanupArmatures(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.cleanup_armatures"
+    bl_label = "Cleanup Rigid Body Bones"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.rigid_body_bones.collection is not None
+
+
+    def execute(self, context):
+        exists = set()
+
+        for armature in bpy.data.armatures:
+            container = armature.rigid_body_bones.container
+
+            if container:
+                exists.add(container.name)
+
+        scene = context.scene.rigid_body_bones
+
+        if remove_collection_orphans(scene.collection, exists):
+            scene.property_unset("collection")
 
         return {'FINISHED'}
