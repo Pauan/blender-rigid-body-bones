@@ -5,6 +5,12 @@ from .events import (
 )
 
 
+# Copied from source/blender/blenlib/BLI_math_base.h
+# Needed because of source/blender/makesrna/intern/rna_rigidbody.c
+MAX_ROT = 3.14159265358979323846 * 2.0
+MIN_ROT = -MAX_ROT
+
+
 class Dirty(bpy.types.PropertyGroup):
     armature: bpy.props.PointerProperty(type=bpy.types.Object)
 
@@ -668,6 +674,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Lower X Angle Limit",
         description="Lower limit of X axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),
@@ -680,6 +688,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Lower Y Angle Limit",
         description="Lower limit of Y axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),
@@ -692,6 +702,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Lower Z Angle Limit",
         description="Lower limit of Z axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),
@@ -705,6 +717,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Upper X Angle Limit",
         description="Upper limit of X axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),
@@ -717,6 +731,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Upper Y Angle Limit",
         description="Upper limit of Y axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),
@@ -729,6 +745,8 @@ class Bone(bpy.types.PropertyGroup):
         name="Upper Z Angle Limit",
         description="Upper limit of Z axis rotation",
         default=0.0,
+        min=MIN_ROT,
+        max=MAX_ROT,
         precision=3,
         step=10,
         options=set(),

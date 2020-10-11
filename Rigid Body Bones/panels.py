@@ -7,9 +7,6 @@ def enabled_icon(enabled):
     if enabled:
         return 'IPO_ELASTIC'
     else:
-        # Small ring
-        #return 'LAYER_USED'
-
         # Horizontal line
         return 'REMOVE'
 

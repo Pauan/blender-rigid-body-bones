@@ -20,6 +20,7 @@ And best of all, this add-on creates normal Blender rigid bodies, so the perform
 
 That means you can send the `.blend` file to somebody else and they can use it without needing the add-on installed.
 
+
 ## Installation
 
 You must have Blender 2.91.0 or higher.
@@ -35,6 +36,7 @@ You must have Blender 2.91.0 or higher.
 5. Enable the checkbox to the left of `Physics: Rigid Body Bones`.
 
 6. Save your preferences.
+
 
 ## How to use
 
