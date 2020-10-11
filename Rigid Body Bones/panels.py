@@ -3,6 +3,13 @@ from . import utils
 from .bones import is_bone_active
 
 
+def enabled_icon(enabled):
+    if enabled:
+        return 'IPO_ELASTIC'
+    else:
+        return 'REMOVE'
+
+
 class ArmaturePanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_armature"
     bl_label = "Armature"
@@ -176,28 +183,34 @@ class LimitsRotatePanel(bpy.types.Panel):
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         col = flow.column()
-        col.prop(data, "use_limit_ang_x")
+        col.prop(data, "use_limit_ang_x", text="Limit X")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_x
-        sub.prop(data, "limit_ang_x_lower", text="X Min")
+        sub.prop(data, "limit_ang_x_lower", text="Min")
         sub.prop(data, "limit_ang_x_upper", text="Max")
 
+        flow.separator()
+
         col = flow.column()
-        col.prop(data, "use_limit_ang_y")
+        col.prop(data, "use_limit_ang_y", text="Limit Y")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_y
-        sub.prop(data, "limit_ang_y_lower", text="Y Min")
+        sub.prop(data, "limit_ang_y_lower", text="Min")
         sub.prop(data, "limit_ang_y_upper", text="Max")
 
+        flow.separator()
+
         col = flow.column()
-        col.prop(data, "use_limit_ang_z")
+        col.prop(data, "use_limit_ang_z", text="Limit Z")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_ang_z
-        sub.prop(data, "limit_ang_z_lower", text="Z Min")
+        sub.prop(data, "limit_ang_z_lower", text="Min")
         sub.prop(data, "limit_ang_z_upper", text="Max")
+
+        flow.separator()
 
 
 class LimitsTranslatePanel(bpy.types.Panel):
@@ -220,28 +233,34 @@ class LimitsTranslatePanel(bpy.types.Panel):
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         col = flow.column()
-        col.prop(data, "use_limit_lin_x")
+        col.prop(data, "use_limit_lin_x", text="Limit X")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_x
-        sub.prop(data, "limit_lin_x_lower", text="X Min")
+        sub.prop(data, "limit_lin_x_lower", text="Min")
         sub.prop(data, "limit_lin_x_upper", text="Max")
 
+        flow.separator()
+
         col = flow.column()
-        col.prop(data, "use_limit_lin_y")
+        col.prop(data, "use_limit_lin_y", text="Limit Y")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_y
-        sub.prop(data, "limit_lin_y_lower", text="Y Min")
+        sub.prop(data, "limit_lin_y_lower", text="Min")
         sub.prop(data, "limit_lin_y_upper", text="Max")
 
+        flow.separator()
+
         col = flow.column()
-        col.prop(data, "use_limit_lin_z")
+        col.prop(data, "use_limit_lin_z", text="Limit Z")
 
         sub = col.column(align=True)
         sub.enabled = data.use_limit_lin_z
-        sub.prop(data, "limit_lin_z_lower", text="Z Min")
+        sub.prop(data, "limit_lin_z_lower", text="Min")
         sub.prop(data, "limit_lin_z_upper", text="Max")
+
+        flow.separator()
 
 
 class SpringsPanel(bpy.types.Panel):
@@ -282,29 +301,44 @@ class SpringsRotatePanel(bpy.types.Panel):
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
-        col = flow.column()
-        col.prop(data, "use_spring_ang_x")
+        col = flow.column(align=True)
+        col.prop(data, "use_spring_ang_x", text="Enable X", icon=enabled_icon(data.use_spring_ang_x))
+        col.prop(data, "use_spring_ang_y", text="Y", icon=enabled_icon(data.use_spring_ang_y))
+        col.prop(data, "use_spring_ang_z", text="Z", icon=enabled_icon(data.use_spring_ang_z))
 
-        sub = col.column(align=True)
+        flow.separator()
+
+        col = flow.column(align=True)
+
+        sub = col.column()
         sub.enabled = data.use_spring_ang_x
-        sub.prop(data, "spring_stiffness_ang_x", text="X Stiffness")
-        sub.prop(data, "spring_damping_ang_x", text="Damping")
+        sub.prop(data, "spring_stiffness_ang_x", text="Stiffness X")
 
-        col = flow.column()
-        col.prop(data, "use_spring_ang_y")
-
-        sub = col.column(align=True)
+        sub = col.column()
         sub.enabled = data.use_spring_ang_y
-        sub.prop(data, "spring_stiffness_ang_y", text="Y Stiffness")
-        sub.prop(data, "spring_damping_ang_y", text="Damping")
+        sub.prop(data, "spring_stiffness_ang_y", text="Y")
 
-        col = flow.column()
-        col.prop(data, "use_spring_ang_z")
-
-        sub = col.column(align=True)
+        sub = col.column()
         sub.enabled = data.use_spring_ang_z
-        sub.prop(data, "spring_stiffness_ang_z", text="Z Stiffness")
-        sub.prop(data, "spring_damping_ang_z", text="Damping")
+        sub.prop(data, "spring_stiffness_ang_z", text="Z")
+
+        flow.separator()
+
+        col = flow.column(align=True)
+
+        sub = col.column()
+        sub.enabled = data.use_spring_ang_x
+        sub.prop(data, "spring_damping_ang_x", text="Damping X")
+
+        sub = col.column()
+        sub.enabled = data.use_spring_ang_y
+        sub.prop(data, "spring_damping_ang_y", text="Y")
+
+        sub = col.column()
+        sub.enabled = data.use_spring_ang_z
+        sub.prop(data, "spring_damping_ang_z", text="Z")
+
+        flow.separator()
 
 
 class SpringsTranslatePanel(bpy.types.Panel):
@@ -326,29 +360,44 @@ class SpringsTranslatePanel(bpy.types.Panel):
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
-        col = flow.column()
-        col.prop(data, "use_spring_x")
+        col = flow.column(align=True)
+        col.prop(data, "use_spring_x", text="Enable X", icon=enabled_icon(data.use_spring_x))
+        col.prop(data, "use_spring_y", text="Y", icon=enabled_icon(data.use_spring_y))
+        col.prop(data, "use_spring_z", text="Z", icon=enabled_icon(data.use_spring_z))
 
-        sub = col.column(align=True)
+        flow.separator()
+
+        col = flow.column(align=True)
+
+        sub = col.column()
         sub.enabled = data.use_spring_x
-        sub.prop(data, "spring_stiffness_x", text="X Stiffness")
-        sub.prop(data, "spring_damping_x", text="Damping")
+        sub.prop(data, "spring_stiffness_x", text="Stiffness X")
 
-        col = flow.column()
-        col.prop(data, "use_spring_y")
-
-        sub = col.column(align=True)
+        sub = col.column()
         sub.enabled = data.use_spring_y
-        sub.prop(data, "spring_stiffness_y", text="Y Stiffness")
-        sub.prop(data, "spring_damping_y", text="Damping")
+        sub.prop(data, "spring_stiffness_y", text="Y")
 
-        col = flow.column()
-        col.prop(data, "use_spring_z")
-
-        sub = col.column(align=True)
+        sub = col.column()
         sub.enabled = data.use_spring_z
-        sub.prop(data, "spring_stiffness_z", text="Z Stiffness")
-        sub.prop(data, "spring_damping_z", text="Damping")
+        sub.prop(data, "spring_stiffness_z", text="Z")
+
+        flow.separator()
+
+        col = flow.column(align=True)
+
+        sub = col.column()
+        sub.enabled = data.use_spring_x
+        sub.prop(data, "spring_damping_x", text="Damping X")
+
+        sub = col.column()
+        sub.enabled = data.use_spring_y
+        sub.prop(data, "spring_damping_y", text="Y")
+
+        sub = col.column()
+        sub.enabled = data.use_spring_z
+        sub.prop(data, "spring_damping_z", text="Z")
+
+        flow.separator()
 
 
 class OffsetPanel(bpy.types.Panel):
@@ -370,6 +419,8 @@ class OffsetPanel(bpy.types.Panel):
 
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
+        flow.separator()
+
         col = flow.column()
         col.prop(data, "origin", slider=True, text="Origin")
 
@@ -387,6 +438,8 @@ class OffsetPanel(bpy.types.Panel):
 
         col = flow.column()
         col.prop(data, "scale")
+
+        flow.separator()
 
 
 class AdvancedPanel(bpy.types.Panel):
@@ -456,6 +509,8 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
             col = flow.column()
             col.prop(data, "angular_damping", text="Rotation", slider=True)
 
+        flow.separator()
+
 
 class CollectionsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_collections"
@@ -473,6 +528,8 @@ class CollectionsPanel(bpy.types.Panel):
 
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.prop(data, "collision_collections", text="")
+
+        layout.separator()
 
 
 class DeactivationPanel(bpy.types.Panel):
@@ -513,6 +570,8 @@ class DeactivationPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "deactivate_linear_velocity", text="Velocity Linear")
         col.prop(data, "deactivate_angular_velocity", text="Angular")
+
+        flow.separator()
 
 
 class OverrideIterationsPanel(bpy.types.Panel):

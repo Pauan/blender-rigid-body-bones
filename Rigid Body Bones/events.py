@@ -104,7 +104,8 @@ def mark_dirty(context):
     dirty = scene.dirties.add()
     dirty.armature = armature
 
-    if len(scene.dirties) > 0:
+    # TODO more robust prevention of duplicates
+    if len(scene.dirties) == 1:
         bpy.app.timers.register(next_tick)
 
 

@@ -149,6 +149,7 @@ class Bone(bpy.types.PropertyGroup):
         description="Scale of the rigid body relative to the bone length",
         size=3,
         default=(0.2, 1.0, 0.2),
+        min=0.0,
         precision=3,
         step=1,
         subtype='XYZ',
@@ -364,7 +365,7 @@ class Bone(bpy.types.PropertyGroup):
 
 
     use_spring_ang_x: bpy.props.BoolProperty(
-        name="X Rotate Spring",
+        name="Enable X Rotate Spring",
         description="Enable spring on X rotational axis",
         default=False,
         options=set(),
@@ -372,7 +373,7 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     use_spring_ang_y: bpy.props.BoolProperty(
-        name="Y Rotate Spring",
+        name="Enable Y Rotate Spring",
         description="Enable spring on Y rotational axis",
         default=False,
         options=set(),
@@ -380,7 +381,7 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     use_spring_ang_z: bpy.props.BoolProperty(
-        name="Z Rotate Spring",
+        name="Enable Z Rotate Spring",
         description="Enable spring on Z rotational axis",
         default=False,
         options=set(),
@@ -455,7 +456,7 @@ class Bone(bpy.types.PropertyGroup):
 
 
     use_spring_x: bpy.props.BoolProperty(
-        name="X Translate Spring",
+        name="Enable X Translate Spring",
         description="Enable spring on X translate axis",
         default=False,
         options=set(),
@@ -463,7 +464,7 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     use_spring_y: bpy.props.BoolProperty(
-        name="Y Translate Spring",
+        name="Enable Y Translate Spring",
         description="Enable spring on Y translate axis",
         default=False,
         options=set(),
@@ -471,7 +472,7 @@ class Bone(bpy.types.PropertyGroup):
     )
 
     use_spring_z: bpy.props.BoolProperty(
-        name="Z Translate Spring",
+        name="Enable Z Translate Spring",
         description="Enable spring on Z translate axis",
         default=False,
         options=set(),
