@@ -7,6 +7,10 @@ def enabled_icon(enabled):
     if enabled:
         return 'IPO_ELASTIC'
     else:
+        # Small ring
+        #return 'LAYER_USED'
+
+        # Horizontal line
         return 'REMOVE'
 
 
@@ -66,8 +70,6 @@ class ArmatureSettingsPanel(bpy.types.Panel):
 
         col = flow.column()
         col.prop(data, "enabled")
-
-        #col.operator("rigid_body_bones.update", text="Enable rigid bodies", icon='CHECKBOX_HLT', emboss=False)
 
         flow.separator()
 

@@ -42,7 +42,7 @@ class Armature(bpy.types.PropertyGroup):
 
 
     enabled: bpy.props.BoolProperty(
-        name="Enable rigid bodies",
+        name="Enable rigid body physics",
         description="Enable rigid body physics for the armature",
         default=True,
         update=event_dirty,
@@ -56,8 +56,8 @@ class Armature(bpy.types.PropertyGroup):
     )
 
     hide_hitboxes: bpy.props.BoolProperty(
-        name="Hide rigid bodies",
-        description="Hide bone rigid bodies",
+        name="Hide hitboxes",
+        description="Hide bone hitboxes",
         default=False,
         update=event_hide_hitboxes,
     )
@@ -100,7 +100,7 @@ class Bone(bpy.types.PropertyGroup):
 
     enabled: bpy.props.BoolProperty(
         name="Enable Rigid Body",
-        description="Enable rigid body for the bone",
+        description="Enable rigid body physics for the bone",
         default=False,
         options=set(),
         update=event_dirty,
@@ -108,19 +108,19 @@ class Bone(bpy.types.PropertyGroup):
 
     type: bpy.props.EnumProperty(
         name="Type",
-        description="Behavior of the rigid body",
+        description="Behavior of the bone physics",
         default='PASSIVE',
         options=set(),
         items=[
-            ('PASSIVE', "Passive", "Rigid body follows the bone", 0),
-            ('ACTIVE', "Active", "Bone follows the rigid body", 1),
+            ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
+            ('ACTIVE', "Active", "Bone automatically moves", 1),
         ],
         update=event_dirty,
     )
 
     location: bpy.props.FloatVectorProperty(
         name="Location",
-        description="Location of the rigid body relative to the bone",
+        description="Location of the hitbox relative to the bone",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=5,
@@ -133,7 +133,7 @@ class Bone(bpy.types.PropertyGroup):
 
     rotation: bpy.props.FloatVectorProperty(
         name="Rotation",
-        description="Rotation of the rigid body relative to the origin",
+        description="Rotation of the hitbox relative to the origin",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=3,
@@ -146,7 +146,7 @@ class Bone(bpy.types.PropertyGroup):
 
     scale: bpy.props.FloatVectorProperty(
         name="Scale",
-        description="Scale of the rigid body relative to the bone length",
+        description="Scale of the hitbox relative to the bone length",
         size=3,
         default=(0.2, 1.0, 0.2),
         min=0.0,
@@ -170,7 +170,7 @@ class Bone(bpy.types.PropertyGroup):
 
     mass: bpy.props.FloatProperty(
         name="Mass",
-        description="How much the rigid body 'weighs' irrespective of gravity",
+        description="How much the bone 'weighs' irrespective of gravity",
         default=1.0,
         min=0.001,
         precision=3,
@@ -182,11 +182,11 @@ class Bone(bpy.types.PropertyGroup):
 
     collision_shape: bpy.props.EnumProperty(
         name="Collision Shape",
-        description="Collision shape of the rigid body",
+        description="Collision shape of the hitbox",
         default='BOX',
         options=set(),
         items=[
-            ('BOX', "Box", "Box-like shapes (i.e. cubes), including planes (i.e. ground planes)", 'MESH_CUBE', 2),
+            ('BOX', "Box", "", 'MESH_CUBE', 2),
             ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
             ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
             ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
@@ -199,7 +199,7 @@ class Bone(bpy.types.PropertyGroup):
 
     friction: bpy.props.FloatProperty(
         name="Friction",
-        description="Resistance of the rigid body to movement",
+        description="Resistance of the bone to movement",
         default=0.5,
         min=0.0,
         soft_max=1.0,
@@ -210,7 +210,7 @@ class Bone(bpy.types.PropertyGroup):
 
     restitution: bpy.props.FloatProperty(
         name="Restitution",
-        description="Tendency of the rigid body to bounce after colliding with another (0 = stays still, 1 = perfectly elastic)",
+        description="Tendency of the bone to bounce after colliding (0 = stays still, 1 = perfectly elastic)",
         default=0.0,
         min=0.0,
         soft_max=1.0,
@@ -243,7 +243,7 @@ class Bone(bpy.types.PropertyGroup):
 
     use_margin: bpy.props.BoolProperty(
         name="Collision Margin",
-        description="Use custom collision margin",
+        description="Use custom collision margin for the hitbox",
         default=False,
         options=set(),
         update=event_rigid_body,
@@ -264,7 +264,7 @@ class Bone(bpy.types.PropertyGroup):
 
     collision_collections: bpy.props.BoolVectorProperty(
         name="Collision Collections",
-        description="Collision collections the rigid body belongs to",
+        description="Collision collections the hitbox belongs to",
         default=(
             True,  False, False, False, False, False, False, False, False, False,
             False, False, False, False, False, False, False, False, False, False
@@ -277,7 +277,7 @@ class Bone(bpy.types.PropertyGroup):
 
     use_deactivation: bpy.props.BoolProperty(
         name="Enable Deactivation",
-        description="Enable deactivation of resting rigid body (increases performance and stability but can cause glitches)",
+        description="Enable deactivation of non-moving bones (increases performance and stability but can cause glitches)",
         default=False,
         options=set(),
         update=event_rigid_body,
@@ -285,7 +285,7 @@ class Bone(bpy.types.PropertyGroup):
 
     use_start_deactivated: bpy.props.BoolProperty(
         name="Start Deactivated",
-        description="Deactivate rigid body at the start of the simulation",
+        description="Deactivate the bone's physics at the start of the simulation",
         default=False,
         options=set(),
         update=event_rigid_body,
@@ -293,7 +293,7 @@ class Bone(bpy.types.PropertyGroup):
 
     deactivate_linear_velocity: bpy.props.FloatProperty(
         name="Linear Velocity Deactivation Threshold",
-        description="Linear Velocity below which simulation stops simulating the rigid body",
+        description="Linear Velocity below which simulation stops simulating the bone's physics",
         default=0.4,
         min=0.0,
         step=10,
@@ -306,7 +306,7 @@ class Bone(bpy.types.PropertyGroup):
 
     deactivate_angular_velocity: bpy.props.FloatProperty(
         name="Angular Velocity Deactivation Threshold",
-        description="Angular Velocity below which simulation stops simulating the rigid body",
+        description="Angular Velocity below which simulation stops simulating the bone's physics",
         default=0.5,
         min=0.0,
         step=10,
