@@ -722,6 +722,129 @@ class CopyFromActive(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def make_material_preset(presets):
+    output = [(preset, preset, "", i) for i, preset in enumerate(presets)]
+    output.append(('Custom', "Custom", "", -1))
+    return output
+
+
+class CalculateMass(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.calculate_mass"
+    bl_label = "Calculate Mass"
+    bl_description = "Automatically calculates mass for selected bones based on volume"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'REGISTER', 'UNDO'}
+
+    material: bpy.props.EnumProperty(
+        name="Material Preset",
+        description="Type of material that bones are made of (determines material density)",
+        default='Air',
+        # Based on source/blender/editors/physics/rigidbody_object.c
+        items=make_material_preset([
+            'Air',
+            'Acrylic',
+            'Asphalt (Crushed)',
+            'Bark',
+            'Beans (Cocoa)',
+            'Beans (Soy)',
+            'Brick (Pressed)',
+            'Brick (Common)',
+            'Brick (Soft)',
+            'Brass',
+            'Bronze',
+            'Carbon (Solid)',
+            'Cardboard',
+            'Cast Iron',
+            'Chalk (Solid)',
+            'Concrete',
+            'Charcoal',
+            'Cork',
+            'Copper',
+            'Garbage',
+            'Glass (Broken)',
+            'Glass (Solid)',
+            'Gold',
+            'Granite (Broken)',
+            'Granite (Solid)',
+            'Gravel',
+            'Ice (Crushed)',
+            'Ice (Solid)',
+            'Iron',
+            'Lead',
+            'Limestone (Broken)',
+            'Limestone (Solid)',
+            'Marble (Broken)',
+            'Marble (Solid)',
+            'Paper',
+            'Peanuts (Shelled)',
+            'Peanuts (Not Shelled)',
+            'Plaster',
+            'Plastic',
+            'Polystyrene',
+            'Rubber',
+            'Silver',
+            'Steel',
+            'Stone',
+            'Stone (Crushed)',
+            'Timber',
+        ])
+    )
+
+    density: bpy.props.FloatProperty(
+        name="Density",
+        description="Density value (kg/m^3) to use when Material Preset is Custom",
+        default=1.0,
+        min=0.0,
+        soft_min=1.0,
+        soft_max=2500.0,
+        precision=3,
+        step=1,
+    )
+
+    # TODO check for selected ?
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context)
+
+    def execute(self, context):
+        scene = context.scene.rigid_body_bones
+
+        datas = []
+
+        with utils.Selected(context):
+            # This is needed in order to select the objects.
+            #
+            # TODO replace with a Context
+            if scene.collection:
+                scene.collection.hide_select = False
+
+            utils.deselect_all(context)
+
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                data = bone.rigid_body_bones
+                hitbox = get_hitbox(data)
+
+                if hitbox:
+                    datas.append(data)
+                    utils.select_active(context, hitbox)
+
+            bpy.ops.rigidbody.mass_calculate(material=self.material, density=self.density)
+
+            if scene.collection:
+                scene.collection.hide_select = True
+
+        # This is only needed to prevent the mass update callback from running.
+        # TODO make this more efficient
+        events.mark_dirty(context)
+
+        for data in datas:
+            hitbox = get_hitbox(data)
+            data.mass = hitbox.rigid_body.mass
+
+        return {'FINISHED'}
+
+
 def add_new_compound(bone):
     data = bone.rigid_body_bones
 

@@ -31,6 +31,7 @@ class RigidBodyMenu(bpy.types.Menu):
         return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
 
     def draw(self, context):
+        self.layout.operator("rigid_body_bones.calculate_mass")
         self.layout.operator("rigid_body_bones.copy_from_active")
 
 

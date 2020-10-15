@@ -12,8 +12,8 @@
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
 
-# TODO add in Calculate Mass operator
-# TODO add in Bake to Keyframes operator
+# TODO add in translation support
+# TODO add in Bake to Keyframes operator ?
 # TODO add in Apply Transformation operator ?
 bl_info = {
     "name": "Rigid Body Bones",
@@ -52,6 +52,7 @@ classes = (
     armatures.Update,
     armatures.CleanupArmatures,
     armatures.CopyFromActive,
+    armatures.CalculateMass,
     armatures.NewCompound,
     armatures.RemoveCompound,
     armatures.MoveCompound,

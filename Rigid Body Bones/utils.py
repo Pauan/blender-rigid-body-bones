@@ -136,6 +136,10 @@ def is_armature_enabled(context):
     return context.active_object.data.rigid_body_bones.enabled
 
 
+def deselect_all(context):
+    for obj in context.view_layer.objects.selected:
+        obj.select_set(False)
+
 def select_active(context, obj):
     obj.select_set(True)
     context.view_layer.objects.active = obj
