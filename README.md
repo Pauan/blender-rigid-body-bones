@@ -107,7 +107,9 @@ You must have Blender 2.91.0 or higher.
 
 * You will probably need to change the `Properties -> Scene -> Rigid Body World -> Substeps Per Frame` and `Solver Iterations` settings.
 
-   Increase them as high as you can, but decrease them if it causes weird glitches:
+   Increasing them can make the simulation more realistic, but it can also cause weird glitches, so sometimes you need to lower them.
+
+   The `Substeps Per Frame` option affects how springs behave, so be very careful when changing it:
 
    ![][usage05]
 
