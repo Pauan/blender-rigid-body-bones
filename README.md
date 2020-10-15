@@ -85,29 +85,35 @@ You must have Blender 2.91.0 or higher.
 
 ## Useful tips
 
-* Do not put any objects into the `RigidBodyBones` collection, they will be deleted. The `RigidBodyBones` collection can only be used by this add-on.
+* Do not put any objects into the `RigidBodyBones` collection, they will be deleted.
+
+   The `RigidBodyBones` collection can only be used by this add-on.
+
+* The `Rigid.Body.Bones.zip` file contains an `examples` folder which contains example `.blend` files.
 
 * If you select multiple bones, you can hold down `Alt` when changing a setting and it will apply the change to all the selected bones.
 
-* It is sometimes useful to change the "Advanced -> Physics -> Damping Translation" and "Damping Rotation" settings. This basically makes the bone move slower, like it is underwater:
+* It is sometimes useful to change the `Advanced -> Physics -> Damping Translation` and `Damping Rotation` settings.
+
+   This makes the bone move slower, like it is underwater:
 
    ![][usage06]
 
-* You will probably need to adjust the "Properties -> Scene -> Rigid Body World -> Substeps Per Frame" and "Solver Iterations" settings. Increase them as high as you can, but decrease them if it causes weird glitches:
+* You will probably need to adjust the `Properties -> Scene -> Rigid Body World -> Substeps Per Frame` and `Solver Iterations` settings.
+
+   Increase them as high as you can, but decrease them if it causes weird glitches:
 
    ![][usage05]
 
-* The `Armature` panel contains a few useful settings which apply to the entire armature:
+* The `Armature` panel contains a few useful settings which apply to the entire armature.
+
+   If things somehow get messed up, turn off the `Armature -> Enable rigid body physics` checkbox, and then turn it back on:
 
    ![][usage04]
 
 * There is a `Pose -> Rigid Body` menu which contains a few useful operators:
 
    ![][usage03]
-
-* If things somehow get messed up, try turning off the "Armature -> Enable rigid body physics" checkbox, and then turn it back on.
-
-* The `Rigid.Body.Bones.zip` file contains an `examples` folder which contains example `.blend` files.
 
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
