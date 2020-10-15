@@ -20,19 +20,25 @@
 
 Blender can do all of that, however it is ***incredibly*** time consuming and tedious:
 
-* You must manually create new cubes and align them with the bones (in the correct axis rotation).
+* You must manually create a cube for every bone and align them with the bones (in the correct position, size, and rotation).
 
    Whenever you change the bones you must manually realign the cubes.
 
-* You must manually set all the proper settings (wireframe, show on top, unselectable, etc.)
+* You must manually set all the proper settings (rigid body, wireframe, show on top, unselectable, etc.)
 
-* You must manually create empties and set up constraints between the cubes.
+* You must manually create an empty for every cube (in the correct position and rotation) and set up constraints between the cubes.
+
+   Whenever you change the bones you must manually realign the empties.
 
 * You must create "blank" cubes which are parented to bones, and then attach other cubes to it.
 
    You must remember to manually disable collisions for these blank cubes.
 
-* You must remember to unparent/reparent the bones when changing between Edit and Pose mode.
+* You must add `Child Of` bone constraints to the bones and use `Set Inverse`.
+
+   You must do this again every time you change the bones.
+
+* You must unparent/reparent the bones when changing between Edit and Pose mode.
 
 If you try to do it by hand, you will waste many hours of time.
 
