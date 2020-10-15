@@ -144,6 +144,14 @@ def cleanup_armatures():
     return 5.0
 
 
+@persistent
+def fix_undo(scene):
+    context = bpy.context
+
+    if utils.is_armature(context):
+        mark_dirty(context)
+
+
 owner = object()
 
 def register_subscribers():
@@ -169,6 +177,10 @@ def register():
     # This is needed in order to re-subscribe when the file changes
     bpy.app.handlers.load_post.append(load_post)
 
+    # This is needed in order to fix up problems caused by undo/redo
+    #bpy.app.handlers.undo_post.append(fix_undo)
+    #bpy.app.handlers.redo_post.append(fix_undo)
+
     bpy.app.timers.register(cleanup_armatures, persistent=True)
 
     register_subscribers()
@@ -182,6 +194,12 @@ def unregister():
 
     if bpy.app.timers.is_registered(next_tick):
         bpy.app.timers.unregister(next_tick)
+
+    if fix_undo in bpy.app.handlers.redo_post:
+        bpy.app.handlers.redo_post.remove(fix_undo)
+
+    if fix_undo in bpy.app.handlers.undo_post:
+        bpy.app.handlers.undo_post.remove(fix_undo)
 
     if load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post)
