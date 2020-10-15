@@ -38,7 +38,7 @@ Blender can do all of that, however it is ***incredibly*** time consuming and te
 
    You must do this again every time you change the bones.
 
-* You must unparent/reparent the bones when changing between Edit and Pose mode.
+* You must unparent/reparent the bones when switching between Edit and Pose mode.
 
 If you try to do it by hand, you will waste many hours of time.
 
@@ -97,7 +97,7 @@ You must have Blender 2.91.0 or higher.
 
 * The `Rigid.Body.Bones.zip` file contains an `examples` folder which contains example `.blend` files.
 
-* If you select multiple bones, you can hold down `Alt` when changing a setting and it will apply the change to all the selected bones.
+* If you select multiple bones, you can hold down `Alt` when changing a setting and it will apply the setting to all the selected bones.
 
 * It is sometimes useful to change the `Advanced -> Physics -> Damping Translation` and `Damping Rotation` settings.
 
@@ -105,7 +105,7 @@ You must have Blender 2.91.0 or higher.
 
    ![][usage06]
 
-* You will probably need to adjust the `Properties -> Scene -> Rigid Body World -> Substeps Per Frame` and `Solver Iterations` settings.
+* You will probably need to change the `Properties -> Scene -> Rigid Body World -> Substeps Per Frame` and `Solver Iterations` settings.
 
    Increase them as high as you can, but decrease them if it causes weird glitches:
 
