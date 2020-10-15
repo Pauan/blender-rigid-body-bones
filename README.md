@@ -14,9 +14,27 @@
 
 * Collision detection with the environment based on simple hitboxes.
 
-Blender can do all of that, however it is ***incredibly*** time consuming and tedious. And there are a lot of problems that you need to watch out for. If you try to do it by hand, you will waste many hours of time.
+* Exporting baked physics animations to game engines.
 
-With this add-on, rather than spending several *minutes* (per bone), it instead takes a couple *seconds*, and all of the tricky stuff is handled automatically for you.
+Blender can do all of that, however it is ***incredibly*** time consuming and tedious:
+
+* You must manually create new cubes and align them with the bones (in the correct axis rotation).
+
+   Whenever you change the bones you must manually realign the cubes.
+
+* You must manually set all the proper settings (wireframe, show on top, unselectable, etc.)
+
+* You must manually create empties and set up constraints between the cubes.
+
+* You must create "blank" cubes which are parented to bones, and then attach other cubes to it.
+
+   You must remember to manually disable collisions for these blank cubes.
+
+* You must remember to unparent/reparent the bones when changing between Edit and Pose mode.
+
+If you try to do it by hand, you will waste many hours of time.
+
+With this add-on, *all* of the above steps are automatically done for you. Rather than spending several *minutes* (per bone), it instead takes a couple *seconds*.
 
 And best of all, this add-on creates normal Blender rigid bodies, so the performance is excellent, and it continues to work perfectly even after disabling the add-on.
 
