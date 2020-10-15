@@ -713,12 +713,11 @@ class CopyFromActive(bpy.types.Operator):
         active = utils.get_active_bone(armature)
         active_data = active.rigid_body_bones
 
-        with events.StopEvents():
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
+        for pose_bone in context.selected_pose_bones_from_active_object:
+            bone = pose_bone.bone
 
-                if bone.name != active.name:
-                    copy_properties(active_data, bone.rigid_body_bones)
+            if bone.name != active.name:
+                copy_properties(active_data, bone.rigid_body_bones)
 
         return {'FINISHED'}
 

@@ -15,24 +15,10 @@ def event_dirty(self, context):
     mark_dirty(context)
 
 
-# TODO rather than using a global, instead check whether the armature is dirty or not
-skip_events = False
-
-class StopEvents:
-    def __enter__(self):
-        global skip_events
-        skip_events = True
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        global skip_events
-        skip_events = False
-        return False
-
-
 @utils.event("rigid_body")
 @utils.if_armature_enabled
 def event_rigid_body(context, armature, top):
-    if not skip_events:
+    if not is_dirty(context.scene.rigid_body_bones, armature):
         for bone in armature.data.bones:
             data = bone.rigid_body_bones
 
@@ -46,7 +32,7 @@ def event_rigid_body(context, armature, top):
 @utils.event("rigid_body_constraint")
 @utils.if_armature_enabled
 def event_rigid_body_constraint(context, armature, top):
-    if not skip_events:
+    if not is_dirty(context.scene.rigid_body_bones, armature):
         for bone in armature.data.bones:
             data = bone.rigid_body_bones
 
@@ -57,7 +43,7 @@ def event_rigid_body_constraint(context, armature, top):
 @utils.event("align")
 @utils.if_armature_enabled
 def event_align(context, armature, top):
-    if not skip_events:
+    if not is_dirty(context.scene.rigid_body_bones, armature):
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones
@@ -92,6 +78,14 @@ def event_hide_active_bones(context, armature, top):
         bones.hide_active_bone(bone, data, top.hide_active_bones)
 
 
+def is_dirty(scene, armature):
+    for dirty in scene.dirties:
+        if dirty.armature and dirty.armature.name == armature.name:
+            return True
+
+    return False
+
+
 # This is used to run the update operator during the next
 # main event tick.
 #
@@ -104,17 +98,13 @@ def mark_dirty(context):
     scene = context.scene.rigid_body_bones
 
     # Don't add duplicate objects
-    for dirty in scene.dirties:
-        if dirty.armature and dirty.armature.name == armature.name:
-            return
+    if not is_dirty(scene, armature):
+        dirty = scene.dirties.add()
+        dirty.armature = armature
 
-    dirty = scene.dirties.add()
-    dirty.armature = armature
-
-    # TODO more robust prevention of duplicates
-    # TODO test that this works correctly
-    if len(scene.dirties) == 1:
-        bpy.app.timers.register(next_tick)
+    if len(scene.dirties) > 0:
+        if not bpy.app.timers.is_registered(next_tick):
+            bpy.app.timers.register(next_tick)
 
 
 @utils.timed("update")

@@ -15,7 +15,6 @@
 # TODO add in Calculate Mass operator
 # TODO add in Bake to Keyframes operator
 # TODO add in Apply Transformation operator ?
-# TODO auto-set `skip_events` when `mark_dirty` is called ?
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
