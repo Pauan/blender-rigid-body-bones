@@ -2,15 +2,17 @@
 
 3D engines have support for bone physics, this can be used for a wide variety of things:
 
-* Animated hair that reacts to gravity and wind.
+* Hair that reacts to motion, gravity, and wind.
+
+* Antennas, wings, tails, etc.
+
+* Breast / butt / muscle jiggle.
 
 * Ragdoll physics.
 
 * Simple cloth physics (faster than using real cloth physics, but not as realistic).
 
-* Breast / butt / muscle jiggle.
-
-* Collision detection based on simple hitboxes.
+* Collision detection with the environment based on simple hitboxes.
 
 Blender can do all of that, however it is ***incredibly*** time consuming and tedious. And there are a lot of problems that you need to watch out for. If you try to do it by hand, you will waste many hours of time.
 

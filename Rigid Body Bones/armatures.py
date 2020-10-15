@@ -1,14 +1,16 @@
 import bpy
 from . import utils
 from . import events
+from . import properties
 from .bones import (
     active_name, align_constraint, align_hitbox, blank_name, constraint_name,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
     make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
-    update_rigid_body, update_shape, passive_name, remove_pose_constraint,
-    update_pose_constraint, copy_properties,
+    update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
+    update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
+    compound_name,
 )
 
 
@@ -73,6 +75,21 @@ def passives_collection(context, armature, top):
     if not collection:
         collection = child_collection(context, armature, top, name)
         top.passives = collection
+
+    else:
+        collection.name = name
+
+    return collection
+
+
+def compounds_collection(context, armature, top):
+    collection = top.compounds
+
+    name = armature.data.name + " [Compounds]"
+
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.compounds = collection
 
     else:
         collection.name = name
@@ -198,6 +215,16 @@ class Update(bpy.types.Operator):
             else:
                 duplicates.add(name)
 
+        for compound in data.compounds:
+            if compound.hitbox:
+                name = compound.hitbox.name
+
+                if name in duplicates:
+                    compound.property_unset("hitbox")
+
+                else:
+                    duplicates.add(name)
+
 
     # TODO non-recursive version ?
     def is_active_parent(self, bone):
@@ -285,6 +312,27 @@ class Update(bpy.types.Operator):
             parent.append(constraint)
 
 
+    def make_compounds(self, context, armature, top, parent, bone, data):
+        is_compound = (data.collision_shape == 'COMPOUND')
+
+        for compound in data.compounds:
+            if is_compound:
+                if not compound.hitbox:
+                    collection = compounds_collection(context, armature, top)
+                    compound.hitbox = make_compound_hitbox(context, collection, bone, compound)
+
+                else:
+                    update_hitbox_name(compound.hitbox, compound_name(bone, compound))
+
+                # TODO only set this if the parent is different ?
+                utils.set_parent(compound.hitbox, parent)
+
+                self.exists.add(compound.hitbox.name)
+
+            else:
+                remove_compound(compound)
+
+
     def update_bone(self, context, armature, top, bone, data):
         if top.enabled and is_bone_enabled(data):
             if is_bone_active(data):
@@ -304,8 +352,9 @@ class Update(bpy.types.Operator):
                 else:
                     data.constraint.name = constraint_name(bone)
 
+                self.make_compounds(context, armature, top, data.active, bone, data)
                 align_hitbox(data.active, bone, data)
-                update_shape(data.active, type=data.collision_shape)
+                update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
 
                 align_constraint(data.constraint, bone)
@@ -327,8 +376,9 @@ class Update(bpy.types.Operator):
                 else:
                     update_hitbox_name(data.passive, passive_name(bone))
 
+                self.make_compounds(context, armature, top, data.passive, bone, data)
                 align_hitbox(data.passive, bone, data)
-                update_shape(data.passive, type=data.collision_shape)
+                update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
 
                 self.exists.add(data.passive.name)
@@ -337,6 +387,9 @@ class Update(bpy.types.Operator):
             remove_active(data)
             remove_passive(data)
             remove_constraint(data)
+
+            for compound in data.compounds:
+                remove_compound(compound)
 
 
     def fix_parents(self, armature, top, bone, data):
@@ -460,6 +513,9 @@ class Update(bpy.types.Operator):
         if top.passives and remove_orphans(top.passives, exists):
             top.property_unset("passives")
 
+        if top.compounds and remove_orphans(top.compounds, exists):
+            top.property_unset("compounds")
+
         if top.blanks and remove_orphans(top.blanks, exists):
             top.property_unset("blanks")
 
@@ -494,6 +550,9 @@ class Update(bpy.types.Operator):
 
         if top.passives:
             top.passives.hide_viewport = True
+
+        if top.compounds:
+            top.compounds.hide_viewport = True
 
 
     def process_pose(self, context, armature, top):
@@ -532,6 +591,9 @@ class Update(bpy.types.Operator):
 
         if top.passives:
             top.passives.hide_viewport = top.hide_hitboxes
+
+        if top.compounds:
+            top.compounds.hide_viewport = top.hide_hitboxes
 
 
     @classmethod
@@ -657,5 +719,161 @@ class CopyFromActive(bpy.types.Operator):
 
                 if bone.name != active.name:
                     copy_properties(active_data, bone.rigid_body_bones)
+
+        return {'FINISHED'}
+
+
+def add_new_compound(bone):
+    data = bone.rigid_body_bones
+
+    seen = set()
+
+    for compound in data.compounds:
+        seen.add(compound.name)
+
+    data.active_compound_index = len(data.compounds)
+
+    new_compound = data.compounds.add()
+
+    properties.Compound.is_updating = True
+    new_compound.name = utils.make_unique_name("Hitbox", seen)
+    properties.Compound.is_updating = False
+
+
+def delete_compound(bone):
+    data = bone.rigid_body_bones
+
+    old_index = data.active_compound_index
+
+    data.compounds.remove(old_index)
+
+    length = len(data.compounds)
+
+    if old_index >= length:
+        data.active_compound_index = max(length - 1, 0)
+
+
+def move_compound(bone, direction):
+    data = bone.rigid_body_bones
+
+    old_index = data.active_compound_index
+
+    if direction == 'UP':
+        new_index = max(old_index - 1, 0)
+
+    else:
+        new_index = min(old_index + 1, len(data.compounds) - 1)
+
+    if old_index != new_index:
+        data.compounds.move(old_index, new_index)
+        data.active_compound_index = new_index
+
+
+class NewCompound(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.new_compound"
+    bl_label = "Add new hitbox"
+    bl_description = "Adds a new hitbox to the compound shape"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'UNDO'}
+
+    is_alt: bpy.props.BoolProperty()
+
+    # TODO test for COMPOUND shape ?
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+
+    # TODO is there a better way of handling Alt ?
+    def invoke(self, context, event):
+        self.is_alt = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                add_new_compound(bone)
+
+        else:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            add_new_compound(bone)
+
+        events.mark_dirty(context)
+
+        return {'FINISHED'}
+
+
+class RemoveCompound(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.remove_compound"
+    bl_label = "Remove hitbox"
+    bl_description = "Deletes the selected hitbox"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'UNDO'}
+
+    is_alt: bpy.props.BoolProperty()
+
+    # TODO test for COMPOUND shape ?
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+
+    # TODO is there a better way of handling Alt ?
+    def invoke(self, context, event):
+        self.is_alt = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                delete_compound(bone)
+
+        else:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            delete_compound(bone)
+
+        events.mark_dirty(context)
+
+        return {'FINISHED'}
+
+
+class MoveCompound(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.move_compound"
+    bl_label = "Move hitbox"
+    bl_description = "Moves the selected hitbox up/down in the list"
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'UNDO'}
+
+    is_alt: bpy.props.BoolProperty()
+
+    direction: bpy.props.EnumProperty(
+        items=[
+            ('UP', "", ""),
+            ('DOWN', "", ""),
+        ]
+    )
+
+    # TODO test for COMPOUND shape ?
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+
+    # TODO is there a better way of handling Alt ?
+    def invoke(self, context, event):
+        self.is_alt = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                move_compound(bone, self.direction)
+
+        else:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            move_compound(bone, self.direction)
 
         return {'FINISHED'}

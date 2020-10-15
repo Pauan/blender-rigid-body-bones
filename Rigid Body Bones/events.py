@@ -15,6 +15,7 @@ def event_dirty(self, context):
     mark_dirty(context)
 
 
+# TODO rather than using a global, instead check whether the armature is dirty or not
 skip_events = False
 
 class StopEvents:
@@ -70,20 +71,6 @@ def event_align(context, armature, top):
             bones.update_pose_constraint(pose_bone)
 
 
-@utils.event("collision_shape")
-@utils.if_armature_enabled
-def event_collision_shape(context, armature, top):
-    if not skip_events:
-        for bone in armature.data.bones:
-            data = bone.rigid_body_bones
-
-            if data.active:
-                bones.update_shape(data.active, type=data.collision_shape)
-
-            elif data.passive:
-                bones.update_shape(data.passive, type=data.collision_shape)
-
-
 @utils.event("hide_hitboxes")
 @utils.if_armature_enabled
 def event_hide_hitboxes(context, armature, top):
@@ -92,6 +79,9 @@ def event_hide_hitboxes(context, armature, top):
 
     if top.passives:
         top.passives.hide_viewport = top.hide_hitboxes
+
+    if top.compounds:
+        top.compounds.hide_viewport = top.hide_hitboxes
 
 
 @utils.event("hide_active_bones")

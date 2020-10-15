@@ -1,6 +1,6 @@
 import bpy
 from . import utils
-from .bones import is_bone_active
+from .bones import is_bone_active, shape_icon
 
 
 def enabled_icon(enabled):
@@ -166,6 +166,175 @@ class SettingsPanel(bpy.types.Panel):
             col.prop(data, "disable_collisions")
 
 
+class CompoundList(bpy.types.UIList):
+    bl_idname = "DATA_UL_rigid_body_bones_bone_compound"
+
+    def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.prop(item, "name", text="", emboss=False, icon=shape_icon(item.collision_shape))
+
+        elif self.layout_type == 'GRID':
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon=shape_icon(item.collision_shape))
+
+
+class HitboxesPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_hitboxes"
+    bl_label = "Hitboxes"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone"
+    bl_options = set()
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        return data.collision_shape == 'COMPOUND'
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        layout = self.layout
+
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+
+        row = layout.row()
+
+        length = len(data.compounds)
+        has_items = length > 0
+
+        if has_items:
+            rows = 4
+        else:
+            rows = 2
+
+        row.template_list(
+            "DATA_UL_rigid_body_bones_bone_compound",
+            "",
+            data,
+            "compounds",
+            data,
+            "active_compound_index",
+            rows=rows,
+            maxrows=4,
+            item_dyntip_propname="name",
+        )
+
+        col = row.column(align=True)
+        col.operator("rigid_body_bones.new_compound", icon='ADD', text="")
+
+        sub = col.column(align=True)
+        sub.enabled = has_items
+        sub.operator("rigid_body_bones.remove_compound", icon='REMOVE', text="")
+
+        if has_items:
+            index = data.active_compound_index
+
+            col.separator()
+
+            sub = col.column(align=True)
+            sub.enabled = (index != 0)
+            sub.operator("rigid_body_bones.move_compound", icon='TRIA_UP', text="").direction = 'UP'
+
+            sub = col.column(align=True)
+            sub.enabled = (index < length - 1)
+            sub.operator("rigid_body_bones.move_compound", icon='TRIA_DOWN', text="").direction = 'DOWN'
+
+            compound = data.compounds[index]
+
+            layout.separator()
+
+            flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+            flow.use_property_split = True
+
+            col = flow.column()
+            col.prop(compound, "collision_shape", text="Shape")
+
+
+class HitboxesOffsetPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_bone_hitboxes_offset"
+    bl_label = "Offset"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_hitboxes"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 0
+
+    @classmethod
+    def poll(cls, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        return len(data.compounds) > 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        compound = data.compounds[data.active_compound_index]
+        layout = self.layout
+
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(compound, "origin", slider=True, text="Origin")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(compound, "location")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(compound, "rotation")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(compound, "scale")
+
+        flow.separator()
+
+
+class HitboxesAdvancedPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_hitboxes_advanced"
+    bl_label = "Advanced"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_parent_id = "DATA_PT_rigid_body_bones_bone_hitboxes"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        return len(data.compounds) > 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        compound = data.compounds[data.active_compound_index]
+        layout = self.layout
+
+        layout.use_property_split = True
+        layout.enabled = data.enabled and utils.is_armature_enabled(context)
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        col = flow.column()
+        col.prop(compound, "use_margin")
+
+        col = flow.column()
+        col.enabled = compound.use_margin
+        col.prop(compound, "collision_margin", text="Margin")
+
+        flow.separator()
+
+
 class LimitsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_bone_limits"
     bl_label = "Limits"
@@ -174,7 +343,7 @@ class LimitsPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 1
+    bl_order = 2
 
     @classmethod
     def poll(cls, context):
@@ -293,7 +462,7 @@ class SpringsPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 2
+    bl_order = 3
 
     @classmethod
     def poll(cls, context):
@@ -430,7 +599,7 @@ class OffsetPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 3
+    bl_order = 4
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
@@ -456,10 +625,11 @@ class OffsetPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "rotation")
 
-        flow.separator()
+        if data.collision_shape != 'COMPOUND':
+            flow.separator()
 
-        col = flow.column()
-        col.prop(data, "scale")
+            col = flow.column()
+            col.prop(data, "scale")
 
         flow.separator()
 
@@ -472,7 +642,7 @@ class AdvancedPanel(bpy.types.Panel):
     bl_category = "Rigid Body Bones"
     bl_parent_id = "DATA_PT_rigid_body_bones_bone"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 4
+    bl_order = 5
 
     def draw(self, context):
         pass

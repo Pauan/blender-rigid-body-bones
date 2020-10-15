@@ -4,17 +4,18 @@
 # TODO support convex hull and mesh shapes
 # TODO support cone shape
 # TODO FIXED and RAGDOLL types
+# TODO MOTOR type
 # TODO different scale settings for different collision shapes
+# TODO display origin point for hitboxes
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
 
-# TODO compound shape
-# TODO investigate if compound shape can be used to implement convex hull and mesh shapes
 # TODO add in Calculate Mass operator
 # TODO add in Bake to Keyframes operator
 # TODO add in Apply Transformation operator ?
+# TODO auto-set `skip_events` when `mark_dirty` is called ?
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
@@ -46,17 +47,25 @@ classes = (
     properties.Scene,
     properties.Error,
     properties.Armature,
+    properties.Compound,
     properties.Bone,
 
     armatures.Update,
     armatures.CleanupArmatures,
     armatures.CopyFromActive,
+    armatures.NewCompound,
+    armatures.RemoveCompound,
+    armatures.MoveCompound,
 
     panels.RigidBodyMenu,
     panels.ArmaturePanel,
     panels.ArmatureSettingsPanel,
     panels.BonePanel,
     panels.SettingsPanel,
+    panels.CompoundList,
+    panels.HitboxesPanel,
+    panels.HitboxesOffsetPanel,
+    panels.HitboxesAdvancedPanel,
     panels.LimitsPanel,
     panels.LimitsRotatePanel,
     panels.LimitsTranslatePanel,

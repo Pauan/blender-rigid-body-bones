@@ -23,6 +23,30 @@ def blank_name(bone):
 def constraint_name(bone):
     return bone.name + " [Head]"
 
+# TODO respect the 64 character name limit
+def compound_name(bone, data):
+    return "{} - {} [Compound]".format(bone.name, data.name)
+
+
+def shape_icon(shape):
+    if shape == 'BOX':
+        return 'MESH_CUBE'
+    elif shape == 'SPHERE':
+        return 'MESH_UVSPHERE'
+    elif shape == 'CAPSULE':
+        return 'MESH_CAPSULE'
+    elif shape == 'CYLINDER':
+        return 'MESH_CYLINDER'
+    elif shape == 'CONE':
+        return 'MESH_CONE'
+    elif shape == 'CONVEX_HULL':
+        return 'MESH_ICOSPHERE'
+    elif shape == 'MESH':
+        return 'MESH_MONKEY'
+    elif shape == 'COMPOUND':
+        return 'MESH_DATA'
+
+
 
 def common_settings(object):
     object.hide_render = True
@@ -58,6 +82,20 @@ def make_passive_hitbox(context, armature, collection, bone, data):
     bpy.ops.rigidbody.object_add(type='PASSIVE')
 
     hitbox.rigid_body.kinematic = True
+    common_settings(hitbox)
+
+    return hitbox
+
+
+def make_compound_hitbox(context, collection, bone, data):
+    hitbox = utils.make_mesh_object(
+        name=compound_name(bone, data),
+        collection=collection,
+    )
+
+    utils.select_active(context, hitbox)
+    bpy.ops.rigidbody.object_add(type='PASSIVE')
+
     common_settings(hitbox)
 
     return hitbox
@@ -123,7 +161,22 @@ def update_shape(object, type):
     else:
         object.show_bounds = True
         object.display_type = 'BOUNDS'
-        object.display_bounds_type = type
+
+        if type == 'COMPOUND':
+            object.display_bounds_type = 'SPHERE'
+        else:
+            object.display_bounds_type = type
+
+
+def update_hitbox_shape(object, data):
+    type = data.collision_shape
+
+    update_shape(object, type=type)
+
+    if type == 'COMPOUND':
+        for compound in data.compounds:
+            assert compound.hitbox is not None
+            update_shape(compound.hitbox, type=compound.collision_shape)
 
 
 def update_rigid_body(rigid_body, data):
@@ -139,6 +192,13 @@ def update_rigid_body(rigid_body, data):
     rigid_body.use_start_deactivated = data.use_start_deactivated
     rigid_body.deactivate_linear_velocity = data.deactivate_linear_velocity
     rigid_body.deactivate_angular_velocity = data.deactivate_angular_velocity
+
+    if data.collision_shape == 'COMPOUND':
+        for compound in data.compounds:
+            compound_body = compound.hitbox.rigid_body
+
+            compound_body.use_margin = compound.use_margin
+            compound_body.collision_margin = compound.collision_margin
 
 
 def is_spring(data):
@@ -213,12 +273,14 @@ def align_constraint(constraint, bone):
     constraint.rotation_euler = bone.matrix_local.to_euler()
 
 
-def hitbox_dimensions(bone):
-    dimensions = bone.rigid_body_bones.scale * bone.length
+# TODO this is called with both Bone and Compound properties
+def hitbox_dimensions(bone, data):
+    dimensions = data.scale * bone.length
     dimensions.rotate(Euler((radians(90.0), 0.0, 0.0)))
     return dimensions
 
 
+# TODO this is called with both Bone and Compound properties
 def hitbox_location(bone, data):
     length = bone.length
     origin = length * (data.origin - 0.5)
@@ -228,31 +290,74 @@ def hitbox_location(bone, data):
 
     location.y += origin - (length * 0.5)
     location += data.location
-
-    if is_bone_active(data):
-        location.rotate(bone.matrix_local.to_euler())
-        location += bone.tail_local
-
     return location
+
+
+# TODO this is called with both Bone and Compound properties
+def passive_rotation(data):
+    rotation = Euler((radians(90.0), 0.0, 0.0))
+    rotation.rotate(data.rotation)
+    return rotation
 
 
 def hitbox_rotation(bone, data):
     if is_bone_active(data):
-        rotation = bone.rigid_body_bones.rotation.copy()
+        rotation = data.rotation.copy()
         rotation.rotate(bone.matrix_local.to_euler())
         rotation.rotate_axis('X', radians(90.0))
         return rotation
 
     else:
-        rotation = Euler((radians(90.0), 0.0, 0.0))
-        rotation.rotate(bone.rigid_body_bones.rotation)
-        return rotation
+        return passive_rotation(data)
+
+
+def hitbox_origin(bone, data):
+    return Vector((0.0, bone.length * (data.origin - 1.0), 0.0))
+
+
+def align_compound(hitbox, bone, data, compound):
+    location = hitbox_location(bone, compound)
+    location -= hitbox_origin(bone, data)
+    location.rotate(Euler((radians(-90.0), 0.0, 0.0)))
+    hitbox.location = location
+
+    rotation = passive_rotation(compound)
+    rotation.rotate(Euler((radians(-90.0), 0.0, 0.0)))
+    hitbox.rotation_euler = rotation
+
+    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, compound))
 
 
 def align_hitbox(hitbox, bone, data):
-    hitbox.location = hitbox_location(bone, data)
     hitbox.rotation_euler = hitbox_rotation(bone, data)
-    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone))
+
+    if data.collision_shape == 'COMPOUND':
+        location = hitbox_origin(bone, data)
+        location += data.location
+
+        if is_bone_active(data):
+            location.rotate(bone.matrix_local.to_euler())
+            location += bone.tail_local
+
+        hitbox.location = location
+
+        dimensions = bone.length * 0.05
+        utils.set_mesh_cube(hitbox.data, (dimensions, dimensions, dimensions))
+
+        for compound in data.compounds:
+            assert compound.hitbox is not None
+            align_compound(compound.hitbox, bone, data, compound)
+
+    else:
+        location = hitbox_location(bone, data)
+
+        if is_bone_active(data):
+            location.rotate(bone.matrix_local.to_euler())
+            location += bone.tail_local
+
+        hitbox.location = location
+
+        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, data))
 
 
 def update_hitbox_name(hitbox, name):
@@ -280,6 +385,11 @@ def remove_passive(data):
     if data.passive:
         utils.remove_object(data.passive)
         data.property_unset("passive")
+
+def remove_compound(data):
+    if data.hitbox:
+        utils.remove_object(data.hitbox)
+        data.property_unset("hitbox")
 
 def remove_blank(data):
     if data.blank:
@@ -443,3 +553,18 @@ def copy_properties(active, data):
     data.limit_ang_x_upper = active.limit_ang_x_upper
     data.limit_ang_y_upper = active.limit_ang_y_upper
     data.limit_ang_z_upper = active.limit_ang_z_upper
+
+    data.compounds.clear()
+
+    for compound in active.compounds:
+        new = data.compounds.add()
+        new.name = compound.name
+        new.collision_shape = compound.collision_shape
+        new.location = compound.location
+        new.rotation = compound.rotation
+        new.scale = compound.scale
+        new.origin = compound.origin
+        new.use_margin = compound.use_margin
+        new.collision_margin = compound.collision_margin
+
+    data.active_compound_index = active.active_compound_index

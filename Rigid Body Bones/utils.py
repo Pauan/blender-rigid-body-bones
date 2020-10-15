@@ -1,3 +1,4 @@
+import re
 import sys
 import time
 import bpy
@@ -6,7 +7,7 @@ from math import radians
 from mathutils import Vector, Euler, Matrix
 
 
-DEBUG = False
+DEBUG = True
 
 def log(obj):
     from pprint import PrettyPrinter
@@ -200,3 +201,25 @@ def make_mesh_object(name, collection):
     cube = bpy.data.objects.new(name, mesh)
     collection.objects.link(cube)
     return cube
+
+
+re_strip = re.compile(r"\.[0-9]+$")
+
+# TODO is there a builtin utility for this ?
+def strip_name_suffix(name):
+    return re_strip.sub("", name)
+
+
+# TODO is there a builtin utility for this ?
+def make_unique_name(prefix, seen):
+    index = 1
+
+    while True:
+        # TODO respect the 64 character name limit
+        new_name = "{}.{:0>3}".format(prefix, index)
+
+        if new_name in seen:
+            index += 1
+
+        else:
+            return new_name

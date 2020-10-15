@@ -1,7 +1,9 @@
 import bpy
+from . import utils
+from .bones import shape_icon
 from .events import (
     event_dirty, event_rigid_body, event_rigid_body_constraint, event_align,
-    event_collision_shape, event_hide_hitboxes, event_hide_active_bones
+    event_hide_hitboxes, event_hide_active_bones, mark_dirty
 )
 
 
@@ -40,6 +42,7 @@ class Armature(bpy.types.PropertyGroup):
     container: bpy.props.PointerProperty(type=bpy.types.Collection)
     actives: bpy.props.PointerProperty(type=bpy.types.Collection)
     passives: bpy.props.PointerProperty(type=bpy.types.Collection)
+    compounds: bpy.props.PointerProperty(type=bpy.types.Collection)
     blanks: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
 
@@ -78,52 +81,7 @@ class Armature(bpy.types.PropertyGroup):
         del bpy.types.Armature.rigid_body_bones
 
 
-class Bone(bpy.types.PropertyGroup):
-    active: bpy.props.PointerProperty(type=bpy.types.Object)
-    passive: bpy.props.PointerProperty(type=bpy.types.Object)
-    blank: bpy.props.PointerProperty(type=bpy.types.Object)
-    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
-
-    error: bpy.props.StringProperty()
-
-    # These properties are used to save/restore the parent
-    # TODO replace with PointerProperty
-    name: bpy.props.StringProperty()
-
-    # TODO replace with PointerProperty
-    parent: bpy.props.StringProperty(
-        name="Parent",
-        description="Parent bone for joint",
-    )
-
-    use_connect: bpy.props.BoolProperty(
-        name="Connected",
-        description="When bone has a parent, bone's head is stuck to the parent's tail",
-    )
-
-    is_hidden: bpy.props.BoolProperty(default=False)
-
-
-    enabled: bpy.props.BoolProperty(
-        name="Enable Rigid Body",
-        description="Enable rigid body physics for the bone",
-        default=False,
-        options=set(),
-        update=event_dirty,
-    )
-
-    type: bpy.props.EnumProperty(
-        name="Type",
-        description="Behavior of the bone physics",
-        default='PASSIVE',
-        options=set(),
-        items=[
-            ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
-            ('ACTIVE', "Active", "Bone automatically moves", 1),
-        ],
-        update=event_dirty,
-    )
-
+class ShapeProperties:
     location: bpy.props.FloatVectorProperty(
         name="Location",
         description="Location of the hitbox relative to the bone",
@@ -174,6 +132,126 @@ class Bone(bpy.types.PropertyGroup):
         update=event_align,
     )
 
+    use_margin: bpy.props.BoolProperty(
+        name="Collision Margin",
+        description="Use custom collision margin for the hitbox",
+        default=False,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    collision_margin: bpy.props.FloatProperty(
+        name="Collision Margin",
+        description="Threshold of distance near surface where collisions are still considered (best results when non-zero)",
+        default=0.04,
+        min=0.0,
+        max=1.0,
+        step=1,
+        precision=3,
+        unit='LENGTH',
+        options=set(),
+        update=event_rigid_body,
+    )
+
+
+class Compound(bpy.types.PropertyGroup, ShapeProperties):
+    # TODO make a Context object for this ?
+    is_updating = False
+
+    def update_name(self, context):
+        if not Compound.is_updating:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            data = bone.rigid_body_bones
+
+            seen = set()
+
+            for compound in data.compounds:
+                if compound != self:
+                    seen.add(compound.name)
+
+            if self.name in seen:
+                Compound.is_updating = True
+                self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
+                Compound.is_updating = False
+
+            mark_dirty(context)
+
+    hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
+
+    name: bpy.props.StringProperty(update=update_name)
+
+    # TODO some code duplication
+    collision_shape: bpy.props.EnumProperty(
+        name="Collision Shape",
+        description="Collision shape of the hitbox",
+        default='BOX',
+        options=set(),
+        items=[
+            ('BOX', "Box", "", shape_icon('BOX'), 2),
+            ('SPHERE', "Sphere", "", shape_icon('SPHERE'), 0),
+            ('CAPSULE', "Capsule", "", shape_icon('CAPSULE'), 1),
+            ('CYLINDER', "Cylinder", "", shape_icon('CYLINDER'), 3),
+            #('CONE', "Cone", "", shape_icon('CONE'), 4),
+            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", shape_icon('CONVEX_HULL'), 5),
+            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", shape_icon('MESH'), 6),
+        ],
+        # TODO more efficient event for this ?
+        update=event_dirty,
+    )
+
+
+class Bone(bpy.types.PropertyGroup, ShapeProperties):
+    active: bpy.props.PointerProperty(type=bpy.types.Object)
+    passive: bpy.props.PointerProperty(type=bpy.types.Object)
+    blank: bpy.props.PointerProperty(type=bpy.types.Object)
+    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
+
+    error: bpy.props.StringProperty()
+
+    # These properties are used to save/restore the parent
+    # TODO replace with PointerProperty
+    name: bpy.props.StringProperty()
+
+    # TODO replace with PointerProperty
+    parent: bpy.props.StringProperty(
+        name="Parent",
+        description="Parent bone for joint",
+    )
+
+    use_connect: bpy.props.BoolProperty(
+        name="Connected",
+        description="When bone has a parent, bone's head is stuck to the parent's tail",
+    )
+
+    is_hidden: bpy.props.BoolProperty(default=False)
+
+
+    compounds: bpy.props.CollectionProperty(type=Compound)
+
+    active_compound_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
+
+
+    enabled: bpy.props.BoolProperty(
+        name="Enable Rigid Body",
+        description="Enable rigid body physics for the bone",
+        default=False,
+        options=set(),
+        update=event_dirty,
+    )
+
+    type: bpy.props.EnumProperty(
+        name="Type",
+        description="Behavior of the bone physics",
+        default='PASSIVE',
+        options=set(),
+        items=[
+            ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
+            ('ACTIVE', "Active", "Bone automatically moves", 1),
+        ],
+        update=event_dirty,
+    )
+
     mass: bpy.props.FloatProperty(
         name="Mass",
         description="How much the bone 'weighs' irrespective of gravity",
@@ -192,15 +270,17 @@ class Bone(bpy.types.PropertyGroup):
         default='BOX',
         options=set(),
         items=[
-            ('BOX', "Box", "", 'MESH_CUBE', 2),
-            ('SPHERE', "Sphere", "", 'MESH_UVSPHERE', 0),
-            ('CAPSULE', "Capsule", "", 'MESH_CAPSULE', 1),
-            ('CYLINDER', "Cylinder", "", 'MESH_CYLINDER', 3),
-            #('CONE', "Cone", "", "MESH_CONE", 4),
-            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", "MESH_ICOSPHERE", 5),
-            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", "MESH_MONKEY", 6),
+            ('BOX', "Box", "", shape_icon('BOX'), 2),
+            ('SPHERE', "Sphere", "", shape_icon('SPHERE'), 0),
+            ('CAPSULE', "Capsule", "", shape_icon('CAPSULE'), 1),
+            ('CYLINDER', "Cylinder", "", shape_icon('CYLINDER'), 3),
+            #('CONE', "Cone", "", shape_icon('CONE'), 4),
+            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", shape_icon('CONVEX_HULL'), 5),
+            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", shape_icon('MESH'), 6),
+            None,
+            ('COMPOUND', "Compound", "Combines multiple hitboxes into one hitbox", shape_icon('COMPOUND'), 7),
         ],
-        update=event_collision_shape,
+        update=event_dirty,
     )
 
     friction: bpy.props.FloatProperty(
@@ -243,27 +323,6 @@ class Bone(bpy.types.PropertyGroup):
         min=0.0,
         max=1.0,
         precision=3,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    use_margin: bpy.props.BoolProperty(
-        name="Collision Margin",
-        description="Use custom collision margin for the hitbox",
-        default=False,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    collision_margin: bpy.props.FloatProperty(
-        name="Collision Margin",
-        description="Threshold of distance near surface where collisions are still considered (best results when non-zero)",
-        default=0.04,
-        min=0.0,
-        max=1.0,
-        step=1,
-        precision=3,
-        unit='LENGTH',
         options=set(),
         update=event_rigid_body,
     )
