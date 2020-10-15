@@ -22,7 +22,6 @@ def root_collection(context):
     if not collection:
         collection = utils.make_collection("RigidBodyBones", scene.collection)
         collection.hide_render = True
-        collection.hide_select = False
         scene.rigid_body_bones.collection = collection
 
     return collection
@@ -528,12 +527,8 @@ class Update(bpy.types.Operator):
 
         scene = context.scene.rigid_body_bones
 
-        if scene.collection:
-            if utils.safe_remove_collection(scene.collection):
-                scene.property_unset("collection")
-
-            else:
-                scene.collection.hide_select = True
+        if scene.collection and utils.safe_remove_collection(scene.collection):
+            scene.property_unset("collection")
 
 
     def process_edit(self, context, armature, top):
@@ -557,15 +552,6 @@ class Update(bpy.types.Operator):
 
     def process_pose(self, context, armature, top):
         top.errors.clear()
-
-
-        scene = context.scene.rigid_body_bones
-
-        # This is needed in order to select the objects,
-        # otherwise it's not possible to add rigid bodies
-        # to them.
-        if scene.collection:
-            scene.collection.hide_select = False
 
 
         for bone in armature.data.bones:
@@ -807,17 +793,9 @@ class CalculateMass(bpy.types.Operator):
         return utils.is_pose_mode(context) and utils.is_armature(context)
 
     def execute(self, context):
-        scene = context.scene.rigid_body_bones
-
         datas = []
 
-        with utils.Selected(context):
-            # This is needed in order to select the objects.
-            #
-            # TODO replace with a Context
-            if scene.collection:
-                scene.collection.hide_select = False
-
+        with utils.Selected(context), utils.Selectable(context):
             utils.deselect_all(context)
 
             for pose_bone in context.selected_pose_bones_from_active_object:
@@ -830,9 +808,6 @@ class CalculateMass(bpy.types.Operator):
                     utils.select_active(context, hitbox)
 
             bpy.ops.rigidbody.mass_calculate(material=self.material, density=self.density)
-
-            if scene.collection:
-                scene.collection.hide_select = True
 
         # This is only needed to prevent the mass update callback from running.
         # TODO make this more efficient

@@ -84,7 +84,7 @@ class Armature(bpy.types.PropertyGroup):
 class ShapeProperties:
     location: bpy.props.FloatVectorProperty(
         name="Location",
-        description="Location of the hitbox relative to the bone",
+        description="Location of the hitbox relative to the origin",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=5,

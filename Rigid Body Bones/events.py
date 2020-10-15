@@ -112,7 +112,7 @@ def next_tick():
     context = bpy.context
     scene = context.scene.rigid_body_bones
 
-    with utils.Selected(context):
+    with utils.Selected(context), utils.Selectable(context):
         for dirty in scene.dirties:
             if dirty.armature:
                 utils.select_active(context, dirty.armature)

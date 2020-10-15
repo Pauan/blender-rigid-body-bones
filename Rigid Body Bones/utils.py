@@ -112,6 +112,26 @@ class Selected:
         return False
 
 
+# This is needed in order to select the objects.
+class Selectable:
+    def __init__(self, context):
+        self.context = context
+
+    def __enter__(self):
+        scene = self.context.scene.rigid_body_bones
+
+        if scene.collection:
+            scene.collection.hide_select = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        scene = self.context.scene.rigid_body_bones
+
+        if scene.collection:
+            scene.collection.hide_select = True
+
+        return False
+
+
 def get_active_bone(armature):
     return armature.data.bones.active
 
