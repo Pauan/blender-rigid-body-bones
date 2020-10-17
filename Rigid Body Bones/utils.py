@@ -220,6 +220,13 @@ def set_mesh_cube(mesh, dimensions):
     bm.free()
 
 
+# TODO is there a faster way ?
+def clear_mesh(mesh):
+    bm = bmesh.new()
+    bm.to_mesh(mesh)
+    bm.free()
+
+
 def make_mesh_object(name, collection):
     mesh = bpy.data.meshes.new(name=name)
     cube = bpy.data.objects.new(name, mesh)

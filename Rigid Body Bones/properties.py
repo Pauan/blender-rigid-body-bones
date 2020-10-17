@@ -43,6 +43,7 @@ class Armature(bpy.types.PropertyGroup):
     actives: bpy.props.PointerProperty(type=bpy.types.Collection)
     passives: bpy.props.PointerProperty(type=bpy.types.Collection)
     compounds: bpy.props.PointerProperty(type=bpy.types.Collection)
+    origins: bpy.props.PointerProperty(type=bpy.types.Collection)
     blanks: bpy.props.PointerProperty(type=bpy.types.Collection)
     constraints: bpy.props.PointerProperty(type=bpy.types.Collection)
 
@@ -67,6 +68,13 @@ class Armature(bpy.types.PropertyGroup):
     hide_hitboxes: bpy.props.BoolProperty(
         name="Hide hitboxes",
         description="Hide bone hitboxes",
+        default=False,
+        update=event_hide_hitboxes,
+    )
+
+    hide_hitbox_origins: bpy.props.BoolProperty(
+        name="Hide hitbox origins",
+        description="Hide origins for hitboxes",
         default=False,
         update=event_hide_hitboxes,
     )
@@ -204,6 +212,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
 class Bone(bpy.types.PropertyGroup, ShapeProperties):
     active: bpy.props.PointerProperty(type=bpy.types.Object)
     passive: bpy.props.PointerProperty(type=bpy.types.Object)
+    origin_empty: bpy.props.PointerProperty(type=bpy.types.Object)
     blank: bpy.props.PointerProperty(type=bpy.types.Object)
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
 

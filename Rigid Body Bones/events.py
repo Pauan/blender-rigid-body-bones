@@ -54,6 +54,9 @@ def event_align(context, armature, top):
             elif data.passive:
                 bones.align_hitbox(data.passive, bone, data)
 
+            if data.origin_empty:
+                bones.align_origin(data.origin_empty, bone, data)
+
             bones.update_pose_constraint(pose_bone)
 
 
@@ -68,6 +71,9 @@ def event_hide_hitboxes(context, armature, top):
 
     if top.compounds:
         top.compounds.hide_viewport = top.hide_hitboxes
+
+    if top.origins:
+        top.origins.hide_viewport = top.hide_hitbox_origins
 
 
 @utils.event("hide_active_bones")

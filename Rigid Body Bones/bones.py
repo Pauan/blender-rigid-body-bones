@@ -17,6 +17,9 @@ def active_name(bone):
 def passive_name(bone):
     return bone.name + " [Passive]"
 
+def origin_name(bone):
+    return bone.name + " [Origin]"
+
 def blank_name(bone):
     return bone.name + " [Blank]"
 
@@ -101,6 +104,18 @@ def make_compound_hitbox(context, collection, bone, data):
     return hitbox
 
 
+def make_origin(collection, bone):
+    origin = bpy.data.objects.new(name=origin_name(bone), object_data=None)
+    collection.objects.link(origin)
+
+    origin.rotation_euler = (radians(-90.0), 0.0, 0.0)
+
+    common_settings(origin)
+    origin.empty_display_type = 'CIRCLE'
+
+    return origin
+
+
 def make_empty_rigid_body(context, name, collection, parent, parent_bone):
     body = utils.make_mesh_object(
         name=name,
@@ -163,7 +178,7 @@ def update_shape(object, type):
         object.display_type = 'BOUNDS'
 
         if type == 'COMPOUND':
-            object.display_bounds_type = 'SPHERE'
+            object.display_bounds_type = 'BOX'
         else:
             object.display_bounds_type = type
 
@@ -341,8 +356,7 @@ def align_hitbox(hitbox, bone, data):
 
         hitbox.location = location
 
-        dimensions = bone.length * 0.05
-        utils.set_mesh_cube(hitbox.data, (dimensions, dimensions, dimensions))
+        utils.clear_mesh(hitbox.data)
 
         for compound in data.compounds:
             assert compound.hitbox is not None
@@ -358,6 +372,16 @@ def align_hitbox(hitbox, bone, data):
         hitbox.location = location
 
         utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, data))
+
+
+def align_origin(origin, bone, data):
+    origin.empty_display_size = bone.length * 0.05
+
+    if data.collision_shape == 'COMPOUND':
+        origin.location = (0.0, 0.0, 0.0)
+
+    else:
+        origin.location = (0.0, 0.0, (bone.length * (0.5 - data.origin)) * data.scale.y)
 
 
 def update_hitbox_name(hitbox, name):
@@ -390,6 +414,11 @@ def remove_compound(data):
     if data.hitbox:
         utils.remove_object(data.hitbox)
         data.property_unset("hitbox")
+
+def remove_origin(data):
+    if data.origin_empty:
+        utils.remove_object(data.origin_empty)
+        data.property_unset("origin_empty")
 
 def remove_blank(data):
     if data.blank:

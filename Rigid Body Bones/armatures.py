@@ -10,7 +10,7 @@ from .bones import (
     remove_passive, store_parent, update_constraint, update_hitbox_name,
     update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
     update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
-    compound_name,
+    compound_name, make_origin, origin_name, align_origin, remove_origin,
 )
 
 
@@ -89,6 +89,21 @@ def compounds_collection(context, armature, top):
     if not collection:
         collection = child_collection(context, armature, top, name)
         top.compounds = collection
+
+    else:
+        collection.name = name
+
+    return collection
+
+
+def origins_collection(context, armature, top):
+    collection = top.origins
+
+    name = armature.data.name + " [Origins]"
+
+    if not collection:
+        collection = child_collection(context, armature, top, name)
+        top.origins = collection
 
     else:
         collection.name = name
@@ -332,6 +347,22 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
+    def make_origin(self, context, armature, top, parent, bone, data):
+        if not data.origin_empty:
+            collection = origins_collection(context, armature, top)
+            data.origin_empty = make_origin(collection, bone)
+
+        else:
+            data.origin_empty.name = origin_name(bone)
+
+        # TODO only set this if the parent is different ?
+        utils.set_parent(data.origin_empty, parent)
+
+        align_origin(data.origin_empty, bone, data)
+
+        self.exists.add(data.origin_empty.name)
+
+
     def update_bone(self, context, armature, top, bone, data):
         if top.enabled and is_bone_enabled(data):
             if is_bone_active(data):
@@ -355,6 +386,8 @@ class Update(bpy.types.Operator):
                 align_hitbox(data.active, bone, data)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
+
+                self.make_origin(context, armature, top, data.active, bone, data)
 
                 align_constraint(data.constraint, bone)
                 update_constraint(data.constraint.rigid_body_constraint, data)
@@ -380,12 +413,15 @@ class Update(bpy.types.Operator):
                 update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
 
+                self.make_origin(context, armature, top, data.passive, bone, data)
+
                 self.exists.add(data.passive.name)
 
         else:
             remove_active(data)
             remove_passive(data)
             remove_constraint(data)
+            remove_origin(data)
 
             for compound in data.compounds:
                 remove_compound(compound)
@@ -515,6 +551,9 @@ class Update(bpy.types.Operator):
         if top.compounds and remove_orphans(top.compounds, exists):
             top.property_unset("compounds")
 
+        if top.origins and remove_orphans(top.origins, exists):
+            top.property_unset("origins")
+
         if top.blanks and remove_orphans(top.blanks, exists):
             top.property_unset("blanks")
 
@@ -549,6 +588,9 @@ class Update(bpy.types.Operator):
         if top.compounds:
             top.compounds.hide_viewport = True
 
+        if top.origins:
+            top.origins.hide_viewport = True
+
 
     def process_pose(self, context, armature, top):
         top.errors.clear()
@@ -580,6 +622,9 @@ class Update(bpy.types.Operator):
 
         if top.compounds:
             top.compounds.hide_viewport = top.hide_hitboxes
+
+        if top.origins:
+            top.origins.hide_viewport = top.hide_hitbox_origins
 
 
     @classmethod

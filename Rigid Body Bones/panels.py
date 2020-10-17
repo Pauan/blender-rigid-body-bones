@@ -95,8 +95,13 @@ class ArmatureSettingsPanel(bpy.types.Panel):
         flow.separator()
 
         col = flow.column()
-        col.prop(data, "hide_hitboxes")
         col.prop(data, "hide_active_bones")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "hide_hitboxes")
+        col.prop(data, "hide_hitbox_origins")
 
 
 class BonePanel(bpy.types.Panel):
