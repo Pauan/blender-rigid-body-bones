@@ -129,6 +129,39 @@ class ShapeProperties:
         update=event_align,
     )
 
+    scale_width: bpy.props.FloatProperty(
+        name="Scale Width",
+        description="Width of the hitbox relative to the bone length",
+        default=0.2,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=event_align,
+    )
+
+    scale_length: bpy.props.FloatProperty(
+        name="Scale Length",
+        description="Length of the hitbox relative to the bone length",
+        default=1.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=event_align,
+    )
+
+    scale_diameter: bpy.props.FloatProperty(
+        name="Scale Diameter",
+        description="Diameter of the hitbox relative to the bone length",
+        default=1.0,
+        min=0.0,
+        precision=3,
+        step=1,
+        options=set(),
+        update=event_align,
+    )
+
     origin: bpy.props.FloatProperty(
         name="Offset Origin",
         description="Origin relative to the bone: Head=0, Tail=1",

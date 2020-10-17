@@ -11,6 +11,21 @@ def enabled_icon(enabled):
         return 'REMOVE'
 
 
+def display_scale(flow, data, shape):
+    if shape == 'BOX':
+        col = flow.column()
+        col.prop(data, "scale")
+
+    elif shape == 'SPHERE':
+        col = flow.column()
+        col.prop(data, "scale_diameter", text="Scale D")
+
+    else:
+        col = flow.column(align=True)
+        col.prop(data, "scale_width", text="Scale W")
+        col.prop(data, "scale_length", text="L")
+
+
 def rigid_body_menu(self, context):
     self.layout.menu("VIEW3D_MT_pose_rigid_body")
 
@@ -300,8 +315,7 @@ class HitboxesOffsetPanel(bpy.types.Panel):
 
         flow.separator()
 
-        col = flow.column()
-        col.prop(compound, "scale")
+        display_scale(flow, compound, compound.collision_shape)
 
         flow.separator()
 
@@ -631,11 +645,11 @@ class OffsetPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "rotation")
 
-        if data.collision_shape != 'COMPOUND':
-            flow.separator()
+        shape = data.collision_shape
 
-            col = flow.column()
-            col.prop(data, "scale")
+        if shape != 'COMPOUND':
+            flow.separator()
+            display_scale(flow, data, shape)
 
         flow.separator()
 

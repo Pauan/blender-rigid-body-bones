@@ -14,8 +14,7 @@
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
 
-# TODO different scale settings for different collision shapes
-# TODO display origin point for hitboxes
+# TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

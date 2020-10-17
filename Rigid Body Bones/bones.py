@@ -288,19 +288,36 @@ def align_constraint(constraint, bone):
     constraint.rotation_euler = bone.matrix_local.to_euler()
 
 
+def scale(data, shape):
+    if shape == 'BOX':
+        return data.scale
+    elif shape == 'SPHERE':
+        return Vector((data.scale_diameter, data.scale_diameter, data.scale_diameter))
+    else:
+        return Vector((data.scale_width, data.scale_length, data.scale_width))
+
+def scale_y(data, shape):
+    if shape == 'BOX':
+        return data.scale.y
+    elif shape == 'SPHERE':
+        return data.scale_diameter
+    else:
+        return data.scale_length
+
+
 # TODO this is called with both Bone and Compound properties
-def hitbox_dimensions(bone, data):
-    dimensions = data.scale * bone.length
+def hitbox_dimensions(bone, data, shape):
+    dimensions = scale(data, shape) * bone.length
     dimensions.rotate(Euler((radians(90.0), 0.0, 0.0)))
     return dimensions
 
 
 # TODO this is called with both Bone and Compound properties
-def hitbox_location(bone, data):
+def hitbox_location(bone, data, shape):
     length = bone.length
     origin = length * (data.origin - 0.5)
 
-    location = Vector((0.0, -origin * data.scale.y, 0.0))
+    location = Vector((0.0, -origin * scale_y(data, shape), 0.0))
     location.rotate(data.rotation)
 
     location.y += origin - (length * 0.5)
@@ -331,7 +348,9 @@ def hitbox_origin(bone, data):
 
 
 def align_compound(hitbox, bone, data, compound):
-    location = hitbox_location(bone, compound)
+    shape = compound.collision_shape
+
+    location = hitbox_location(bone, compound, shape)
     location -= hitbox_origin(bone, data)
     location.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.location = location
@@ -340,13 +359,15 @@ def align_compound(hitbox, bone, data, compound):
     rotation.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.rotation_euler = rotation
 
-    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, compound))
+    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, compound, shape))
 
 
 def align_hitbox(hitbox, bone, data):
     hitbox.rotation_euler = hitbox_rotation(bone, data)
 
-    if data.collision_shape == 'COMPOUND':
+    shape = data.collision_shape
+
+    if shape == 'COMPOUND':
         location = hitbox_origin(bone, data)
         location += data.location
 
@@ -363,7 +384,7 @@ def align_hitbox(hitbox, bone, data):
             align_compound(compound.hitbox, bone, data, compound)
 
     else:
-        location = hitbox_location(bone, data)
+        location = hitbox_location(bone, data, shape)
 
         if is_bone_active(data):
             location.rotate(bone.matrix_local.to_euler())
@@ -371,17 +392,19 @@ def align_hitbox(hitbox, bone, data):
 
         hitbox.location = location
 
-        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, data))
+        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, data, shape))
 
 
 def align_origin(origin, bone, data):
     origin.empty_display_size = bone.length * 0.05
 
-    if data.collision_shape == 'COMPOUND':
+    shape = data.collision_shape
+
+    if shape == 'COMPOUND':
         origin.location = (0.0, 0.0, 0.0)
 
     else:
-        origin.location = (0.0, 0.0, (bone.length * (0.5 - data.origin)) * data.scale.y)
+        origin.location = (0.0, 0.0, (bone.length * (0.5 - data.origin)) * scale_y(data, shape))
 
 
 def update_hitbox_name(hitbox, name):
@@ -527,6 +550,9 @@ def copy_properties(active, data):
     data.location = active.location
     data.rotation = active.rotation
     data.scale = active.scale
+    data.scale_diameter = active.scale_diameter
+    data.scale_width = active.scale_width
+    data.scale_length = active.scale_length
     data.origin = active.origin
     data.mass = active.mass
     data.collision_shape = active.collision_shape
@@ -592,6 +618,9 @@ def copy_properties(active, data):
         new.location = compound.location
         new.rotation = compound.rotation
         new.scale = compound.scale
+        new.scale_diameter = compound.scale_diameter
+        new.scale_width = compound.scale_width
+        new.scale_length = compound.scale_length
         new.origin = compound.origin
         new.use_margin = compound.use_margin
         new.collision_margin = compound.collision_margin
