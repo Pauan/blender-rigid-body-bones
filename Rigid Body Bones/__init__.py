@@ -5,16 +5,17 @@
 # TODO support cone shape
 # TODO FIXED and RAGDOLL types
 # TODO MOTOR type
-# TODO different scale settings for different collision shapes
-# TODO display origin point for hitboxes
+# TODO add in language translation support
+# TODO add in Bake to Keyframes operator ?
+# TODO add in Apply Transformation operator ?
+# TODO Collision support for colliding with soft bodies and clothes ?
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
 
-# TODO add in translation support
-# TODO add in Bake to Keyframes operator ?
-# TODO add in Apply Transformation operator ?
+# TODO different scale settings for different collision shapes
+# TODO display origin point for hitboxes
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

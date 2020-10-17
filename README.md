@@ -105,6 +105,10 @@ You must have Blender 2.91.0 or higher.
 
    ![][usage06]
 
+* Inside of the `Advanced -> Collision Layers` panel you can assign the bone to a different layer, which will cause it to only collide with other objects in the same layer.
+
+   You can also assign the bone to multiple layers by holding down `Shift`. Or you can hold down `Shift` to remove it from all the layers, which means it will never collide with anything. This is useful if you want the bone to be affected by motion, gravity, and wind, but not collisions.
+
 * You will probably need to change the `Properties -> Scene -> Rigid Body World -> Substeps Per Frame` and `Solver Iterations` settings.
 
    Increasing them can make the simulation more realistic, but it can also cause weird glitches, so sometimes you need to lower them.

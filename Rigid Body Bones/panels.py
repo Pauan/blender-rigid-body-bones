@@ -707,7 +707,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
 
 class CollectionsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_collections"
-    bl_label = "Collections"
+    bl_label = "Collision Layers"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"

@@ -328,8 +328,8 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
     )
 
     collision_collections: bpy.props.BoolVectorProperty(
-        name="Collision Collections",
-        description="Collision collections the hitbox belongs to",
+        name="Collision Layers",
+        description="The hitbox will only collide with other objects in the same collision layer",
         default=(
             True,  False, False, False, False, False, False, False, False, False,
             False, False, False, False, False, False, False, False, False, False
