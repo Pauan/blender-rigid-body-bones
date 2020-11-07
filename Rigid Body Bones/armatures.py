@@ -496,6 +496,8 @@ class Update(bpy.types.Operator):
 
     def update_constraints(self, context, armature, top):
         if top.enabled:
+            utils.reset_frame(context)
+
             # Create/update/remove Child Of constraints
             for pose_bone in armature.pose.bones:
                 update_pose_constraint(pose_bone)

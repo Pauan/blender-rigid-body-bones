@@ -527,8 +527,6 @@ def update_pose_constraint(pose_bone):
             found = constraints.new(type='CHILD_OF')
             found.name = "Rigid Body Bones [Child Of]"
 
-        # TODO verify that this properly sets the inverse
-        # TODO reset the locrotscale ?
         found.set_inverse_pending = True
 
         assert index is not None

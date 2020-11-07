@@ -44,6 +44,8 @@ def event_rigid_body_constraint(context, armature, top):
 @utils.if_armature_enabled
 def event_align(context, armature, top):
     if not is_dirty(context.scene.rigid_body_bones, armature):
+        utils.reset_frame(context)
+
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones

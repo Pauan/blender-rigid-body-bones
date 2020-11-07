@@ -132,6 +132,11 @@ class Selectable:
         return False
 
 
+def reset_frame(context):
+    scene = context.scene
+    scene.frame_set(scene.rigidbody_world.point_cache.frame_start)
+
+
 def get_active_bone(armature):
     return armature.data.bones.active
 

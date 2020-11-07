@@ -181,11 +181,6 @@ class SettingsPanel(bpy.types.Panel):
             col = flow.column()
             col.prop(data, "mass")
 
-            flow.separator()
-
-            col = flow.column()
-            col.prop(data, "disable_collisions")
-
 
 class CompoundList(bpy.types.UIList):
     bl_idname = "DATA_UL_rigid_body_bones_bone_compound"
@@ -688,6 +683,11 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         if is_bone_active(data):
+            col = flow.column()
+            col.prop(data, "disable_collisions")
+
+            flow.separator()
+
             col = flow.column()
             col.prop(data, "use_breaking")
 

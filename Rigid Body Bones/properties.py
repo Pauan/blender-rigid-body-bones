@@ -444,7 +444,7 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
     )
 
     disable_collisions: bpy.props.BoolProperty(
-        name="Disable Collisions",
+        name="Disable Parent Collisions",
         description="Disable collisions with the parent bone",
         default=True,
         options=set(),
