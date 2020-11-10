@@ -1,3 +1,12 @@
+<video autoplay loop muted width="1266" height="832">
+   <source src="https://github.com/Pauan/blender-rigid-body-bones/raw/master/Simple.mp4" type="video/mp4"></source>
+</video>
+
+<video autoplay loop muted width="1280" height="720">
+   <source src="https://github.com/Pauan/blender-rigid-body-bones/raw/master/Kizuna%20AI.webm" type="video/mp4"></source>
+</video>
+
+
 # Rigid Body Bones
 
 3D engines have support for bone physics, this can be used for a wide variety of things:
