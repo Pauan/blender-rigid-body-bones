@@ -1,10 +1,9 @@
-<video autoplay loop muted width="1266" height="832">
-   <source src="https://github.com/Pauan/blender-rigid-body-bones/raw/master/Simple.mp4" type="video/mp4"></source>
-</video>
+![][simplegif]
 
-<video autoplay loop muted width="1280" height="720">
-   <source src="https://github.com/Pauan/blender-rigid-body-bones/raw/master/Kizuna%20AI.webm" type="video/mp4"></source>
-</video>
+![][kizunagif]
+
+[simplegif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Simple.gif
+[kizunagif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Kizuna%20AI.gif
 
 
 # Rigid Body Bones
