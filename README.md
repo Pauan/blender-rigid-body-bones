@@ -1,12 +1,11 @@
+# Rigid Body Bones
+
 ![][simplegif]
 
 ![][kizunagif]
 
 [simplegif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Simple.gif
 [kizunagif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Kizuna%20AI.gif
-
-
-# Rigid Body Bones
 
 3D engines have support for bone physics, this can be used for a wide variety of things:
 
