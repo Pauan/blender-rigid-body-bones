@@ -47,7 +47,7 @@ Blender can do all of that, however it is ***incredibly*** time consuming and te
 
 * You must unparent/reparent the bones when switching between Edit and Pose mode.
 
-If you try to do it by hand, you will waste many hours of time.
+If you try to do it by hand, you will waste hundreds of hours of time.
 
 With this add-on, *all* of the above steps are automatically done for you. Rather than spending several *minutes* (per bone), it instead takes a couple *seconds*.
 
@@ -122,7 +122,7 @@ You must have Blender 2.91.0 or higher.
 
    Increasing them can make the simulation more realistic, but it can also cause weird glitches, so sometimes you need to lower them.
 
-   The `Substeps Per Frame` option affects how springs behave, so be very careful when changing it:
+   The `Substeps Per Frame` option changes how springs behave, so be very careful when changing it:
 
    ![][usage05]
 
