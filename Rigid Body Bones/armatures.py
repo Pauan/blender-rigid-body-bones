@@ -545,14 +545,15 @@ class Update(bpy.types.Operator):
             data = bone.rigid_body_bones
             bones[bone.name] = is_bone_enabled(data) and is_bone_active(data)
 
-        self.update_action(seen_actions, bones, armature.animation_data.action)
-
         if armature.pose_library:
             self.update_action(seen_actions, bones, armature.pose_library)
 
-        for track in armature.animation_data.nla_tracks:
-            for strip in track.strips:
-                self.update_action(seen_actions, bones, strip.action)
+        if armature.animation_data:
+            self.update_action(seen_actions, bones, armature.animation_data.action)
+
+            for track in armature.animation_data.nla_tracks:
+                for strip in track.strips:
+                    self.update_action(seen_actions, bones, strip.action)
 
 
     def change_parents(self, context, armature):
