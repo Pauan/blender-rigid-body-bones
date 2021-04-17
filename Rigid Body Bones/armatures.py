@@ -1,3 +1,4 @@
+import re
 import bpy
 from . import utils
 from . import events
@@ -12,6 +13,9 @@ from .bones import (
     update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
     compound_name, make_origin, origin_name, align_origin, remove_origin,
 )
+
+
+DATA_PATH_REGEXP = re.compile(r"""^pose\.bones\["([^"]+)"\]""")
 
 
 def root_collection(context):
@@ -516,6 +520,41 @@ class Update(bpy.types.Operator):
             remove_root_body(top)
 
 
+    def update_action(self, seen_actions, bones, action):
+        if not action.name in seen_actions:
+            seen_actions.add(action.name)
+
+            for fcurve in action.fcurves:
+                match = DATA_PATH_REGEXP.match(fcurve.data_path)
+
+                if match:
+                    name = match.group(1)
+                    is_active = bones.get(name, None)
+
+                    if is_active is not None:
+                        fcurve.mute = is_active
+
+
+    # This disables keyframe animations for Active bones
+    def update_fcurves(self, armature):
+        seen_actions = set()
+        bones = {}
+
+        for pose_bone in armature.pose.bones:
+            bone = pose_bone.bone
+            data = bone.rigid_body_bones
+            bones[bone.name] = is_bone_enabled(data) and is_bone_active(data)
+
+        self.update_action(seen_actions, bones, armature.animation_data.action)
+
+        if armature.pose_library:
+            self.update_action(seen_actions, bones, armature.pose_library)
+
+        for track in armature.animation_data.nla_tracks:
+            for strip in track.strips:
+                self.update_action(seen_actions, bones, strip.action)
+
+
     def change_parents(self, context, armature):
         edit_bones = armature.data.edit_bones
 
@@ -613,6 +652,8 @@ class Update(bpy.types.Operator):
 
 
         self.update_constraints(context, armature, top)
+
+        self.update_fcurves(armature)
 
         self.remove_orphans(context, armature, top)
 
