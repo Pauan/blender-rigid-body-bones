@@ -6,7 +6,6 @@
 # TODO FIXED and RAGDOLL types
 # TODO MOTOR type
 # TODO add in language translation support
-# TODO add in Bake to Keyframes operator ?
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
 
@@ -56,6 +55,7 @@ classes = (
     armatures.NewCompound,
     armatures.RemoveCompound,
     armatures.MoveCompound,
+    armatures.BakeToKeyframes,
 
     panels.RigidBodyMenu,
     panels.ArmaturePanel,

@@ -48,6 +48,7 @@ class RigidBodyMenu(bpy.types.Menu):
     def draw(self, context):
         self.layout.operator("rigid_body_bones.calculate_mass")
         self.layout.operator("rigid_body_bones.copy_from_active")
+        self.layout.operator("rigid_body_bones.bake_to_keyframes")
 
 
 class ArmaturePanel(bpy.types.Panel):

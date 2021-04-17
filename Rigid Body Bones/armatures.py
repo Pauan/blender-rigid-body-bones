@@ -1021,3 +1021,132 @@ class MoveCompound(bpy.types.Operator):
             move_compound(bone, self.direction)
 
         return {'FINISHED'}
+
+
+class BakeToKeyframes(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.bake_to_keyframes"
+    bl_label = "Bake to Keyframes"
+    bl_description = "Bake rigid body transformations of selected bones to keyframes"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    frame_start: bpy.props.IntProperty(
+        name="Start Frame",
+        description="Start frame for baking",
+        default=1,
+        min=0,
+        max=300000,
+    )
+
+    frame_end: bpy.props.IntProperty(
+        name="End Frame",
+        description="End frame for baking",
+        default=250,
+        min=0,
+        max=300000,
+    )
+
+    step: bpy.props.IntProperty(
+        name="Frame Step",
+        description="Frame Step",
+        default=1,
+        min=1,
+        max=120,
+    )
+
+    # TODO check for selected ?
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.is_armature(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        row = layout.row(align=True)
+        row.alignment = 'CENTER'
+        row.label(text="Baking removes the parent of Active bones", icon='INFO')
+
+        layout.prop(self, "frame_start")
+        layout.prop(self, "frame_end")
+        layout.prop(self, "step")
+
+    def invoke(self, context, _event):
+        scene = context.scene
+        self.frame_start = scene.frame_start
+        self.frame_end = scene.frame_end
+
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        active = set()
+        selected = {}
+
+        for pose_bone in context.selected_pose_bones_from_active_object:
+            bone = pose_bone.bone
+            data = bone.rigid_body_bones
+
+            assert not bone.hide
+
+            if is_bone_enabled(data) and is_bone_active(data):
+                active.add(bone.name)
+
+            else:
+                selected[bone.name] = (bone.select, bone.select_head, bone.select_tail)
+                bone.select = False
+                bone.select_head = False
+                bone.select_tail = False
+
+        succeeded = False
+
+        try:
+            # clean_curves was added in 2.92.0
+            if bpy.app.version >= (2, 92, 0):
+                bpy.ops.nla.bake(
+                    frame_start=self.frame_start,
+                    frame_end=self.frame_end,
+                    step=self.step,
+                    only_selected=True,
+                    visual_keying=True,
+                    clear_constraints=False,
+                    clear_parents=False,
+                    use_current_action=True,
+                    clean_curves=True,
+                    bake_types={'POSE'},
+                )
+            else:
+                bpy.ops.nla.bake(
+                    frame_start=self.frame_start,
+                    frame_end=self.frame_end,
+                    step=self.step,
+                    only_selected=True,
+                    visual_keying=True,
+                    clear_constraints=False,
+                    clear_parents=False,
+                    use_current_action=True,
+                    bake_types={'POSE'},
+                )
+
+            succeeded = True
+
+        finally:
+            for pose_bone in context.visible_pose_bones:
+                bone = pose_bone.bone
+                data = bone.rigid_body_bones
+
+                assert not bone.hide
+
+                select = selected.get(bone.name, None)
+
+                if select:
+                    bone.select = select[0]
+                    bone.select_head = select[1]
+                    bone.select_tail = select[2]
+
+                # Remove the parent and also disable the rigid body
+                if succeeded and bone.name in active:
+                    data.parent = ""
+                    data.use_connect = False
+                    data.type = 'PASSIVE'
+
+        return {'FINISHED'}
