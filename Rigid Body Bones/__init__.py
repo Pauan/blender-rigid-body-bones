@@ -16,7 +16,7 @@
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
-    "version": (1, 4),
+    "version": (1, 4, 1),
     # Minimum version because of https://developer.blender.org/T81345
     "blender": (2, 91, 0),
     "location": "View3D > Sidebar > Rigid Body Bones",
