@@ -8,16 +8,15 @@
 # TODO add in language translation support
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
+# TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
-
-# TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
-    "version": (1, 3),
+    "version": (1, 4),
     # Minimum version because of https://developer.blender.org/T81345
     "blender": (2, 91, 0),
     "location": "View3D > Sidebar > Rigid Body Bones",
