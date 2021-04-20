@@ -4,13 +4,6 @@ from . import utils
 from . import bones
 
 
-def simplify_modes(mode):
-    if mode == 'EDIT':
-        return mode
-    else:
-        return 'POSE'
-
-
 def event_dirty(self, context):
     mark_dirty(context)
 
@@ -100,19 +93,18 @@ def is_dirty(scene, armature):
 # It also causes multiple update operations to be batched
 # into one operation, which makes Alt updating work correctly.
 def mark_dirty(context):
-    assert utils.is_armature(context)
+    if utils.is_armature(context):
+        armature = context.active_object
+        scene = context.scene.rigid_body_bones
 
-    armature = context.active_object
-    scene = context.scene.rigid_body_bones
+        # Don't add duplicate objects
+        if not is_dirty(scene, armature):
+            dirty = scene.dirties.add()
+            dirty.armature = armature
 
-    # Don't add duplicate objects
-    if not is_dirty(scene, armature):
-        dirty = scene.dirties.add()
-        dirty.armature = armature
-
-    if len(scene.dirties) > 0:
-        if not bpy.app.timers.is_registered(next_tick):
-            bpy.app.timers.register(next_tick)
+        if len(scene.dirties) > 0:
+            if not bpy.app.timers.is_registered(next_tick):
+                bpy.app.timers.register(next_tick)
 
 
 @utils.timed("update")
@@ -136,8 +128,7 @@ def mode_switch():
     if utils.is_armature(context):
         armature = context.active_object
         top = armature.data.rigid_body_bones
-
-        mode = simplify_modes(armature.mode)
+        mode = armature.mode
 
         if top.mode != mode:
             top.mode = mode
@@ -177,6 +168,10 @@ def register_subscribers():
 @persistent
 def load_post(dummy):
     register_subscribers()
+
+    # When opening an old file, if an armature is selected it will update it.
+    # This is only really needed when updating the add-on.
+    mark_dirty(bpy.context)
 
 
 def register():

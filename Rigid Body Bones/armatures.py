@@ -296,11 +296,11 @@ class Update(bpy.types.Operator):
             self.names[data.name] = bone.name
 
             # Can't use is_bone_enabled because this runs before update_error
-            if top.enabled and not self.is_edit_mode and data.enabled and is_bone_active(data):
-                self.remove_parents.add(bone.name)
+            if top.enabled and self.mode == 'OBJECT' and data.enabled and is_bone_active(data):
+                self.remove_parent.add(bone.name)
 
             elif bone.parent is None:
-                self.restore_parents[bone.name] = (data.parent, data.use_connect)
+                self.restore_parent[bone.name] = (data.parent, data.use_connect)
 
 
     def hide_active(self, top, bone, data):
@@ -561,7 +561,7 @@ class Update(bpy.types.Operator):
 
         for edit_bone in edit_bones:
             name = edit_bone.name
-            data = self.restore_parents.get(name)
+            data = self.restore_parent.get(name)
 
             # Restore parent
             if data is not None:
@@ -575,7 +575,7 @@ class Update(bpy.types.Operator):
                 edit_bone.use_connect = use_connect
 
             # Remove parent
-            elif name in self.remove_parents:
+            elif name in self.remove_parent:
                 edit_bone.parent = None
 
 
@@ -613,13 +613,16 @@ class Update(bpy.types.Operator):
 
 
     def process_edit(self, context, armature, top):
-        for pose_bone in armature.pose.bones:
-            bone = pose_bone.bone
-            data = bone.rigid_body_bones
+        with utils.Mode(context, 'POSE'):
+            for pose_bone in armature.pose.bones:
+                bone = pose_bone.bone
+                data = bone.rigid_body_bones
 
-            remove_pose_constraint(pose_bone)
+                remove_pose_constraint(pose_bone)
 
-            self.fix_parents(armature, top, bone, data)
+                self.fix_parents(armature, top, bone, data)
+
+        self.change_parents(context, armature)
 
         if top.actives:
             top.actives.hide_viewport = True
@@ -637,20 +640,16 @@ class Update(bpy.types.Operator):
     def process_pose(self, context, armature, top):
         top.errors.clear()
 
-
         for bone in armature.data.bones:
             data = bone.rigid_body_bones
             self.fix_parents(armature, top, bone, data)
-
 
         # This must happen before process_bone
         with utils.Mode(context, 'EDIT'):
             self.change_parents(context, armature)
 
-
         for bone in armature.data.bones:
             self.process_bone(context, armature, top, bone)
-
 
         self.update_constraints(context, armature, top)
 
@@ -685,25 +684,21 @@ class Update(bpy.types.Operator):
         self.names = {}
 
         # Data for bones which should have their parent restored
-        self.restore_parents = {}
+        self.restore_parent = {}
 
         # Names of bones which should have their parent removed
-        self.remove_parents = set()
+        self.remove_parent = set()
 
         # Whether to destructively delete/store the bone parent data
         self.delete_parents = False
         self.store_parents = False
 
-        self.is_edit_mode = (top.mode == 'EDIT')
+        self.mode = top.mode
+
+        assert armature.mode == top.mode
 
 
-        if self.is_edit_mode:
-            assert armature.mode == 'EDIT'
-        else:
-            assert armature.mode != 'EDIT'
-
-
-        if self.is_edit_mode or not top.enabled:
+        if self.mode == 'EDIT' or not top.enabled:
             if top.parents_stored:
                 top.property_unset("parents_stored")
                 self.delete_parents = True
@@ -714,11 +709,8 @@ class Update(bpy.types.Operator):
                 self.store_parents = True
 
 
-        if self.is_edit_mode:
-            with utils.Mode(context, 'POSE'):
-                self.process_edit(context, armature, top)
-
-            self.change_parents(context, armature)
+        if self.mode == 'EDIT':
+            self.process_edit(context, armature, top)
 
         else:
             # Fast lookup for stored bone names -> list of active children
