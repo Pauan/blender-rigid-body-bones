@@ -141,6 +141,9 @@ def make_empty_rigid_body(context, name, collection, parent, parent_bone):
     common_settings(body)
     update_shape(body, type='BOX')
 
+    # TODO remove this after the clear_mesh bug is fixed
+    utils.clear_mesh(body.data)
+
     return body
 
 

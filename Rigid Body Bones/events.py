@@ -101,9 +101,7 @@ def cleanup_armatures():
 @persistent
 def fix_undo(scene):
     context = bpy.context
-
-    if utils.is_armature(context):
-        event_update(None, context)
+    event_update(None, context)
 
 
 owner = object()

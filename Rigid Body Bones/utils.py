@@ -214,9 +214,12 @@ def set_mesh_cube(mesh, dimensions):
 
 # TODO is there a faster way ?
 def clear_mesh(mesh):
-    bm = bmesh.new()
-    bm.to_mesh(mesh)
-    bm.free()
+    set_mesh_cube(mesh, (0.0, 0.0, 0.0))
+
+    # TODO can't use this because of a bug in Blender which causes empty meshes to have big bounding boxes when undoing
+    #bm = bmesh.new()
+    #bm.to_mesh(mesh)
+    #bm.free()
 
 
 def make_mesh_object(name, collection):
