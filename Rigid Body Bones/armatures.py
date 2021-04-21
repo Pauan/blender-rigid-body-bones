@@ -9,9 +9,9 @@ from .bones import (
     make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
-    update_rigid_body, update_rigid_body_active, update_hitbox_shape, passive_name,
-    remove_pose_constraint, update_pose_constraint, copy_properties, make_compound_hitbox,
-    remove_compound, compound_name, make_origin, origin_name, align_origin, remove_origin,
+    update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
+    update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
+    compound_name, make_origin, origin_name, align_origin, remove_origin,
     mute_pose_constraint,
 )
 
@@ -184,34 +184,6 @@ def remove_root_body(top):
     if top.root_body:
         utils.remove_object(top.root_body)
         top.property_unset("root_body")
-
-
-class AlignHitboxes(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.align_hitboxes"
-    bl_label = "Align hitboxes for all bones"
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    running = False
-
-    def modal(self, context, event):
-        if utils.is_armature(context):
-            if context.active_object.mode != 'POSE':
-                AlignHitboxes.running = False
-                return {'FINISHED'}
-            else:
-                events.event_align(None, context)
-                return {'PASS_THROUGH'}
-        else:
-            return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if AlignHitboxes.running:
-            return {'CANCELLED'}
-
-        else:
-            AlignHitboxes.running = True
-            context.window_manager.modal_handler_add(self)
-            return {'RUNNING_MODAL'}
 
 
 # This must be an operator, because it creates/destroys data blocks (e.g. objects).
@@ -393,7 +365,7 @@ class Update(bpy.types.Operator):
         # TODO only set this if the parent is different ?
         utils.set_parent(data.origin_empty, parent)
 
-        align_origin(data.origin_empty, pose_bone, data)
+        align_origin(data.origin_empty, pose_bone, data, self.is_active)
 
         self.exists.add(data.origin_empty.name)
 
@@ -418,10 +390,9 @@ class Update(bpy.types.Operator):
                     data.constraint.name = constraint_name(bone)
 
                 self.make_compounds(context, armature, top, data.active, bone, data)
-                align_hitbox(data.active, pose_bone, data)
+                align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
-                update_rigid_body_active(data.active.rigid_body, self.is_active)
 
                 self.make_origin(context, armature, top, data.active, pose_bone, bone, data)
 
@@ -445,7 +416,7 @@ class Update(bpy.types.Operator):
                     update_hitbox_name(data.passive, passive_name(bone))
 
                 self.make_compounds(context, armature, top, data.passive, bone, data)
-                align_hitbox(data.passive, pose_bone, data)
+                align_hitbox(data.passive, armature, pose_bone, data, False)
                 update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
 
@@ -777,7 +748,6 @@ class Update(bpy.types.Operator):
                 with utils.AnimationFrame(context):
                     self.process_pose(context, armature, top)
             else:
-                bpy.ops.rigid_body_bones.align_hitboxes('INVOKE_DEFAULT')
                 self.process_pose(context, armature, top)
 
 

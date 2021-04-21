@@ -42,13 +42,13 @@ def event_align(context, armature, top):
             data = bone.rigid_body_bones
 
             if data.active:
-                bones.align_hitbox(data.active, pose_bone, data)
+                bones.align_hitbox(data.active, armature, pose_bone, data, False)
 
             elif data.passive:
-                bones.align_hitbox(data.passive, pose_bone, data)
+                bones.align_hitbox(data.passive, armature, pose_bone, data, False)
 
             if data.origin_empty:
-                bones.align_origin(data.origin_empty, pose_bone, data)
+                bones.align_origin(data.origin_empty, pose_bone, data, False)
 
 
 @utils.event("hide_hitboxes")

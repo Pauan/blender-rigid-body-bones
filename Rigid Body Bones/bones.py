@@ -216,10 +216,6 @@ def update_rigid_body(rigid_body, data):
             compound_body.collision_margin = compound.collision_margin
 
 
-def update_rigid_body_active(rigid_body, is_active):
-    rigid_body.kinematic = not is_active
-
-
 def is_spring(data):
     return (
         data.use_spring_ang_x or
@@ -335,8 +331,8 @@ def passive_rotation(data):
     return rotation
 
 
-def hitbox_rotation(pose_bone, data):
-    if is_bone_active(data):
+def hitbox_rotation(pose_bone, data, is_active):
+    if is_bone_active(data) and is_active:
         rotation = data.rotation.copy()
         rotation.rotate(bone_rotation(pose_bone))
         rotation.rotate_axis('X', radians(90.0))
@@ -353,8 +349,8 @@ def hitbox_origin(data, length):
 def bone_rotation(pose_bone):
     return pose_bone.matrix.to_euler()
 
-def bone_length(pose_bone, data):
-    if is_bone_active(data):
+def bone_length(pose_bone, data, is_active):
+    if is_bone_active(data) and is_active:
         return pose_bone.length
     else:
         return pose_bone.bone.length
@@ -375,18 +371,26 @@ def align_compound(hitbox, data, compound, length):
     utils.set_mesh_cube(hitbox.data, hitbox_dimensions(compound, shape, length))
 
 
-def align_hitbox(hitbox, pose_bone, data):
-    hitbox.rotation_euler = hitbox_rotation(pose_bone, data)
+def align_hitbox(hitbox, armature, pose_bone, data, is_active):
+    if is_bone_active(data):
+        hitbox.rigid_body.kinematic = not is_active
+
+        if is_active:
+            utils.set_parent(hitbox, armature)
+        else:
+            utils.set_bone_parent(hitbox, armature, pose_bone.bone.name)
+
+    hitbox.rotation_euler = hitbox_rotation(pose_bone, data, is_active)
 
     shape = data.collision_shape
 
-    length = bone_length(pose_bone, data)
+    length = bone_length(pose_bone, data, is_active)
 
     if shape == 'COMPOUND':
         location = hitbox_origin(data, length)
         location += data.location
 
-        if is_bone_active(data):
+        if is_bone_active(data) and is_active:
             location.rotate(bone_rotation(pose_bone))
             location += pose_bone.tail
 
@@ -401,7 +405,7 @@ def align_hitbox(hitbox, pose_bone, data):
     else:
         location = hitbox_location(data, shape, length)
 
-        if is_bone_active(data):
+        if is_bone_active(data) and is_active:
             location.rotate(bone_rotation(pose_bone))
             location += pose_bone.tail
 
@@ -410,8 +414,8 @@ def align_hitbox(hitbox, pose_bone, data):
         utils.set_mesh_cube(hitbox.data, hitbox_dimensions(data, shape, length))
 
 
-def align_origin(origin, pose_bone, data):
-    length = bone_length(pose_bone, data)
+def align_origin(origin, pose_bone, data, is_active):
+    length = bone_length(pose_bone, data, is_active)
 
     origin.empty_display_size = length * 0.05
 
@@ -577,7 +581,10 @@ def update_pose_constraint(pose_bone, is_active):
         if index != last:
             constraints.move(index, last)
 
-        found.target = hitbox
+        if is_active:
+            found.target = hitbox
+        else:
+            found.target = None
 
     elif found is not None:
         # TODO can this remove an index instead, to make it faster ?
