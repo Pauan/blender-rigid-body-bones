@@ -95,8 +95,6 @@ You must have Blender 2.91.0 or higher.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
-   When changing certain settings it will reset the frame to the beginning. This is needed to prevent bugs.
-
 
 ## Useful tips
 

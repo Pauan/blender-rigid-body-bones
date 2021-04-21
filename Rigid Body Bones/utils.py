@@ -64,11 +64,24 @@ def event(name):
 
 def if_armature_enabled(f):
     def update(context):
-        armature = context.active_object
-        top = armature.data.rigid_body_bones
+        if is_armature(context):
+            armature = context.active_object
+            top = armature.data.rigid_body_bones
 
-        if top.enabled and armature.mode != 'EDIT':
-            f(context, armature, top)
+            if top.enabled and armature.mode != 'EDIT':
+                f(context, armature, top)
+
+    return update
+
+
+def if_armature_pose(f):
+    def update(context):
+        if is_armature(context):
+            armature = context.active_object
+            top = armature.data.rigid_body_bones
+
+            if top.enabled and armature.mode == 'POSE':
+                f(context, armature, top)
 
     return update
 
@@ -84,7 +97,8 @@ class Mode:
         bpy.ops.object.mode_set(mode=self.mode)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        bpy.ops.object.mode_set(mode=self.old_mode)
+        if self.old_mode is not None:
+            bpy.ops.object.mode_set(mode=self.old_mode)
         return False
 
 
@@ -132,10 +146,24 @@ class Selectable:
         return False
 
 
-def reset_frame(context):
-    scene = context.scene
-    if scene.rigidbody_world:
-        scene.frame_set(scene.rigidbody_world.point_cache.frame_start)
+# Temporarily resets the frame to the starting simulation frame
+class AnimationFrame:
+    def __init__(self, context):
+        self.scene = context.scene
+        self.old_frame = None
+
+    def __enter__(self):
+        scene = self.scene
+
+        if scene.rigidbody_world:
+            self.old_frame = scene.frame_current
+            scene.frame_set(scene.rigidbody_world.point_cache.frame_start)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.old_frame is not None:
+            self.scene.frame_set(self.old_frame)
+
+        return False
 
 
 def get_active_bone(armature):

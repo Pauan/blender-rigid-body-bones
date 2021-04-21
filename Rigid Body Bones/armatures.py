@@ -9,9 +9,10 @@ from .bones import (
     make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
-    update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
-    update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
-    compound_name, make_origin, origin_name, align_origin, remove_origin,
+    update_rigid_body, update_rigid_body_active, update_hitbox_shape, passive_name,
+    remove_pose_constraint, update_pose_constraint, copy_properties, make_compound_hitbox,
+    remove_compound, compound_name, make_origin, origin_name, align_origin, remove_origin,
+    mute_pose_constraint,
 )
 
 
@@ -295,19 +296,21 @@ class Update(bpy.types.Operator):
 
             self.names[data.name] = bone.name
 
-            # Can't use is_bone_enabled because this runs before update_error
-            if top.enabled and self.mode == 'OBJECT' and data.enabled and is_bone_active(data):
-                self.remove_parent.add(bone.name)
+            if bone.parent is None:
+                if data.parent != "":
+                    self.restore_parent[bone.name] = (data.parent, data.use_connect)
 
-            elif bone.parent is None:
-                self.restore_parent[bone.name] = (data.parent, data.use_connect)
+            else:
+                # Can't use is_bone_enabled because this runs before update_error
+                if top.enabled and self.is_active and data.enabled and is_bone_active(data):
+                    self.remove_parent.add(bone.name)
 
 
     def hide_active(self, top, bone, data):
         hide_active_bone(bone, data, top.enabled and top.hide_active_bones)
 
 
-    def update_active_constraint(self, context, armature, top, bone, data):
+    def update_active_constraint(self, context, armature, top, data):
         assert data.is_property_set("parent")
 
         constraint = data.constraint.rigid_body_constraint
@@ -351,7 +354,7 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
-    def make_origin(self, context, armature, top, parent, bone, data):
+    def make_origin(self, context, armature, top, parent, pose_bone, bone, data):
         if not data.origin_empty:
             collection = origins_collection(context, armature, top)
             data.origin_empty = make_origin(collection, bone)
@@ -362,12 +365,12 @@ class Update(bpy.types.Operator):
         # TODO only set this if the parent is different ?
         utils.set_parent(data.origin_empty, parent)
 
-        align_origin(data.origin_empty, bone, data)
+        align_origin(data.origin_empty, pose_bone, data)
 
         self.exists.add(data.origin_empty.name)
 
 
-    def update_bone(self, context, armature, top, bone, data):
+    def update_bone(self, context, armature, top, pose_bone, bone, data):
         if top.enabled and is_bone_enabled(data):
             if is_bone_active(data):
                 remove_passive(data)
@@ -387,16 +390,17 @@ class Update(bpy.types.Operator):
                     data.constraint.name = constraint_name(bone)
 
                 self.make_compounds(context, armature, top, data.active, bone, data)
-                align_hitbox(data.active, bone, data)
+                align_hitbox(data.active, pose_bone, data)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
+                update_rigid_body_active(data.active.rigid_body, self.is_active)
 
-                self.make_origin(context, armature, top, data.active, bone, data)
+                self.make_origin(context, armature, top, data.active, pose_bone, bone, data)
 
-                align_constraint(data.constraint, bone)
+                align_constraint(data.constraint, pose_bone)
                 update_constraint(data.constraint.rigid_body_constraint, data)
 
-                self.update_active_constraint(context, armature, top, bone, data)
+                self.update_active_constraint(context, armature, top, data)
 
                 self.exists.add(data.active.name)
                 self.exists.add(data.constraint.name)
@@ -413,11 +417,11 @@ class Update(bpy.types.Operator):
                     update_hitbox_name(data.passive, passive_name(bone))
 
                 self.make_compounds(context, armature, top, data.passive, bone, data)
-                align_hitbox(data.passive, bone, data)
+                align_hitbox(data.passive, pose_bone, data)
                 update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
 
-                self.make_origin(context, armature, top, data.passive, bone, data)
+                self.make_origin(context, armature, top, data.passive, pose_bone, bone, data)
 
                 self.exists.add(data.passive.name)
 
@@ -441,7 +445,8 @@ class Update(bpy.types.Operator):
             delete_parent(data)
 
 
-    def process_bone(self, context, armature, top, bone):
+    def process_bone(self, context, armature, top, pose_bone):
+        bone = pose_bone.bone
         data = bone.rigid_body_bones
 
         self.update_error(top, bone, data)
@@ -450,7 +455,7 @@ class Update(bpy.types.Operator):
 
         self.hide_active(top, bone, data)
 
-        self.update_bone(context, armature, top, bone, data)
+        self.update_bone(context, armature, top, pose_bone, bone, data)
 
 
     def update_joint(self, context, armature, top, bone):
@@ -500,15 +505,11 @@ class Update(bpy.types.Operator):
 
     def update_constraints(self, context, armature, top):
         if top.enabled:
-            utils.reset_frame(context)
-
-            # Create/update/remove Child Of constraints
             for pose_bone in armature.pose.bones:
-                update_pose_constraint(pose_bone)
+                update_pose_constraint(pose_bone, self.is_active)
                 self.update_joint(context, armature, top, pose_bone.bone)
 
         else:
-            # Remove Child Of constraints
             for pose_bone in armature.pose.bones:
                 remove_pose_constraint(pose_bone)
                 remove_blank(pose_bone.bone.rigid_body_bones)
@@ -556,26 +557,31 @@ class Update(bpy.types.Operator):
                     self.update_action(seen_actions, bones, strip.action)
 
 
-    def change_parents(self, context, armature):
+    def restore_parents(self, armature):
         edit_bones = armature.data.edit_bones
 
         for edit_bone in edit_bones:
             name = edit_bone.name
             data = self.restore_parent.get(name)
 
-            # Restore parent
             if data is not None:
                 (parent_name, use_connect) = data
 
+                assert parent_name != ""
                 assert edit_bone.parent is None
 
-                if parent_name != "":
-                    edit_bone.parent = edit_bones[self.names[parent_name]]
-
+                edit_bone.parent = edit_bones[self.names[parent_name]]
                 edit_bone.use_connect = use_connect
 
-            # Remove parent
-            elif name in self.remove_parent:
+
+    def remove_parents(self, armature):
+        edit_bones = armature.data.edit_bones
+
+        for edit_bone in edit_bones:
+            name = edit_bone.name
+
+            if name in self.remove_parent:
+                assert edit_bone.parent is not None
                 edit_bone.parent = None
 
 
@@ -614,15 +620,13 @@ class Update(bpy.types.Operator):
 
     def process_edit(self, context, armature, top):
         with utils.Mode(context, 'POSE'):
-            for pose_bone in armature.pose.bones:
-                bone = pose_bone.bone
+            print(len(armature.data.bones))
+            for bone in armature.data.bones:
                 data = bone.rigid_body_bones
-
-                remove_pose_constraint(pose_bone)
 
                 self.fix_parents(armature, top, bone, data)
 
-        self.change_parents(context, armature)
+        self.restore_parents(armature)
 
         if top.actives:
             top.actives.hide_viewport = True
@@ -640,20 +644,31 @@ class Update(bpy.types.Operator):
     def process_pose(self, context, armature, top):
         top.errors.clear()
 
-        for bone in armature.data.bones:
+        for pose_bone in armature.pose.bones:
+            bone = pose_bone.bone
             data = bone.rigid_body_bones
+
+            mute_pose_constraint(pose_bone)
             self.fix_parents(armature, top, bone, data)
 
         # This must happen before process_bone
         with utils.Mode(context, 'EDIT'):
-            self.change_parents(context, armature)
+            self.restore_parents(armature)
 
-        for bone in armature.data.bones:
-            self.process_bone(context, armature, top, bone)
+        for pose_bone in armature.pose.bones:
+            self.process_bone(context, armature, top, pose_bone)
 
         self.update_constraints(context, armature, top)
 
         self.update_fcurves(armature)
+
+        # This must happen after update_constraints
+        if self.is_active:
+            # Make sure that we're changing the mode for the armature
+            utils.select_active(context, armature)
+
+            with utils.Mode(context, 'EDIT'):
+                self.remove_parents(armature)
 
         self.remove_orphans(context, armature, top)
 
@@ -697,6 +712,9 @@ class Update(bpy.types.Operator):
 
         assert armature.mode == top.mode
 
+        # Whether the rigid body simulation should be active
+        self.is_active = (self.mode == 'OBJECT')
+
 
         if self.mode == 'EDIT' or not top.enabled:
             if top.parents_stored:
@@ -728,7 +746,11 @@ class Update(bpy.types.Operator):
             # Whether the root body should exist or not
             self.has_root_body = False
 
-            self.process_pose(context, armature, top)
+            if self.is_active:
+                with utils.AnimationFrame(context):
+                    self.process_pose(context, armature, top)
+            else:
+                self.process_pose(context, armature, top)
 
 
         return {'FINISHED'}

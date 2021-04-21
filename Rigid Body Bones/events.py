@@ -4,12 +4,16 @@ from . import utils
 from . import bones
 
 
+# 30 FPS
+UPDATE_TIMER_INTERVAL = 10.0 #(1000.0 / 30.0) / 1000.0
+
+
 def event_dirty(self, context):
     mark_dirty(context)
 
 
 @utils.event("rigid_body")
-@utils.if_armature_enabled
+@utils.if_armature_pose
 def event_rigid_body(context, armature, top):
     if not is_dirty(context.scene.rigid_body_bones, armature):
         for bone in armature.data.bones:
@@ -23,7 +27,7 @@ def event_rigid_body(context, armature, top):
 
 
 @utils.event("rigid_body_constraint")
-@utils.if_armature_enabled
+@utils.if_armature_pose
 def event_rigid_body_constraint(context, armature, top):
     if not is_dirty(context.scene.rigid_body_bones, armature):
         for bone in armature.data.bones:
@@ -34,25 +38,21 @@ def event_rigid_body_constraint(context, armature, top):
 
 
 @utils.event("align")
-@utils.if_armature_enabled
+@utils.if_armature_pose
 def event_align(context, armature, top):
     if not is_dirty(context.scene.rigid_body_bones, armature):
-        utils.reset_frame(context)
-
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones
 
             if data.active:
-                bones.align_hitbox(data.active, bone, data)
+                bones.align_hitbox(data.active, pose_bone, data)
 
             elif data.passive:
-                bones.align_hitbox(data.passive, bone, data)
+                bones.align_hitbox(data.passive, pose_bone, data)
 
             if data.origin_empty:
-                bones.align_origin(data.origin_empty, bone, data)
-
-            bones.update_pose_constraint(pose_bone)
+                bones.align_origin(data.origin_empty, pose_bone, data)
 
 
 @utils.event("hide_hitboxes")
@@ -135,6 +135,15 @@ def mode_switch():
             mark_dirty(context)
 
 
+def pose_bone_changed():
+    context = bpy.context
+
+    print("BONE CHANGED")
+    event_align(None, context)
+
+    return UPDATE_TIMER_INTERVAL
+
+
 # This is needed to cleanup the rigid body objects when the armature is deleted
 def cleanup_armatures():
     if bpy.ops.rigid_body_bones.cleanup_armatures.poll():
@@ -185,12 +194,16 @@ def register():
     #bpy.app.handlers.redo_post.append(fix_undo)
 
     bpy.app.timers.register(cleanup_armatures, persistent=True)
+    bpy.app.timers.register(pose_bone_changed, persistent=True, first_interval=UPDATE_TIMER_INTERVAL)
 
     register_subscribers()
 
 
 def unregister():
     utils.debug("UNREGISTER EVENTS")
+
+    if bpy.app.timers.is_registered(pose_bone_changed):
+        bpy.app.timers.unregister(pose_bone_changed)
 
     if bpy.app.timers.is_registered(cleanup_armatures):
         bpy.app.timers.unregister(cleanup_armatures)

@@ -216,6 +216,10 @@ def update_rigid_body(rigid_body, data):
             compound_body.collision_margin = compound.collision_margin
 
 
+def update_rigid_body_active(rigid_body, is_active):
+    rigid_body.kinematic = not is_active
+
+
 def is_spring(data):
     return (
         data.use_spring_ang_x or
@@ -283,9 +287,9 @@ def update_constraint(constraint, data):
     constraint.limit_ang_z_upper = -data.limit_ang_z_lower
 
 
-def align_constraint(constraint, bone):
-    constraint.location = bone.head_local
-    constraint.rotation_euler = bone.matrix_local.to_euler()
+def align_constraint(constraint, pose_bone):
+    constraint.location = pose_bone.head
+    constraint.rotation_euler = bone_rotation(pose_bone)
 
 
 def scale(data, shape):
@@ -306,15 +310,14 @@ def scale_y(data, shape):
 
 
 # TODO this is called with both Bone and Compound properties
-def hitbox_dimensions(bone, data, shape):
-    dimensions = scale(data, shape) * bone.length
+def hitbox_dimensions(data, shape, length):
+    dimensions = scale(data, shape) * length
     dimensions.rotate(Euler((radians(90.0), 0.0, 0.0)))
     return dimensions
 
 
 # TODO this is called with both Bone and Compound properties
-def hitbox_location(bone, data, shape):
-    length = bone.length
+def hitbox_location(data, shape, length):
     origin = length * (data.origin - 0.5)
 
     location = Vector((0.0, -origin * scale_y(data, shape), 0.0))
@@ -332,10 +335,10 @@ def passive_rotation(data):
     return rotation
 
 
-def hitbox_rotation(bone, data):
+def hitbox_rotation(pose_bone, data):
     if is_bone_active(data):
         rotation = data.rotation.copy()
-        rotation.rotate(bone.matrix_local.to_euler())
+        rotation.rotate(bone_rotation(pose_bone))
         rotation.rotate_axis('X', radians(90.0))
         return rotation
 
@@ -343,15 +346,25 @@ def hitbox_rotation(bone, data):
         return passive_rotation(data)
 
 
-def hitbox_origin(bone, data):
-    return Vector((0.0, bone.length * (data.origin - 1.0), 0.0))
+def hitbox_origin(data, length):
+    return Vector((0.0, length * (data.origin - 1.0), 0.0))
 
 
-def align_compound(hitbox, bone, data, compound):
+def bone_rotation(pose_bone):
+    return pose_bone.matrix.to_euler()
+
+def bone_length(pose_bone, data):
+    if is_bone_active(data):
+        return pose_bone.length
+    else:
+        return pose_bone.bone.length
+
+
+def align_compound(hitbox, data, compound, length):
     shape = compound.collision_shape
 
-    location = hitbox_location(bone, compound, shape)
-    location -= hitbox_origin(bone, data)
+    location = hitbox_location(compound, shape, lenth)
+    location -= hitbox_origin(data, length)
     location.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.location = location
 
@@ -359,21 +372,23 @@ def align_compound(hitbox, bone, data, compound):
     rotation.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.rotation_euler = rotation
 
-    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, compound, shape))
+    utils.set_mesh_cube(hitbox.data, hitbox_dimensions(compound, shape, length))
 
 
-def align_hitbox(hitbox, bone, data):
-    hitbox.rotation_euler = hitbox_rotation(bone, data)
+def align_hitbox(hitbox, pose_bone, data):
+    hitbox.rotation_euler = hitbox_rotation(pose_bone, data)
 
     shape = data.collision_shape
 
+    length = bone_length(pose_bone, data)
+
     if shape == 'COMPOUND':
-        location = hitbox_origin(bone, data)
+        location = hitbox_origin(data, length)
         location += data.location
 
         if is_bone_active(data):
-            location.rotate(bone.matrix_local.to_euler())
-            location += bone.tail_local
+            location.rotate(bone_rotation(pose_bone))
+            location += pose_bone.tail
 
         hitbox.location = location
 
@@ -381,22 +396,24 @@ def align_hitbox(hitbox, bone, data):
 
         for compound in data.compounds:
             assert compound.hitbox is not None
-            align_compound(compound.hitbox, bone, data, compound)
+            align_compound(compound.hitbox, data, compound, length)
 
     else:
-        location = hitbox_location(bone, data, shape)
+        location = hitbox_location(data, shape, length)
 
         if is_bone_active(data):
-            location.rotate(bone.matrix_local.to_euler())
-            location += bone.tail_local
+            location.rotate(bone_rotation(pose_bone))
+            location += pose_bone.tail
 
         hitbox.location = location
 
-        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(bone, data, shape))
+        utils.set_mesh_cube(hitbox.data, hitbox_dimensions(data, shape, length))
 
 
-def align_origin(origin, bone, data):
-    origin.empty_display_size = bone.length * 0.05
+def align_origin(origin, pose_bone, data):
+    length = bone_length(pose_bone, data)
+
+    origin.empty_display_size = length * 0.05
 
     shape = data.collision_shape
 
@@ -404,7 +421,7 @@ def align_origin(origin, bone, data):
         origin.location = (0.0, 0.0, 0.0)
 
     else:
-        origin.location = (0.0, 0.0, (bone.length * (0.5 - data.origin)) * scale_y(data, shape))
+        origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * scale_y(data, shape))
 
 
 def update_hitbox_name(hitbox, name):
@@ -502,18 +519,31 @@ def remove_pose_constraint(pose_bone):
         pose_bone.constraints.remove(constraint)
 
 
-def update_pose_constraint(pose_bone):
+def find_pose_constraint(pose_bone):
     index = None
     found = None
 
-    constraints = pose_bone.constraints
-
     # TODO can this be replaced with a collection method ?
-    for i, constraint in enumerate(constraints):
+    for i, constraint in enumerate(pose_bone.constraints):
         if constraint.name == "Rigid Body Bones [Child Of]":
             found = constraint
             index = i
             break
+
+    return (index, found)
+
+
+def mute_pose_constraint(pose_bone):
+    (index, found) = find_pose_constraint(pose_bone)
+
+    if found:
+        found.mute = True
+
+
+def update_pose_constraint(pose_bone, is_active):
+    (index, found) = find_pose_constraint(pose_bone)
+
+    constraints = pose_bone.constraints
 
     data = pose_bone.bone.rigid_body_bones
 
@@ -527,12 +557,25 @@ def update_pose_constraint(pose_bone):
             found = constraints.new(type='CHILD_OF')
             found.name = "Rigid Body Bones [Child Of]"
 
-        found.set_inverse_pending = True
+        if is_active:
+            found.inverse_matrix = (
+                # This is the same as the standard Set Inverse
+                hitbox.matrix_basis.inverted() @
+                # This is needed because we're removing the parent, so we have to preserve the parent transformations
+                pose_bone.matrix @
+                pose_bone.matrix_basis.inverted() @
+                pose_bone.bone.matrix_local.inverted()
+            )
+
+        found.mute = not is_active
+        found.show_expanded = False
 
         assert index is not None
 
-        if index != 0:
-            constraints.move(index, 0)
+        last = len(constraints) - 1
+
+        if index != last:
+            constraints.move(index, last)
 
         found.target = hitbox
 
