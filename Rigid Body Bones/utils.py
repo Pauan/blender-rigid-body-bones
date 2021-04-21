@@ -44,48 +44,6 @@ def timed(name):
     return decorator
 
 
-def event(name):
-    def decorator(f):
-        def update(self, context):
-            debug("EVENT {} {{".format(name))
-
-            time_start = time.time()
-
-            f(context)
-
-            time_end = time.time()
-            print_time(time_start, time_end)
-
-            debug("}")
-
-        return update
-    return decorator
-
-
-def if_armature_enabled(f):
-    def update(context):
-        if is_armature(context):
-            armature = context.active_object
-            top = armature.data.rigid_body_bones
-
-            if top.enabled and armature.mode != 'EDIT':
-                f(context, armature, top)
-
-    return update
-
-
-def if_armature_pose(f):
-    def update(context):
-        if is_armature(context):
-            armature = context.active_object
-            top = armature.data.rigid_body_bones
-
-            if top.enabled and armature.mode == 'POSE':
-                f(context, armature, top)
-
-    return update
-
-
 class Mode:
     def __init__(self, context, mode):
         self.context = context
@@ -288,3 +246,110 @@ def make_unique_name(prefix, seen):
 
         else:
             return new_name
+
+
+# Event system
+EVENTS = {}
+
+
+def get_dirty(armature, scene):
+    # If the dirty already exists then return it
+    for dirty in scene.dirties:
+        # TODO better cherk for this ?
+        if dirty.armature and dirty.armature.name == armature.name:
+            return dirty
+
+    # If it doesn't exist, create a new one
+    dirty = scene.dirties.add()
+    dirty.armature = armature
+    return dirty
+
+
+# This is used to run the event during the next main event tick.
+#
+# It also causes multiple update operations to be batched
+# into one operation, which makes Alt updating work correctly.
+def mark_dirty(context, name):
+    scene = context.scene.rigid_body_bones
+
+    if is_armature(context):
+        armature = context.active_object
+
+        dirty = get_dirty(armature, scene)
+        setattr(dirty, name, True)
+
+        debug("DIRTY {}".format(name))
+
+    if len(scene.dirties) > 0:
+        if not bpy.app.timers.is_registered(run_events):
+            bpy.app.timers.register(run_events)
+
+
+@timed("run_events")
+def run_events():
+    context = bpy.context
+    scene = context.scene.rigid_body_bones
+
+    assert len(scene.dirties) > 0
+
+    for dirty in scene.dirties:
+        armature = dirty.armature
+
+        if armature:
+            for (name, f) in EVENTS.items():
+                if getattr(dirty, name):
+                    f(context, dirty, armature)
+
+    scene.dirties.clear()
+
+
+def event(name):
+    def decorator(f):
+        def run(context, dirty, armature):
+            debug("EVENT {} {{".format(name))
+
+            time_start = time.time()
+
+            f(context, dirty, armature)
+
+            time_end = time.time()
+            print_time(time_start, time_end)
+
+            debug("}")
+
+        EVENTS[name] = run
+
+        def update(self, context):
+            mark_dirty(context, name)
+
+        return update
+    return decorator
+
+
+def if_armature_enabled(f):
+    def run(context, dirty, armature):
+        # event_update already updates everything, so we don't need to run this too
+        if not dirty.update:
+            top = armature.data.rigid_body_bones
+
+            if top.enabled and armature.mode != 'EDIT':
+                f(context, dirty, armature, top)
+
+    return run
+
+
+def if_armature_pose(f):
+    def run(context, dirty, armature):
+        # event_update already updates everything, so we don't need to run this too
+        if not dirty.update:
+            top = armature.data.rigid_body_bones
+
+            if top.enabled and armature.mode == 'POSE':
+                f(context, dirty, armature, top)
+
+    return run
+
+
+def unregister():
+    if bpy.app.timers.is_registered(run_events):
+        bpy.app.timers.unregister(run_events)

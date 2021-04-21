@@ -1,59 +1,61 @@
+import time
 import bpy
 from bpy.app.handlers import persistent
 from . import utils
 from . import bones
 
 
-def event_dirty(self, context):
-    mark_dirty(context)
+@utils.event("update")
+def event_update(context, dirty, armature):
+    with utils.Selected(context), utils.Selectable(context):
+        utils.select_active(context, armature)
+        assert context.active_object.name == armature.name
+        bpy.ops.rigid_body_bones.update()
 
 
 @utils.event("rigid_body")
 @utils.if_armature_pose
-def event_rigid_body(context, armature, top):
-    if not is_dirty(context.scene.rigid_body_bones, armature):
-        for bone in armature.data.bones:
-            data = bone.rigid_body_bones
+def event_rigid_body(context, dirty, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
 
-            if data.active:
-                bones.update_rigid_body(data.active.rigid_body, data)
+        if data.active:
+            bones.update_rigid_body(data.active.rigid_body, data)
 
-            elif data.passive:
-                bones.update_rigid_body(data.passive.rigid_body, data)
+        elif data.passive:
+            bones.update_rigid_body(data.passive.rigid_body, data)
 
 
 @utils.event("rigid_body_constraint")
 @utils.if_armature_pose
-def event_rigid_body_constraint(context, armature, top):
-    if not is_dirty(context.scene.rigid_body_bones, armature):
-        for bone in armature.data.bones:
-            data = bone.rigid_body_bones
+def event_rigid_body_constraint(context, dirty, armature, top):
+    for bone in armature.data.bones:
+        data = bone.rigid_body_bones
 
-            if data.constraint:
-                bones.update_constraint(data.constraint.rigid_body_constraint, data)
+        if data.constraint:
+            bones.update_constraint(data.constraint.rigid_body_constraint, data)
 
 
 @utils.event("align")
 @utils.if_armature_pose
-def event_align(context, armature, top):
-    if not is_dirty(context.scene.rigid_body_bones, armature):
-        for pose_bone in armature.pose.bones:
-            bone = pose_bone.bone
-            data = bone.rigid_body_bones
+def event_align(context, dirty, armature, top):
+    for pose_bone in armature.pose.bones:
+        bone = pose_bone.bone
+        data = bone.rigid_body_bones
 
-            if data.active:
-                bones.align_hitbox(data.active, armature, pose_bone, data, False)
+        if data.active:
+            bones.align_hitbox(data.active, armature, pose_bone, data, False)
 
-            elif data.passive:
-                bones.align_hitbox(data.passive, armature, pose_bone, data, False)
+        elif data.passive:
+            bones.align_hitbox(data.passive, armature, pose_bone, data, False)
 
-            if data.origin_empty:
-                bones.align_origin(data.origin_empty, pose_bone, data, False)
+        if data.origin_empty:
+            bones.align_origin(data.origin_empty, pose_bone, data, False)
 
 
 @utils.event("hide_hitboxes")
 @utils.if_armature_enabled
-def event_hide_hitboxes(context, armature, top):
+def event_hide_hitboxes(context, dirty, armature, top):
     if top.actives:
         top.actives.hide_viewport = top.hide_hitboxes
 
@@ -69,53 +71,10 @@ def event_hide_hitboxes(context, armature, top):
 
 @utils.event("hide_active_bones")
 @utils.if_armature_enabled
-def event_hide_active_bones(context, armature, top):
+def event_hide_active_bones(context, dirty, armature, top):
     for bone in armature.data.bones:
         data = bone.rigid_body_bones
         bones.hide_active_bone(bone, data, top.hide_active_bones)
-
-
-def is_dirty(scene, armature):
-    for dirty in scene.dirties:
-        if dirty.armature and dirty.armature.name == armature.name:
-            return True
-
-    return False
-
-
-# This is used to run the update operator during the next
-# main event tick.
-#
-# It also causes multiple update operations to be batched
-# into one operation, which makes Alt updating work correctly.
-def mark_dirty(context):
-    if utils.is_armature(context):
-        armature = context.active_object
-        scene = context.scene.rigid_body_bones
-
-        # Don't add duplicate objects
-        if not is_dirty(scene, armature):
-            dirty = scene.dirties.add()
-            dirty.armature = armature
-
-        if len(scene.dirties) > 0:
-            if not bpy.app.timers.is_registered(next_tick):
-                bpy.app.timers.register(next_tick)
-
-
-@utils.timed("update")
-def next_tick():
-    context = bpy.context
-    scene = context.scene.rigid_body_bones
-
-    with utils.Selected(context), utils.Selectable(context):
-        for dirty in scene.dirties:
-            if dirty.armature:
-                utils.select_active(context, dirty.armature)
-                assert context.active_object.name == dirty.armature.name
-                bpy.ops.rigid_body_bones.update()
-
-    scene.dirties.clear()
 
 
 def mode_switch():
@@ -128,7 +87,7 @@ def mode_switch():
 
         if top.mode != mode:
             top.mode = mode
-            mark_dirty(context)
+            event_update(None, context)
 
 
 # This is needed to cleanup the rigid body objects when the armature is deleted
@@ -144,7 +103,7 @@ def fix_undo(scene):
     context = bpy.context
 
     if utils.is_armature(context):
-        mark_dirty(context)
+        event_update(None, context)
 
 
 owner = object()
@@ -167,7 +126,7 @@ def load_post(dummy):
 
     # When opening an old file, if an armature is selected it will update it.
     # This is only really needed when updating the add-on.
-    mark_dirty(bpy.context)
+    event_update(None, bpy.context)
 
 
 def register():
@@ -188,11 +147,10 @@ def register():
 def unregister():
     utils.debug("UNREGISTER EVENTS")
 
+    utils.unregister()
+
     if bpy.app.timers.is_registered(cleanup_armatures):
         bpy.app.timers.unregister(cleanup_armatures)
-
-    if bpy.app.timers.is_registered(next_tick):
-        bpy.app.timers.unregister(next_tick)
 
     if fix_undo in bpy.app.handlers.redo_post:
         bpy.app.handlers.redo_post.remove(fix_undo)

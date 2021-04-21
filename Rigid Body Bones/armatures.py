@@ -187,7 +187,7 @@ def remove_root_body(top):
 
 
 # This must be an operator, because it creates/destroys data blocks (e.g. objects).
-# It must run asynchronously, in a separate tick. This is handled by `events.mark_dirty`.
+# It must run asynchronously, in a separate tick. This is handled by `events.event_update`.
 class Update(bpy.types.Operator):
     bl_idname = "rigid_body_bones.update"
     bl_label = "Update Rigid Body Bones"
@@ -910,10 +910,6 @@ class CalculateMass(bpy.types.Operator):
 
             bpy.ops.rigidbody.mass_calculate(material=self.material, density=self.density)
 
-        # This is only needed to prevent the mass update callback from running.
-        # TODO make this more efficient
-        events.mark_dirty(context)
-
         for data in datas:
             hitbox = get_hitbox(data)
             data.mass = hitbox.rigid_body.mass
@@ -997,7 +993,7 @@ class NewCompound(bpy.types.Operator):
             bone = utils.get_active_bone(armature)
             add_new_compound(bone)
 
-        events.mark_dirty(context)
+        events.event_update(None, context)
 
         return {'FINISHED'}
 
@@ -1032,7 +1028,7 @@ class RemoveCompound(bpy.types.Operator):
             bone = utils.get_active_bone(armature)
             delete_compound(bone)
 
-        events.mark_dirty(context)
+        events.event_update(None, context)
 
         return {'FINISHED'}
 

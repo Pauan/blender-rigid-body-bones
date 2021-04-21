@@ -2,8 +2,8 @@ import bpy
 from . import utils
 from .bones import shape_icon
 from .events import (
-    event_dirty, event_rigid_body, event_rigid_body_constraint, event_align,
-    event_hide_hitboxes, event_hide_active_bones, mark_dirty
+    event_update, event_rigid_body, event_rigid_body_constraint, event_align,
+    event_hide_hitboxes, event_hide_active_bones,
 )
 
 
@@ -15,6 +15,12 @@ MIN_ROT = -MAX_ROT
 
 class Dirty(bpy.types.PropertyGroup):
     armature: bpy.props.PointerProperty(type=bpy.types.Object)
+    update: bpy.props.BoolProperty(default=False)
+    rigid_body: bpy.props.BoolProperty(default=False)
+    rigid_body_constraint: bpy.props.BoolProperty(default=False)
+    align: bpy.props.BoolProperty(default=False)
+    hide_hitboxes: bpy.props.BoolProperty(default=False)
+    hide_active_bones: bpy.props.BoolProperty(default=False)
 
 
 class Scene(bpy.types.PropertyGroup):
@@ -55,7 +61,7 @@ class Armature(bpy.types.PropertyGroup):
         name="Enable rigid body physics",
         description="Enable rigid body physics for the armature",
         default=True,
-        update=event_dirty,
+        update=event_update,
     )
 
     hide_active_bones: bpy.props.BoolProperty(
@@ -216,7 +222,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
                 self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
                 Compound.is_updating = False
 
-            mark_dirty(context)
+            event_update(None, context)
 
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
 
@@ -238,7 +244,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
             #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", shape_icon('MESH'), 6),
         ],
         # TODO more efficient event for this ?
-        update=event_dirty,
+        update=event_update,
     )
 
 
@@ -279,7 +285,7 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
         description="Enable rigid body physics for the bone",
         default=False,
         options=set(),
-        update=event_dirty,
+        update=event_update,
     )
 
     type: bpy.props.EnumProperty(
@@ -291,7 +297,7 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
             ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
             ('ACTIVE', "Active", "Bone automatically moves", 1),
         ],
-        update=event_dirty,
+        update=event_update,
     )
 
     mass: bpy.props.FloatProperty(
@@ -322,7 +328,7 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
             None,
             ('COMPOUND', "Compound", "Combines multiple hitboxes into one hitbox", shape_icon('COMPOUND'), 7),
         ],
-        update=event_dirty,
+        update=event_update,
     )
 
     friction: bpy.props.FloatProperty(

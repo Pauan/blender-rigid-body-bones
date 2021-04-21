@@ -359,7 +359,7 @@ def bone_length(pose_bone, data, is_active):
 def align_compound(hitbox, data, compound, length):
     shape = compound.collision_shape
 
-    location = hitbox_location(compound, shape, lenth)
+    location = hitbox_location(compound, shape, length)
     location -= hitbox_origin(data, length)
     location.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.location = location
@@ -542,6 +542,7 @@ def mute_pose_constraint(pose_bone):
 
     if found:
         found.mute = True
+        found.target = None
 
 
 def update_pose_constraint(pose_bone, is_active):
