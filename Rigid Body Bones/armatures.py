@@ -12,7 +12,7 @@ from .bones import (
     update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
     update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
     compound_name, make_origin, origin_name, align_origin, remove_origin,
-    mute_pose_constraint,
+    mute_pose_constraint, compound_origin_name,
 )
 
 
@@ -333,11 +333,23 @@ class Update(bpy.types.Operator):
             parent.append(constraint)
 
 
-    def make_compounds(self, context, armature, top, parent, bone, data):
-        is_compound = (data.collision_shape == 'COMPOUND')
+    def make_origin(self, context, armature, top, data, parent, name):
+        if not data.origin_empty:
+            collection = origins_collection(context, armature, top)
+            data.origin_empty = make_origin(collection, name)
 
-        for compound in data.compounds:
-            if is_compound:
+        else:
+            data.origin_empty.name = name
+
+        # TODO only set this if the parent is different ?
+        utils.set_parent(data.origin_empty, parent)
+
+        self.exists.add(data.origin_empty.name)
+
+
+    def make_compounds(self, context, armature, top, bone, data, parent):
+        if data.collision_shape == 'COMPOUND':
+            for compound in data.compounds:
                 if not compound.hitbox:
                     collection = compounds_collection(context, armature, top)
                     compound.hitbox = make_compound_hitbox(context, collection, bone, compound)
@@ -350,24 +362,11 @@ class Update(bpy.types.Operator):
 
                 self.exists.add(compound.hitbox.name)
 
-            else:
-                remove_compound(compound)
-
-
-    def make_origin(self, context, armature, top, parent, pose_bone, bone, data):
-        if not data.origin_empty:
-            collection = origins_collection(context, armature, top)
-            data.origin_empty = make_origin(collection, bone)
+                self.make_origin(context, armature, top, compound, compound.hitbox, compound_origin_name(bone, compound))
 
         else:
-            data.origin_empty.name = origin_name(bone)
-
-        # TODO only set this if the parent is different ?
-        utils.set_parent(data.origin_empty, parent)
-
-        align_origin(data.origin_empty, pose_bone, data, self.is_active)
-
-        self.exists.add(data.origin_empty.name)
+            for compound in data.compounds:
+                remove_compound(compound)
 
 
     def update_bone(self, context, armature, top, pose_bone, bone, data):
@@ -389,12 +388,13 @@ class Update(bpy.types.Operator):
                 else:
                     data.constraint.name = constraint_name(bone)
 
-                self.make_compounds(context, armature, top, data.active, bone, data)
+                self.make_compounds(context, armature, top, bone, data, data.active)
+                self.make_origin(context, armature, top, data, data.active, origin_name(bone))
+
+                align_origin(data.origin_empty, pose_bone, data, self.is_active)
                 align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
-
-                self.make_origin(context, armature, top, data.active, pose_bone, bone, data)
 
                 align_constraint(data.constraint, pose_bone)
                 update_constraint(data.constraint.rigid_body_constraint, data)
@@ -415,12 +415,13 @@ class Update(bpy.types.Operator):
                 else:
                     update_hitbox_name(data.passive, passive_name(bone))
 
-                self.make_compounds(context, armature, top, data.passive, bone, data)
+                self.make_compounds(context, armature, top, bone, data, data.passive)
+                self.make_origin(context, armature, top, data, data.passive, origin_name(bone))
+
+                align_origin(data.origin_empty, pose_bone, data, False)
                 align_hitbox(data.passive, armature, pose_bone, data, False)
                 update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
-
-                self.make_origin(context, armature, top, data.passive, pose_bone, bone, data)
 
                 self.exists.add(data.passive.name)
 

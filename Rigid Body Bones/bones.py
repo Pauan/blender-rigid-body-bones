@@ -30,6 +30,10 @@ def constraint_name(bone):
 def compound_name(bone, data):
     return "{} - {} [Compound]".format(bone.name, data.name)
 
+# TODO respect the 64 character name limit
+def compound_origin_name(bone, data):
+    return "{} - {} [Origin]".format(bone.name, data.name)
+
 
 def shape_icon(shape):
     if shape == 'BOX':
@@ -104,8 +108,8 @@ def make_compound_hitbox(context, collection, bone, data):
     return hitbox
 
 
-def make_origin(collection, bone):
-    origin = bpy.data.objects.new(name=origin_name(bone), object_data=None)
+def make_origin(collection, name):
+    origin = bpy.data.objects.new(name=name, object_data=None)
     collection.objects.link(origin)
 
     origin.rotation_euler = (radians(-90.0), 0.0, 0.0)
@@ -414,18 +418,29 @@ def align_hitbox(hitbox, armature, pose_bone, data, is_active):
         utils.set_mesh_cube(hitbox.data, hitbox_dimensions(data, shape, length))
 
 
+def update_origin_size(origin, length):
+    origin.empty_display_size = length * 0.05
+
+def update_origin_location(origin, data, shape, length):
+    origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * scale_y(data, shape))
+
 def align_origin(origin, pose_bone, data, is_active):
     length = bone_length(pose_bone, data, is_active)
 
-    origin.empty_display_size = length * 0.05
+    update_origin_size(origin, length)
 
     shape = data.collision_shape
 
     if shape == 'COMPOUND':
         origin.location = (0.0, 0.0, 0.0)
 
+        for compound in data.compounds:
+            origin = compound.origin_empty
+            update_origin_size(origin, length)
+            update_origin_location(origin, compound, compound.collision_shape, length)
+
     else:
-        origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * scale_y(data, shape))
+        update_origin_location(origin, data, shape, length)
 
 
 def update_hitbox_name(hitbox, name):
@@ -458,6 +473,10 @@ def remove_compound(data):
     if data.hitbox:
         utils.remove_object(data.hitbox)
         data.property_unset("hitbox")
+
+    if data.origin_empty:
+        utils.remove_object(data.origin_empty)
+        data.property_unset("origin_empty")
 
 def remove_origin(data):
     if data.origin_empty:

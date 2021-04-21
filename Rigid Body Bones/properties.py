@@ -225,6 +225,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
             event_update(None, context)
 
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
+    origin_empty: bpy.props.PointerProperty(type=bpy.types.Object)
 
     name: bpy.props.StringProperty(update=update_name)
 

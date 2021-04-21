@@ -9,8 +9,8 @@
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
-# TODO add in origin for compound hitboxes
 # TODO when undoing the root body will turn into a box
+# TODO compound hitboxes are slightly misaligned in Object mode
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
