@@ -186,13 +186,41 @@ def remove_root_body(top):
         top.property_unset("root_body")
 
 
+class AlignHitboxes(bpy.types.Operator):
+    bl_idname = "rigid_body_bones.align_hitboxes"
+    bl_label = "Align hitboxes for all bones"
+    bl_options = {'INTERNAL', 'UNDO'}
+
+    running = False
+
+    def modal(self, context, event):
+        if utils.is_armature(context):
+            if context.active_object.mode != 'POSE':
+                AlignHitboxes.running = False
+                return {'FINISHED'}
+            else:
+                events.event_align(None, context)
+                return {'PASS_THROUGH'}
+        else:
+            return {'PASS_THROUGH'}
+
+    def invoke(self, context, event):
+        if AlignHitboxes.running:
+            return {'CANCELLED'}
+
+        else:
+            AlignHitboxes.running = True
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+
+
 # This must be an operator, because it creates/destroys data blocks (e.g. objects).
 # It must run asynchronously, in a separate tick. This is handled by `events.mark_dirty`.
 class Update(bpy.types.Operator):
     bl_idname = "rigid_body_bones.update"
     bl_label = "Update Rigid Body Bones"
     # TODO use UNDO_GROUPED ?
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'INTERNAL', 'UNDO'}
 
 
     def fix_duplicates(self, data):
@@ -620,7 +648,6 @@ class Update(bpy.types.Operator):
 
     def process_edit(self, context, armature, top):
         with utils.Mode(context, 'POSE'):
-            print(len(armature.data.bones))
             for bone in armature.data.bones:
                 data = bone.rigid_body_bones
 
@@ -750,6 +777,7 @@ class Update(bpy.types.Operator):
                 with utils.AnimationFrame(context):
                     self.process_pose(context, armature, top)
             else:
+                bpy.ops.rigid_body_bones.align_hitboxes('INVOKE_DEFAULT')
                 self.process_pose(context, armature, top)
 
 
@@ -761,7 +789,7 @@ class CleanupArmatures(bpy.types.Operator):
     bl_idname = "rigid_body_bones.cleanup_armatures"
     bl_label = "Cleanup Rigid Body Bones"
     # TODO use UNDO_GROUPED ?
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'INTERNAL', 'UNDO'}
 
 
     @classmethod
@@ -974,7 +1002,7 @@ class NewCompound(bpy.types.Operator):
     bl_label = "Add new hitbox"
     bl_description = "Adds a new hitbox to the compound shape"
     # TODO use UNDO_GROUPED ?
-    bl_options = {'UNDO'}
+    bl_options = {'INTERNAL', 'UNDO'}
 
     is_alt: bpy.props.BoolProperty()
 
@@ -1009,7 +1037,7 @@ class RemoveCompound(bpy.types.Operator):
     bl_label = "Remove hitbox"
     bl_description = "Deletes the selected hitbox"
     # TODO use UNDO_GROUPED ?
-    bl_options = {'UNDO'}
+    bl_options = {'INTERNAL', 'UNDO'}
 
     is_alt: bpy.props.BoolProperty()
 
@@ -1044,7 +1072,7 @@ class MoveCompound(bpy.types.Operator):
     bl_label = "Move hitbox"
     bl_description = "Moves the selected hitbox up/down in the list"
     # TODO use UNDO_GROUPED ?
-    bl_options = {'UNDO'}
+    bl_options = {'INTERNAL', 'UNDO'}
 
     is_alt: bpy.props.BoolProperty()
 

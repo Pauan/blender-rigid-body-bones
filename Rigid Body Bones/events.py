@@ -4,10 +4,6 @@ from . import utils
 from . import bones
 
 
-# 30 FPS
-UPDATE_TIMER_INTERVAL = 10.0 #(1000.0 / 30.0) / 1000.0
-
-
 def event_dirty(self, context):
     mark_dirty(context)
 
@@ -135,15 +131,6 @@ def mode_switch():
             mark_dirty(context)
 
 
-def pose_bone_changed():
-    context = bpy.context
-
-    print("BONE CHANGED")
-    event_align(None, context)
-
-    return UPDATE_TIMER_INTERVAL
-
-
 # This is needed to cleanup the rigid body objects when the armature is deleted
 def cleanup_armatures():
     if bpy.ops.rigid_body_bones.cleanup_armatures.poll():
@@ -194,16 +181,12 @@ def register():
     #bpy.app.handlers.redo_post.append(fix_undo)
 
     bpy.app.timers.register(cleanup_armatures, persistent=True)
-    bpy.app.timers.register(pose_bone_changed, persistent=True, first_interval=UPDATE_TIMER_INTERVAL)
 
     register_subscribers()
 
 
 def unregister():
     utils.debug("UNREGISTER EVENTS")
-
-    if bpy.app.timers.is_registered(pose_bone_changed):
-        bpy.app.timers.unregister(pose_bone_changed)
 
     if bpy.app.timers.is_registered(cleanup_armatures):
         bpy.app.timers.unregister(cleanup_armatures)

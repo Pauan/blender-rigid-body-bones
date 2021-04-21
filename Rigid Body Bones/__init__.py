@@ -49,6 +49,7 @@ classes = (
     properties.Compound,
     properties.Bone,
 
+    armatures.AlignHitboxes,
     armatures.Update,
     armatures.CleanupArmatures,
     armatures.CopyFromActive,
