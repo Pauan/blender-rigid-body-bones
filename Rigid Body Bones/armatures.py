@@ -317,17 +317,20 @@ class Update(bpy.types.Operator):
 
 
     def make_origin(self, context, armature, top, data, parent, name):
-        if not data.origin_empty:
+        origin = data.origin_empty
+
+        if not origin:
             collection = origins_collection(context, armature, top)
-            data.origin_empty = make_origin(collection, name)
+            origin = make_origin(collection, name)
+            data.origin_empty = origin
 
         else:
-            data.origin_empty.name = name
+            origin.name = name
 
         # TODO only set this if the parent is different ?
-        utils.set_parent(data.origin_empty, parent)
+        utils.set_parent(origin, parent)
 
-        self.exists.add(data.origin_empty.name)
+        self.exists.add(origin.name)
 
 
     def make_blank(self, context, armature, top, bone, data):
@@ -369,6 +372,8 @@ class Update(bpy.types.Operator):
 
                 else:
                     update_hitbox_name(compound.hitbox, compound_name(bone, compound))
+
+                assert parent is not None
 
                 # TODO only set this if the parent is different ?
                 utils.set_parent(compound.hitbox, parent)
@@ -424,6 +429,9 @@ class Update(bpy.types.Operator):
             if is_bone_active(data):
                 remove_passive(data)
 
+                self.make_parent_constraints(context, armature, top, pose_bone, data)
+                self.make_parent_blank(context, armature, top, pose_bone)
+
                 if not data.active:
                     collection = actives_collection(context, armature, top)
                     data.active = make_active_hitbox(context, armature, collection, bone, data)
@@ -439,9 +447,6 @@ class Update(bpy.types.Operator):
                 align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
-
-                self.make_parent_constraints(context, armature, top, pose_bone, data)
-                self.make_parent_blank(context, armature, top, pose_bone)
 
                 self.exists.add(data.active.name)
 

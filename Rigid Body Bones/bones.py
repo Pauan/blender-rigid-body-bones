@@ -376,6 +376,7 @@ def align_hitbox(hitbox, armature, pose_bone, data, is_active):
 
         if is_active:
             location.y += length
+            assert data.constraint is not None
             utils.set_parent(hitbox, data.constraint)
         else:
             utils.set_bone_parent(hitbox, armature, pose_bone.bone.name)
