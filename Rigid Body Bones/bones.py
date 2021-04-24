@@ -508,13 +508,7 @@ def delete_parent(data):
     data.property_unset("use_connect")
 
 
-def remove_pose_constraint(pose_bone):
-    constraint = pose_bone.constraints.get("Rigid Body Bones [Child Of]")
-
-    if constraint is not None:
-        # TODO can this remove an index instead, to make it faster ?
-        pose_bone.constraints.remove(constraint)
-
+CHILD_OF_CONSTRAINT_NAME = "RigidBodyBones [Child Of]"
 
 def find_pose_constraint(pose_bone):
     index = None
@@ -522,7 +516,11 @@ def find_pose_constraint(pose_bone):
 
     # TODO can this be replaced with a collection method ?
     for i, constraint in enumerate(pose_bone.constraints):
+        # Migrate from the old name to the new name
         if constraint.name == "Rigid Body Bones [Child Of]":
+            constraint.name = CHILD_OF_CONSTRAINT_NAME
+
+        if constraint.name == CHILD_OF_CONSTRAINT_NAME:
             found = constraint
             index = i
             break
@@ -538,53 +536,56 @@ def mute_pose_constraint(pose_bone):
         found.target = None
 
 
-def update_pose_constraint(armature, pose_bone, is_active):
+def remove_pose_constraint(pose_bone):
+    (index, found) = find_pose_constraint(pose_bone)
+
+    if found:
+        # TODO can this remove an index instead, to make it faster ?
+        pose_bone.constraints.remove(found)
+
+
+def create_pose_constraint(armature, pose_bone, data, is_active):
     (index, found) = find_pose_constraint(pose_bone)
 
     constraints = pose_bone.constraints
 
-    data = pose_bone.bone.rigid_body_bones
+    if found is None:
+        index = len(constraints)
+        found = constraints.new(type='CHILD_OF')
+        found.name = CHILD_OF_CONSTRAINT_NAME
 
-    if is_bone_enabled(data) and is_bone_active(data):
-        hitbox = data.active
+    assert index is not None
 
-        assert hitbox is not None
+    last = len(constraints) - 1
 
-        if found is None:
-            index = len(constraints)
-            found = constraints.new(type='CHILD_OF')
-            found.name = "Rigid Body Bones [Child Of]"
+    if index != last:
+        constraints.move(index, last)
 
-        if is_active:
-            found.inverse_matrix = (
-                # This is the same as the standard Set Inverse
-                hitbox.matrix_world.inverted() @
-                # Convert to armature space
-                armature.matrix_world @
-                # This is needed because we're removing the parent, so we have to preserve the parent transformations
-                pose_bone.matrix @
-                pose_bone.matrix_basis.inverted() @
-                pose_bone.bone.matrix_local.inverted()
-            )
 
-        found.mute = not is_active
-        found.show_expanded = False
+    hitbox = data.active
 
-        assert index is not None
+    assert hitbox is not None
 
-        last = len(constraints) - 1
+    found.show_expanded = False
 
-        if index != last:
-            constraints.move(index, last)
+    if is_active:
+        found.mute = False
+        found.target = hitbox
 
-        if is_active:
-            found.target = hitbox
-        else:
-            found.target = None
+        found.inverse_matrix = (
+            # This is the same as the standard Set Inverse
+            hitbox.matrix_world.inverted() @
+            # Convert to armature space
+            armature.matrix_world @
+            # This is needed because we're removing the parent, so we have to preserve the parent transformations
+            pose_bone.matrix @
+            pose_bone.matrix_basis.inverted() @
+            pose_bone.bone.matrix_local.inverted()
+        )
 
-    elif found is not None:
-        # TODO can this remove an index instead, to make it faster ?
-        constraints.remove(found)
+    else:
+        found.mute = True
+        found.target = None
 
 
 # TODO better way of doing this

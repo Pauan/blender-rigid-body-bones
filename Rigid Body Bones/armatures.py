@@ -10,9 +10,9 @@ from .bones import (
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
     remove_passive, store_parent, update_constraint, update_hitbox_name,
     update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
-    update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
-    compound_name, make_origin, origin_name, align_origin, remove_origin,
-    mute_pose_constraint, compound_origin_name, update_constraint_active,
+    copy_properties, make_compound_hitbox, remove_compound, compound_name,
+    make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
+    create_pose_constraint, update_constraint_active, mute_pose_constraint,
 )
 
 
@@ -529,6 +529,8 @@ class Update(bpy.types.Operator):
 
 
         if is_active:
+            create_pose_constraint(armature, pose_bone, data, self.is_active)
+
             constraint = joint.rigid_body_constraint
 
             update_constraint(constraint, data)
@@ -554,11 +556,13 @@ class Update(bpy.types.Operator):
 
             constraint.object2 = data.active
 
+        else:
+            remove_pose_constraint(pose_bone)
+
 
     def update_constraints(self, context, armature, top):
         if top.enabled:
             for pose_bone in armature.pose.bones:
-                update_pose_constraint(armature, pose_bone, self.is_active)
                 self.update_joint(context, armature, top, pose_bone)
 
         else:
@@ -702,7 +706,7 @@ class Update(bpy.types.Operator):
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones
-
+            # This is needed in order to avoid a cyclic dependency
             mute_pose_constraint(pose_bone)
             self.fix_parents(armature, top, bone, data)
 
