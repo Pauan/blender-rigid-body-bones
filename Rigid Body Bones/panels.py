@@ -62,7 +62,7 @@ class ArmaturePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return utils.is_armature(context) and not utils.is_edit_mode(context)
+        return utils.is_armature(context) and utils.is_pose_mode(context)
 
     def draw_header(self, context):
         data = context.active_object.data.rigid_body_bones

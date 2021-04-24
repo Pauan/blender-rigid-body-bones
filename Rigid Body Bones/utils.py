@@ -135,10 +135,6 @@ def get_active_bone(armature):
 def has_active_bone(context):
     return is_armature(context) and (get_active_bone(context.active_object) is not None)
 
-def is_edit_mode(context):
-    # TODO use the mode of the active_object ?
-    return (context.mode == 'EDIT_ARMATURE')
-
 def is_pose_mode(context):
     # TODO use the mode of the active_object ?
     return (context.mode == 'POSE')
@@ -217,14 +213,15 @@ def set_mesh_cube(mesh, dimensions):
     bm.free()
 
 
-# TODO is there a faster way ?
 def clear_mesh(mesh):
-    set_mesh_cube(mesh, (0.0, 0.0, 0.0))
+    # TODO when undoing, Blender will sometimes cause empty meshes to have big bounding boxes
+    #      if that happens, change to use this implementation instead
+    #set_mesh_cube(mesh, (0.0, 0.0, 0.0))
 
-    # TODO can't use this because of a bug in Blender which causes empty meshes to have big bounding boxes when undoing
-    #bm = bmesh.new()
-    #bm.to_mesh(mesh)
-    #bm.free()
+    # TODO is there a faster way ?
+    bm = bmesh.new()
+    bm.to_mesh(mesh)
+    bm.free()
 
 
 def make_mesh_object(name, collection):

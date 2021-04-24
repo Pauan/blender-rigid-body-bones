@@ -9,11 +9,11 @@
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
-# TODO fix the todo in clear_mesh
+# TODO investigate the todo in clear_mesh
 # TODO merge active and passive properties together into hitbox property
-# TODO auto-hide hitboxes in Object mode ?
 
-# TODO add in scale for compounds
+# TODO auto-hide hitboxes in Object mode ?
+# TODO add in scale for compounds (but be careful of non-uniform scale skewing)
 # TODO rename constraint to joint
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
@@ -22,6 +22,7 @@
 # TODO when using IK with non-uniform bone scale (shearing) the matrix of the joints is wrong
 # TODO rigid bodies don't work correctly with non-uniform scale (shearing)
 # TODO even if a Child Of constraint is placed at the bottom of the stack, it does not override the previous constraints
+# TODO even if a Child Of constraint exists, it can still be overridden by manual keyframes
 # TODO pose bone matrix is wrong when enabling rigid body physics in Object mode
 bl_info = {
     "name": "Rigid Body Bones",

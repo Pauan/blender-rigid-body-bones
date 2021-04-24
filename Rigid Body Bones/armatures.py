@@ -578,7 +578,7 @@ class Update(bpy.types.Operator):
                 remove_root_body(top)
 
 
-    def update_action(self, seen_actions, bones, action):
+    def update_action(self, seen_actions, should_mute, action):
         if not action.name in seen_actions:
             seen_actions.add(action.name)
 
@@ -587,31 +587,33 @@ class Update(bpy.types.Operator):
 
                 if match:
                     name = match.group(1)
-                    is_active = bones.get(name, None)
+                    mute = should_mute.get(name, None)
 
-                    if is_active is not None:
-                        fcurve.mute = is_active
+                    if mute is not None:
+                        fcurve.mute = mute
 
 
     # This disables keyframe animations for Active bones
-    def update_fcurves(self, armature):
+    def update_fcurves(self, armature, top):
         seen_actions = set()
-        bones = {}
+        should_mute = {}
+
+        is_active = top.enabled and self.is_active
 
         for pose_bone in armature.pose.bones:
             bone = pose_bone.bone
             data = bone.rigid_body_bones
-            bones[bone.name] = is_bone_enabled(data) and is_bone_active(data)
+            should_mute[bone.name] = is_active and is_bone_enabled(data) and is_bone_active(data)
 
         if armature.pose_library:
-            self.update_action(seen_actions, bones, armature.pose_library)
+            self.update_action(seen_actions, should_mute, armature.pose_library)
 
         if armature.animation_data:
-            self.update_action(seen_actions, bones, armature.animation_data.action)
+            self.update_action(seen_actions, should_mute, armature.animation_data.action)
 
             for track in armature.animation_data.nla_tracks:
                 for strip in track.strips:
-                    self.update_action(seen_actions, bones, strip.action)
+                    self.update_action(seen_actions, should_mute, strip.action)
 
 
     def restore_parents(self, armature):
@@ -722,7 +724,7 @@ class Update(bpy.types.Operator):
 
         self.update_constraints(context, armature, top)
 
-        self.update_fcurves(armature)
+        self.update_fcurves(armature, top)
 
         self.remove_orphans(context, armature, top)
 
@@ -732,16 +734,16 @@ class Update(bpy.types.Operator):
                 self.remove_parents(armature)
 
         if top.actives:
-            top.actives.hide_viewport = top.hide_hitboxes
+            top.actives.hide_viewport = self.is_active or top.hide_hitboxes
 
         if top.passives:
-            top.passives.hide_viewport = top.hide_hitboxes
+            top.passives.hide_viewport = self.is_active or top.hide_hitboxes
 
         if top.compounds:
-            top.compounds.hide_viewport = top.hide_hitboxes
+            top.compounds.hide_viewport = self.is_active or top.hide_hitboxes
 
         if top.origins:
-            top.origins.hide_viewport = top.hide_hitbox_origins
+            top.origins.hide_viewport = self.is_active or top.hide_hitbox_origins
 
         if top.blanks:
             top.blanks.hide_viewport = True
