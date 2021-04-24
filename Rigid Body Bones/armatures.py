@@ -676,7 +676,7 @@ class Update(bpy.types.Operator):
 
 
     def process_edit(self, context, armature, top):
-        with utils.Mode(context, 'POSE'):
+        with utils.Mode(context, armature, 'POSE'):
             for bone in armature.data.bones:
                 data = bone.rigid_body_bones
 
@@ -714,7 +714,7 @@ class Update(bpy.types.Operator):
             self.fix_parents(armature, top, bone, data)
 
         # This must happen before process_bone
-        with utils.Mode(context, 'EDIT'):
+        with utils.Mode(context, armature, 'EDIT'):
             self.restore_parents(armature)
 
         for pose_bone in armature.pose.bones:
@@ -728,10 +728,7 @@ class Update(bpy.types.Operator):
 
         # This must happen after update_constraints
         if self.is_active:
-            # Make sure that we're changing the mode for the armature
-            utils.select_active(context, armature)
-
-            with utils.Mode(context, 'EDIT'):
+            with utils.Mode(context, armature, 'EDIT'):
                 self.remove_parents(armature)
 
         if top.actives:

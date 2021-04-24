@@ -11,6 +11,7 @@
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO fix the todo in clear_mesh
 # TODO merge active and passive properties together into hitbox property
+# TODO auto-hide hitboxes in Object mode ?
 
 # TODO add in scale for compounds
 # TODO rename constraint to joint
@@ -21,6 +22,7 @@
 # TODO when using IK with non-uniform bone scale (shearing) the matrix of the joints is wrong
 # TODO rigid bodies don't work correctly with non-uniform scale (shearing)
 # TODO even if a Child Of constraint is placed at the bottom of the stack, it does not override the previous constraints
+# TODO pose bone matrix is wrong when enabling rigid body physics in Object mode
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

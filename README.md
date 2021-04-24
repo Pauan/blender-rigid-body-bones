@@ -98,6 +98,8 @@ You must have Blender 2.91.0 or higher.
 
 ## Useful tips
 
+* Blender often crashes, so save often! You should especially save right before playing an animation, since that's when most crashes happen.
+
 * Do not put any objects into the `RigidBodyBones` collection, they will be deleted.
 
    The `RigidBodyBones` collection can only be used by this add-on.

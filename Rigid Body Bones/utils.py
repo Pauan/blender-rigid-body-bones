@@ -45,17 +45,22 @@ def timed(name):
 
 
 class Mode:
-    def __init__(self, context, mode):
+    def __init__(self, context, object, mode):
         self.context = context
+        self.object = object
         self.mode = mode
         self.old_mode = None
 
     def __enter__(self):
-        self.old_mode = self.context.active_object.mode
+        self.old_mode = self.object.mode
+        select_active(self.context, self.object)
+        assert self.context.active_object is self.object
         bpy.ops.object.mode_set(mode=self.mode)
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.old_mode is not None:
+            select_active(self.context, self.object)
+            assert self.context.active_object is self.object
             bpy.ops.object.mode_set(mode=self.old_mode)
         return False
 
