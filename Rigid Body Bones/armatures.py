@@ -404,6 +404,7 @@ class Update(bpy.types.Operator):
             assert parent_data.constraint is not None
 
             utils.set_parent(joint, parent_data.constraint)
+            # This transforms the matrix from armature space to local space
             joint.matrix_basis = parent.matrix.inverted() @ pose_bone.matrix
 
         else:
@@ -721,6 +722,8 @@ class Update(bpy.types.Operator):
 
         self.update_fcurves(armature)
 
+        self.remove_orphans(context, armature, top)
+
         # This must happen after update_constraints
         if self.is_active:
             # Make sure that we're changing the mode for the armature
@@ -728,8 +731,6 @@ class Update(bpy.types.Operator):
 
             with utils.Mode(context, 'EDIT'):
                 self.remove_parents(armature)
-
-        self.remove_orphans(context, armature, top)
 
         if top.actives:
             top.actives.hide_viewport = top.hide_hitboxes

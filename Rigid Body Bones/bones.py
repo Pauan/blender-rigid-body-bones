@@ -574,13 +574,11 @@ def create_pose_constraint(armature, pose_bone, data, is_active):
 
         found.inverse_matrix = (
             # This is the same as the standard Set Inverse
-            hitbox.matrix_world.inverted() @
-            # Convert to armature space
-            armature.matrix_world @
+            hitbox.matrix_world.inverted() @ armature.matrix_world @
             # This is needed because we're removing the parent, so we have to preserve the parent transformations
-            pose_bone.matrix @
-            pose_bone.matrix_basis.inverted() @
-            pose_bone.bone.matrix_local.inverted()
+            # It inverts the matrix_basis and matrix_local in order to reset the position to the armature's origin
+            # And then it adds the matrix in order to move it to where it should be based on its parent
+            pose_bone.matrix @ pose_bone.matrix_basis.inverted() @ pose_bone.bone.matrix_local.inverted()
         )
 
     else:
