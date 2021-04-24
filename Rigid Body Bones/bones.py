@@ -157,15 +157,11 @@ def make_blank_rigid_body(context, armature, collection, bone, data):
     )
 
 
-def make_constraint(context, armature, collection, bone, data):
+def make_constraint(context, collection, bone):
     empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
     collection.objects.link(empty)
 
-    utils.set_parent(empty, armature)
-
-    utils.select_active(context, empty)
-    bpy.ops.rigidbody.constraint_add(type='FIXED')
-
+    empty.rotation_mode = 'QUATERNION'
     empty.hide_render = True
     empty.empty_display_size = 0.0
 
@@ -233,6 +229,19 @@ def is_spring(data):
         data.use_spring_z
     )
 
+
+def update_constraint_active(context, constraint, is_active):
+    if is_active:
+        if not constraint.rigid_body_constraint:
+            utils.select_active(context, constraint)
+            bpy.ops.rigidbody.constraint_add(type='FIXED')
+
+    else:
+        if constraint.rigid_body_constraint:
+            utils.select_active(context, constraint)
+            bpy.ops.rigidbody.constraint_remove()
+
+
 def update_constraint(constraint, data):
     if is_spring(data):
         constraint.type = 'GENERIC_SPRING'
@@ -290,12 +299,7 @@ def update_constraint(constraint, data):
     constraint.limit_ang_z_upper = -data.limit_ang_z_lower
 
 
-def align_constraint(constraint, pose_bone):
-    constraint.location = pose_bone.head
-    constraint.rotation_euler = bone_rotation(pose_bone)
-
-
-def scale(data, shape):
+def hitbox_scale(data, shape):
     if shape == 'BOX':
         return data.scale
     elif shape == 'SPHERE':
@@ -303,7 +307,7 @@ def scale(data, shape):
     else:
         return Vector((data.scale_width, data.scale_length, data.scale_width))
 
-def scale_y(data, shape):
+def hitbox_scale_y(data, shape):
     if shape == 'BOX':
         return data.scale.y
     elif shape == 'SPHERE':
@@ -314,7 +318,7 @@ def scale_y(data, shape):
 
 # TODO this is called with both Bone and Compound properties
 def hitbox_dimensions(data, shape, length):
-    dimensions = scale(data, shape) * length
+    dimensions = hitbox_scale(data, shape) * length
     dimensions.rotate(Euler((radians(90.0), 0.0, 0.0)))
     return dimensions
 
@@ -323,7 +327,7 @@ def hitbox_dimensions(data, shape, length):
 def hitbox_location(data, shape, length):
     origin = length * (data.origin - 0.5)
 
-    location = Vector((0.0, -origin * scale_y(data, shape), 0.0))
+    location = Vector((0.0, -origin * hitbox_scale_y(data, shape), 0.0))
     location.rotate(data.rotation)
 
     location.y += origin - (length * 0.5)
@@ -332,35 +336,18 @@ def hitbox_location(data, shape, length):
 
 
 # TODO this is called with both Bone and Compound properties
-def passive_rotation(data):
+def hitbox_rotation(data):
     rotation = Euler((radians(90.0), 0.0, 0.0))
     rotation.rotate(data.rotation)
     return rotation
-
-
-def hitbox_rotation(pose_bone, data, is_active):
-    if is_bone_active(data) and is_active:
-        rotation = data.rotation.copy()
-        rotation.rotate(bone_rotation(pose_bone))
-        rotation.rotate_axis('X', radians(90.0))
-        return rotation
-
-    else:
-        return passive_rotation(data)
 
 
 def hitbox_origin(data, length):
     return Vector((0.0, length * (data.origin - 1.0), 0.0))
 
 
-def bone_rotation(pose_bone):
-    return pose_bone.matrix.to_euler()
-
-def bone_length(pose_bone, data, is_active):
-    if is_bone_active(data) and is_active:
-        return pose_bone.length
-    else:
-        return pose_bone.bone.length
+def bone_length(pose_bone):
+    return pose_bone.bone.length
 
 
 def align_compound(hitbox, data, compound, length):
@@ -371,7 +358,7 @@ def align_compound(hitbox, data, compound, length):
     location.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.location = location
 
-    rotation = passive_rotation(compound)
+    rotation = hitbox_rotation(compound)
     rotation.rotate(Euler((radians(-90.0), 0.0, 0.0)))
     hitbox.rotation_euler = rotation
 
@@ -379,45 +366,32 @@ def align_compound(hitbox, data, compound, length):
 
 
 def align_hitbox(hitbox, armature, pose_bone, data, is_active):
+    shape = data.collision_shape
+
+    length = bone_length(pose_bone)
+    location = hitbox_location(data, shape, length)
+
     if is_bone_active(data):
         hitbox.rigid_body.kinematic = not is_active
 
         if is_active:
-            utils.set_parent(hitbox, armature)
+            location.y += length
+            utils.set_parent(hitbox, data.constraint)
         else:
             utils.set_bone_parent(hitbox, armature, pose_bone.bone.name)
 
-    hitbox.rotation_euler = hitbox_rotation(pose_bone, data, is_active)
-
-    shape = data.collision_shape
-
-    length = bone_length(pose_bone, data, is_active)
+    hitbox.location = location
+    hitbox.rotation_euler = hitbox_rotation(data)
 
     if shape == 'COMPOUND':
-        location = hitbox_origin(data, length)
-        location += data.location
-
-        if is_bone_active(data) and is_active:
-            location.rotate(bone_rotation(pose_bone))
-            location += pose_bone.tail
-
-        hitbox.location = location
-
+        hitbox.hide_viewport = True
         utils.clear_mesh(hitbox.data)
 
         for compound in data.compounds:
-            assert compound.hitbox is not None
             align_compound(compound.hitbox, data, compound, length)
 
     else:
-        location = hitbox_location(data, shape, length)
-
-        if is_bone_active(data) and is_active:
-            location.rotate(bone_rotation(pose_bone))
-            location += pose_bone.tail
-
-        hitbox.location = location
-
+        hitbox.hide_viewport = False
         utils.set_mesh_cube(hitbox.data, hitbox_dimensions(data, shape, length))
 
 
@@ -425,25 +399,21 @@ def update_origin_size(origin, length):
     origin.empty_display_size = length * 0.05
 
 def update_origin_location(origin, data, shape, length):
-    origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * scale_y(data, shape))
+    origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * hitbox_scale_y(data, shape))
 
 def align_origin(origin, pose_bone, data, is_active):
-    length = bone_length(pose_bone, data, is_active)
-
-    update_origin_size(origin, length)
-
     shape = data.collision_shape
 
-    if shape == 'COMPOUND':
-        origin.location = (0.0, 0.0, 0.0)
+    length = bone_length(pose_bone)
 
+    update_origin_size(origin, length)
+    update_origin_location(origin, data, shape, length)
+
+    if shape == 'COMPOUND':
         for compound in data.compounds:
             origin = compound.origin_empty
             update_origin_size(origin, length)
             update_origin_location(origin, compound, compound.collision_shape, length)
-
-    else:
-        update_origin_location(origin, data, shape, length)
 
 
 def update_hitbox_name(hitbox, name):
@@ -567,7 +537,7 @@ def mute_pose_constraint(pose_bone):
         found.target = None
 
 
-def update_pose_constraint(pose_bone, is_active):
+def update_pose_constraint(armature, pose_bone, is_active):
     (index, found) = find_pose_constraint(pose_bone)
 
     constraints = pose_bone.constraints
@@ -587,7 +557,9 @@ def update_pose_constraint(pose_bone, is_active):
         if is_active:
             found.inverse_matrix = (
                 # This is the same as the standard Set Inverse
-                hitbox.matrix_basis.inverted() @
+                hitbox.matrix_world.inverted() @
+                # Convert to armature space
+                armature.matrix_world @
                 # This is needed because we're removing the parent, so we have to preserve the parent transformations
                 pose_bone.matrix @
                 pose_bone.matrix_basis.inverted() @

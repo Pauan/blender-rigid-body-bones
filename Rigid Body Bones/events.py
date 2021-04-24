@@ -32,7 +32,7 @@ def event_rigid_body_constraint(context, dirty, armature, top):
     for bone in armature.data.bones:
         data = bone.rigid_body_bones
 
-        if data.constraint:
+        if data.constraint and data.constraint.rigid_body_constraint:
             bones.update_constraint(data.constraint.rigid_body_constraint, data)
 
 
@@ -85,6 +85,7 @@ def mode_switch():
         top = armature.data.rigid_body_bones
         mode = armature.mode
 
+        # TODO handle this better, such as a "do not update mode" flag
         if top.mode != mode:
             top.mode = mode
             event_update(None, context)

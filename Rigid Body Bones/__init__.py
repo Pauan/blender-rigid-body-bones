@@ -9,12 +9,18 @@
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
-# TODO compound hitboxes are slightly misaligned in Object mode
 # TODO fix the todo in clear_mesh
+# TODO merge active and passive properties together into hitbox property
+
+# TODO add in scale for compounds
+# TODO rename constraint to joint
+# TODO hide constraints for active bones
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
+# TODO when using IK with non-uniform bone scale (shearing) the matrix of the joints is wrong
+# TODO rigid bodies don't work correctly with non-uniform scale (shearing)
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",

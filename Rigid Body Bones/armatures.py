@@ -4,7 +4,7 @@ from . import utils
 from . import events
 from . import properties
 from .bones import (
-    active_name, align_constraint, align_hitbox, blank_name, constraint_name,
+    active_name, align_hitbox, blank_name, constraint_name,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
     make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_constraint,
@@ -12,7 +12,7 @@ from .bones import (
     update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
     update_pose_constraint, copy_properties, make_compound_hitbox, remove_compound,
     compound_name, make_origin, origin_name, align_origin, remove_origin,
-    mute_pose_constraint, compound_origin_name,
+    mute_pose_constraint, compound_origin_name, update_constraint_active,
 )
 
 
@@ -162,24 +162,6 @@ def remove_collection_orphans(collection, exists):
     return utils.safe_remove_collection(collection)
 
 
-def make_root_body(context, armature, top):
-    name = armature.data.name + " [Root]"
-
-    if not top.root_body:
-        top.root_body = make_empty_rigid_body(
-            context,
-            name=name,
-            collection=blanks_collection(context, armature, top),
-            parent=armature,
-            parent_bone=None,
-        )
-
-    else:
-        top.root_body.name = name
-
-    return top.root_body
-
-
 def remove_root_body(top):
     if top.root_body:
         utils.remove_object(top.root_body)
@@ -310,27 +292,28 @@ class Update(bpy.types.Operator):
         hide_active_bone(bone, data, top.enabled and top.hide_active_bones)
 
 
-    def update_active_constraint(self, context, armature, top, data):
-        assert data.is_property_set("parent")
+    def make_root_body(self, context, armature, top):
+        name = armature.data.name + " [Root]"
 
-        constraint = data.constraint.rigid_body_constraint
+        root = top.root_body
 
-        constraint.object2 = data.active
+        if not root:
+            root = make_empty_rigid_body(
+                context,
+                name=name,
+                collection=blanks_collection(context, armature, top),
+                parent=armature,
+                parent_bone=None,
+            )
 
-        if data.parent == "":
-            self.has_root_body = True
-            constraint.object1 = make_root_body(context, armature, top)
+            top.root_body = root
 
-        # Will be processed later, by update_joint
         else:
-            parent = self.active_children.get(data.parent)
+            root.name = name
 
-            if parent is None:
-                parent = []
-                self.active_children[data.parent] = parent
+        self.exists.add(root.name)
 
-            # TODO is this safe if a reallocation happens ?
-            parent.append(constraint)
+        return root
 
 
     def make_origin(self, context, armature, top, data, parent, name):
@@ -345,6 +328,36 @@ class Update(bpy.types.Operator):
         utils.set_parent(data.origin_empty, parent)
 
         self.exists.add(data.origin_empty.name)
+
+
+    def make_blank(self, context, armature, top, bone, data):
+        blank = data.blank
+
+        if not blank:
+            collection = blanks_collection(context, armature, top)
+            blank = make_blank_rigid_body(context, armature, collection, bone, data)
+            data.blank = blank
+
+        else:
+            blank.name = blank_name(bone)
+
+        self.exists.add(blank.name)
+
+
+    def make_constraint(self, context, armature, top, bone, data):
+        constraint = data.constraint
+
+        if not constraint:
+            collection = constraints_collection(context, armature, top)
+            constraint = make_constraint(context, collection, bone)
+            data.constraint = constraint
+
+        else:
+            constraint.name = constraint_name(bone)
+
+        self.exists.add(constraint.name)
+
+        return constraint
 
 
     def make_compounds(self, context, armature, top, bone, data, parent):
@@ -369,6 +382,43 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
+    def make_parent_constraints(self, context, armature, top, pose_bone, data):
+        assert data.is_property_set("name")
+        assert data.is_property_set("parent")
+
+        joint = self.make_constraint(context, armature, top, pose_bone.bone, data)
+        parent = pose_bone.parent
+
+        if parent:
+            parent_data = parent.bone.rigid_body_bones
+
+            assert data.parent == parent_data.name
+
+            self.make_parent_constraints(context, armature, top, parent, parent_data)
+
+            assert parent_data.constraint is not None
+
+            utils.set_parent(joint, parent_data.constraint)
+            joint.matrix_basis = parent.matrix.inverted() @ pose_bone.matrix
+
+        else:
+            assert data.parent == ""
+
+            utils.set_parent(joint, armature)
+            joint.matrix_basis = pose_bone.matrix
+
+
+    def make_parent_blank(self, context, armature, top, pose_bone):
+        parent = pose_bone.parent
+
+        if parent:
+            parent_data = parent.bone.rigid_body_bones
+
+            # In order to avoid circular dependencies it must not create a Blank for errored bones
+            if parent_data.error == "" and not is_bone_enabled(parent_data):
+                self.make_blank(context, armature, top, parent.bone, parent_data)
+
+
     def update_bone(self, context, armature, top, pose_bone, bone, data):
         if top.enabled and is_bone_enabled(data):
             if is_bone_active(data):
@@ -381,32 +431,22 @@ class Update(bpy.types.Operator):
                 else:
                     update_hitbox_name(data.active, active_name(bone))
 
-                if not data.constraint:
-                    collection = constraints_collection(context, armature, top)
-                    data.constraint = make_constraint(context, armature, collection, bone, data)
-
-                else:
-                    data.constraint.name = constraint_name(bone)
-
                 self.make_compounds(context, armature, top, bone, data, data.active)
                 self.make_origin(context, armature, top, data, data.active, origin_name(bone))
 
                 align_origin(data.origin_empty, pose_bone, data, self.is_active)
+
                 align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
                 update_rigid_body(data.active.rigid_body, data)
 
-                align_constraint(data.constraint, pose_bone)
-                update_constraint(data.constraint.rigid_body_constraint, data)
-
-                self.update_active_constraint(context, armature, top, data)
+                self.make_parent_constraints(context, armature, top, pose_bone, data)
+                self.make_parent_blank(context, armature, top, pose_bone)
 
                 self.exists.add(data.active.name)
-                self.exists.add(data.constraint.name)
 
             else:
                 remove_active(data)
-                remove_constraint(data)
 
                 if not data.passive:
                     collection = passives_collection(context, armature, top)
@@ -419,6 +459,7 @@ class Update(bpy.types.Operator):
                 self.make_origin(context, armature, top, data, data.passive, origin_name(bone))
 
                 align_origin(data.origin_empty, pose_bone, data, False)
+
                 align_hitbox(data.passive, armature, pose_bone, data, False)
                 update_hitbox_shape(data.passive, data)
                 update_rigid_body(data.passive.rigid_body, data)
@@ -428,7 +469,6 @@ class Update(bpy.types.Operator):
         else:
             remove_active(data)
             remove_passive(data)
-            remove_constraint(data)
             remove_origin(data)
 
             for compound in data.compounds:
@@ -458,67 +498,72 @@ class Update(bpy.types.Operator):
         self.update_bone(context, armature, top, pose_bone, bone, data)
 
 
-    def update_joint(self, context, armature, top, bone):
+    def update_joint(self, context, armature, top, pose_bone):
+        bone = pose_bone.bone
         data = bone.rigid_body_bones
+        is_active = is_bone_enabled(data) and is_bone_active(data)
 
         assert data.is_property_set("name")
 
-        children = self.active_children.get(data.name)
 
-        if children:
-            if is_bone_enabled(data):
+        blank = data.blank
+
+        if blank:
+            if not blank.name in self.exists:
                 remove_blank(data)
 
-                hitbox = get_hitbox(data)
 
-                assert hitbox is not None
+        joint = data.constraint
 
-                for constraint in children:
-                    constraint.object1 = hitbox
-
-            elif data.error != "":
-                remove_blank(data)
-
-                # This is needed in order to avoid cyclic dependencies with invalid Passives
-                for constraint in children:
-                    constraint.object1 = None
+        if joint:
+            if joint.name in self.exists:
+                update_constraint_active(context, joint, is_active)
 
             else:
-                blank = data.blank
+                remove_constraint(data)
 
-                if not blank:
-                    collection = blanks_collection(context, armature, top)
-                    blank = make_blank_rigid_body(context, armature, collection, bone, data)
-                    data.blank = blank
+
+        if is_active:
+            constraint = joint.rigid_body_constraint
+
+            update_constraint(constraint, data)
+
+            parent = pose_bone.parent
+
+            if parent:
+                parent_data = parent.bone.rigid_body_bones
+
+                hitbox = get_hitbox(parent_data)
+
+                if hitbox:
+                    constraint.object1 = hitbox
 
                 else:
-                    blank.name = blank_name(bone)
+                    # The Blank will be None only if the parent bone has an error
+                    assert parent_data.blank is not None or parent_data.error != ""
 
-                self.exists.add(blank.name)
+                    constraint.object1 = parent_data.blank
 
-                for constraint in children:
-                    constraint.object1 = blank
+            else:
+                constraint.object1 = self.make_root_body(context, armature, top)
 
-        else:
-            remove_blank(data)
+            constraint.object2 = data.active
 
 
     def update_constraints(self, context, armature, top):
         if top.enabled:
             for pose_bone in armature.pose.bones:
-                update_pose_constraint(pose_bone, self.is_active)
-                self.update_joint(context, armature, top, pose_bone.bone)
+                update_pose_constraint(armature, pose_bone, self.is_active)
+                self.update_joint(context, armature, top, pose_bone)
 
         else:
             for pose_bone in armature.pose.bones:
                 remove_pose_constraint(pose_bone)
                 remove_blank(pose_bone.bone.rigid_body_bones)
 
-        if self.has_root_body:
-            self.exists.add(top.root_body.name)
-
-        else:
-            remove_root_body(top)
+        if top.root_body:
+            if not top.root_body.name in self.exists:
+                remove_root_body(top)
 
 
     def update_action(self, seen_actions, bones, action):
@@ -639,6 +684,12 @@ class Update(bpy.types.Operator):
         if top.origins:
             top.origins.hide_viewport = True
 
+        if top.blanks:
+            top.blanks.hide_viewport = True
+
+        if top.constraints:
+            top.constraints.hide_viewport = True
+
 
     def process_pose(self, context, armature, top):
         top.errors.clear()
@@ -683,6 +734,12 @@ class Update(bpy.types.Operator):
         if top.origins:
             top.origins.hide_viewport = top.hide_hitbox_origins
 
+        if top.blanks:
+            top.blanks.hide_viewport = True
+
+        if top.constraints:
+            top.constraints.hide_viewport = True
+
 
     @classmethod
     def poll(cls, context):
@@ -707,15 +764,13 @@ class Update(bpy.types.Operator):
         self.delete_parents = False
         self.store_parents = False
 
-        self.mode = top.mode
-
-        assert armature.mode == top.mode
+        is_edit_mode = (armature.mode == 'EDIT')
 
         # Whether the rigid body simulation should be active
-        self.is_active = (self.mode == 'OBJECT')
+        self.is_active = (armature.mode == 'OBJECT')
 
 
-        if self.mode == 'EDIT' or not top.enabled:
+        if is_edit_mode or not top.enabled:
             if top.parents_stored:
                 top.property_unset("parents_stored")
                 self.delete_parents = True
@@ -726,13 +781,10 @@ class Update(bpy.types.Operator):
                 self.store_parents = True
 
 
-        if self.mode == 'EDIT':
+        if is_edit_mode:
             self.process_edit(context, armature, top)
 
         else:
-            # Fast lookup for stored bone names -> list of active children
-            self.active_children = {}
-
             # Names of objects which exist
             self.exists = set()
 
@@ -741,9 +793,6 @@ class Update(bpy.types.Operator):
 
             # Cache of whether a bone has an active parent or not
             self.active_cache = {}
-
-            # Whether the root body should exist or not
-            self.has_root_body = False
 
             if self.is_active:
                 with utils.AnimationFrame(context):
