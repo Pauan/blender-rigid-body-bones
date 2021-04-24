@@ -510,12 +510,12 @@ def delete_parent(data):
 
 CHILD_OF_CONSTRAINT_NAME = "RigidBodyBones [Child Of]"
 
-def find_pose_constraint(pose_bone):
+def find_pose_constraint(constraints):
     index = None
     found = None
 
     # TODO can this be replaced with a collection method ?
-    for i, constraint in enumerate(pose_bone.constraints):
+    for i, constraint in enumerate(constraints):
         # Migrate from the old name to the new name
         if constraint.name == "Rigid Body Bones [Child Of]":
             constraint.name = CHILD_OF_CONSTRAINT_NAME
@@ -529,25 +529,54 @@ def find_pose_constraint(pose_bone):
 
 
 def mute_pose_constraint(pose_bone):
-    (index, found) = find_pose_constraint(pose_bone)
+    (index, found) = find_pose_constraint(pose_bone.constraints)
 
     if found:
         found.mute = True
         found.target = None
 
 
-def remove_pose_constraint(pose_bone):
-    (index, found) = find_pose_constraint(pose_bone)
+def remove_pose_constraint(pose_bone, data):
+    constraints = pose_bone.constraints
+
+    unmute_constraints(constraints, data)
+
+    (index, found) = find_pose_constraint(constraints)
 
     if found:
         # TODO can this remove an index instead, to make it faster ?
-        pose_bone.constraints.remove(found)
+        constraints.remove(found)
+
+
+def mute_constraints(constraints, data):
+    data.is_constraints_hidden = True
+
+    for constraint in constraints:
+        if constraint.name != CHILD_OF_CONSTRAINT_NAME:
+            # Unfortunately we cannot save the old muting, so we can't restore it later
+            constraint.mute = True
+
+
+def unmute_constraints(constraints, data):
+    if data.is_constraints_hidden:
+        data.property_unset("is_constraints_hidden")
+
+        for constraint in constraints:
+            if constraint.name != CHILD_OF_CONSTRAINT_NAME:
+                # Unfortunately we cannot save the old muting, so we can't restore it
+                constraint.mute = False
 
 
 def create_pose_constraint(armature, pose_bone, data, is_active):
-    (index, found) = find_pose_constraint(pose_bone)
-
     constraints = pose_bone.constraints
+
+    if is_active:
+        mute_constraints(constraints, data)
+    else:
+        unmute_constraints(constraints, data)
+
+
+    (index, found) = find_pose_constraint(constraints)
 
     if found is None:
         index = len(constraints)
@@ -573,6 +602,7 @@ def create_pose_constraint(armature, pose_bone, data, is_active):
         found.target = hitbox
 
         found.inverse_matrix = (
+            # TODO rather than using matrix_world, instead manually calculate the hitbox's matrix
             # This is the same as the standard Set Inverse
             hitbox.matrix_world.inverted() @ armature.matrix_world @
             # This is needed because we're removing the parent, so we have to preserve the parent transformations

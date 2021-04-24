@@ -275,6 +275,8 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
 
     is_hidden: bpy.props.BoolProperty(default=False)
 
+    is_constraints_hidden: bpy.props.BoolProperty(default=False)
+
 
     compounds: bpy.props.CollectionProperty(type=Compound)
 

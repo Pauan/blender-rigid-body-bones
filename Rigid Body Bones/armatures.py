@@ -558,7 +558,7 @@ class Update(bpy.types.Operator):
             constraint.object2 = data.active
 
         else:
-            remove_pose_constraint(pose_bone)
+            remove_pose_constraint(pose_bone, data)
 
 
     def update_constraints(self, context, armature, top):
@@ -568,8 +568,10 @@ class Update(bpy.types.Operator):
 
         else:
             for pose_bone in armature.pose.bones:
-                remove_pose_constraint(pose_bone)
-                remove_blank(pose_bone.bone.rigid_body_bones)
+                data = pose_bone.bone.rigid_body_bones
+
+                remove_pose_constraint(pose_bone, data)
+                remove_blank(data)
 
         if top.root_body:
             if not top.root_body.name in self.exists:

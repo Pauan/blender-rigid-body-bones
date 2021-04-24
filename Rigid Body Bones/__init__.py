@@ -14,13 +14,13 @@
 
 # TODO add in scale for compounds
 # TODO rename constraint to joint
-# TODO hide constraints for active bones
 
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
 # TODO when using IK with non-uniform bone scale (shearing) the matrix of the joints is wrong
 # TODO rigid bodies don't work correctly with non-uniform scale (shearing)
+# TODO even if a Child Of constraint is placed at the bottom of the stack, it does not override the previous constraints
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
