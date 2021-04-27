@@ -1190,6 +1190,8 @@ class BakeToKeyframes(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
     def execute(self, context):
+        armature = context.active_object
+
         active = set()
         selected = {}
 
@@ -1208,56 +1210,78 @@ class BakeToKeyframes(bpy.types.Operator):
                 bone.select_head = False
                 bone.select_tail = False
 
+        has_actives = len(active) > 0
         succeeded = False
 
         try:
-            # clean_curves was added in 2.92.0
-            if bpy.app.version >= (2, 92, 0):
-                bpy.ops.nla.bake(
-                    frame_start=self.frame_start,
-                    frame_end=self.frame_end,
-                    step=self.step,
-                    only_selected=True,
-                    visual_keying=True,
-                    clear_constraints=False,
-                    clear_parents=False,
-                    use_current_action=True,
-                    clean_curves=True,
-                    bake_types={'POSE'},
-                )
-            else:
-                bpy.ops.nla.bake(
-                    frame_start=self.frame_start,
-                    frame_end=self.frame_end,
-                    step=self.step,
-                    only_selected=True,
-                    visual_keying=True,
-                    clear_constraints=False,
-                    clear_parents=False,
-                    use_current_action=True,
-                    bake_types={'POSE'},
-                )
+            if has_actives:
+                with utils.Mode(context, armature, 'OBJECT'):
+                    # Temporarily switch to Object mode
+                    events.event_update(None, context)
+                    # This causes it to run `rigid_body_bones.update` immediately rather than wait for the next tick
+                    utils.run_events()
 
-            succeeded = True
+                assert context.active_object == armature
+                assert armature.mode == 'POSE'
+
+                # clean_curves was added in 2.92.0
+                if bpy.app.version >= (2, 92, 0):
+                    bpy.ops.nla.bake(
+                        frame_start=self.frame_start,
+                        frame_end=self.frame_end,
+                        step=self.step,
+                        only_selected=True,
+                        visual_keying=True,
+                        clear_constraints=False,
+                        clear_parents=False,
+                        use_current_action=True,
+                        clean_curves=True,
+                        bake_types={'POSE'},
+                    )
+                else:
+                    bpy.ops.nla.bake(
+                        frame_start=self.frame_start,
+                        frame_end=self.frame_end,
+                        step=self.step,
+                        only_selected=True,
+                        visual_keying=True,
+                        clear_constraints=False,
+                        clear_parents=False,
+                        use_current_action=True,
+                        bake_types={'POSE'},
+                    )
+
+                succeeded = True
 
         finally:
-            for pose_bone in context.visible_pose_bones:
+            for pose_bone in armature.pose.bones:
                 bone = pose_bone.bone
                 data = bone.rigid_body_bones
 
                 assert not bone.hide
 
-                select = selected.get(bone.name, None)
-
-                if select:
-                    bone.select = select[0]
-                    bone.select_head = select[1]
-                    bone.select_tail = select[2]
-
                 # Remove the parent and also disable the rigid body
                 if succeeded and bone.name in active:
+                    data.type = 'PASSIVE'
                     data.parent = ""
                     data.use_connect = False
-                    data.type = 'PASSIVE'
+
+                else:
+                    select = selected.get(bone.name, None)
+
+                    if select:
+                        bone.select = select[0]
+                        bone.select_head = select[1]
+                        bone.select_tail = select[2]
+
+            assert context.active_object == armature
+            assert armature.mode == 'POSE'
+
+            # Revert back to Pose mode
+            if has_actives:
+                events.event_update(None, context)
+
+            # This causes it to run `rigid_body_bones.update` immediately rather than wait for the next tick
+            utils.run_events()
 
         return {'FINISHED'}

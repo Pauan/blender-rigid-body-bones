@@ -295,8 +295,6 @@ def run_events():
     context = bpy.context
     scene = context.scene.rigid_body_bones
 
-    assert len(scene.dirties) > 0
-
     for dirty in scene.dirties:
         armature = dirty.armature
 

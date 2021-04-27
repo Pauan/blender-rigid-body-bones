@@ -10,7 +10,7 @@
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO add in scale for compounds (but be careful of non-uniform scale skewing)
-# TODO add in color coding for the bones (e.g. active, error, passive)
+# TODO add in color coding / custom shapes for the bones (e.g. active, error, passive)
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
@@ -19,8 +19,6 @@
 # ---- Breaking changes
 # TODO rename constraint to joint
 # TODO merge active and passive properties together into hitbox property
-
-# TODO fix Bake to Keyframes
 
 # ---- Blender bugs
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
