@@ -45,7 +45,7 @@ Blender can do all of that, however it is ***incredibly*** time consuming and te
 
    You must do this again every time you change the bones.
 
-* You must unparent/reparent the bones when switching between Edit and Pose mode.
+* You must unparent/reparent the bones when switching between Pose and Object mode.
 
 If you try to do it by hand, you will waste hundreds of hours of time.
 
@@ -135,6 +135,12 @@ You must have Blender 2.91.0 or higher.
 * There is a `Pose -> Rigid Body` menu which contains a few useful operators:
 
    ![][usage03]
+
+   * `Calculate Mass` will change the mass of the selected bones based on a material type.
+
+   * `Copy from Active` will copy all the rigid body settings from the active bone to the other selected bones.
+
+   * `Bake to Keyframes` will bake the selected bones into keyframes, so they can be used in other engines.
 
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
