@@ -23,7 +23,7 @@ def origin_name(bone):
 def blank_name(bone):
     return bone.name + " [Blank]"
 
-def constraint_name(bone):
+def joint_name(bone):
     return bone.name + " [Head]"
 
 # TODO respect the 64 character name limit
@@ -157,8 +157,8 @@ def make_blank_rigid_body(context, armature, collection, bone, data):
     )
 
 
-def make_constraint(context, collection, bone):
-    empty = bpy.data.objects.new(name=constraint_name(bone), object_data=None)
+def make_joint(context, collection, bone):
+    empty = bpy.data.objects.new(name=joint_name(bone), object_data=None)
     collection.objects.link(empty)
 
     empty.rotation_mode = 'QUATERNION'
@@ -230,19 +230,19 @@ def is_spring(data):
     )
 
 
-def update_constraint_active(context, constraint, is_active):
+def update_joint_active(context, joint, is_active):
     if is_active:
-        if not constraint.rigid_body_constraint:
-            utils.select_active(context, constraint)
+        if not joint.rigid_body_constraint:
+            utils.select_active(context, joint)
             bpy.ops.rigidbody.constraint_add(type='FIXED')
 
     else:
-        if constraint.rigid_body_constraint:
-            utils.select_active(context, constraint)
+        if joint.rigid_body_constraint:
+            utils.select_active(context, joint)
             bpy.ops.rigidbody.constraint_remove()
 
 
-def update_constraint(constraint, data):
+def update_joint_constraint(constraint, data):
     if is_spring(data):
         constraint.type = 'GENERIC_SPRING'
     else:
@@ -462,7 +462,7 @@ def remove_blank(data):
         utils.remove_object(data.blank)
         data.property_unset("blank")
 
-def remove_constraint(data):
+def remove_joint(data):
     if data.constraint:
         utils.remove_object(data.constraint)
         data.property_unset("constraint")

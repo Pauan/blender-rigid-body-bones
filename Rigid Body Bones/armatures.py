@@ -4,15 +4,15 @@ from . import utils
 from . import events
 from . import properties
 from .bones import (
-    active_name, align_hitbox, blank_name, constraint_name,
+    active_name, align_hitbox, blank_name, joint_name,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
-    make_active_hitbox, make_blank_rigid_body, make_constraint, make_empty_rigid_body,
-    make_passive_hitbox, remove_active, remove_blank, remove_constraint,
-    remove_passive, store_parent, update_constraint, update_hitbox_name,
+    make_active_hitbox, make_blank_rigid_body, make_joint, make_empty_rigid_body,
+    make_passive_hitbox, remove_active, remove_blank, remove_joint,
+    remove_passive, store_parent, update_joint_constraint, update_hitbox_name,
     update_rigid_body, update_hitbox_shape, passive_name, remove_pose_constraint,
     copy_properties, make_compound_hitbox, remove_compound, compound_name,
     make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
-    create_pose_constraint, update_constraint_active, mute_pose_constraint,
+    create_pose_constraint, update_joint_active, mute_pose_constraint,
 )
 
 
@@ -131,7 +131,7 @@ def blanks_collection(context, armature, top):
     return collection
 
 
-def constraints_collection(context, armature, top):
+def joints_collection(context, armature, top):
     collection = top.constraints
 
     name = armature.data.name + " [Joints]"
@@ -347,20 +347,20 @@ class Update(bpy.types.Operator):
         self.exists.add(blank.name)
 
 
-    def make_constraint(self, context, armature, top, bone, data):
-        constraint = data.constraint
+    def make_joint(self, context, armature, top, bone, data):
+        joint = data.constraint
 
-        if not constraint:
-            collection = constraints_collection(context, armature, top)
-            constraint = make_constraint(context, collection, bone)
-            data.constraint = constraint
+        if not joint:
+            collection = joints_collection(context, armature, top)
+            joint = make_joint(context, collection, bone)
+            data.constraint = joint
 
         else:
-            constraint.name = constraint_name(bone)
+            joint.name = joint_name(bone)
 
-        self.exists.add(constraint.name)
+        self.exists.add(joint.name)
 
-        return constraint
+        return joint
 
 
     def make_compounds(self, context, armature, top, bone, data, parent):
@@ -387,11 +387,11 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
-    def make_parent_constraints(self, context, armature, top, pose_bone, data):
+    def make_parent_joints(self, context, armature, top, pose_bone, data):
         assert data.is_property_set("name")
         assert data.is_property_set("parent")
 
-        joint = self.make_constraint(context, armature, top, pose_bone.bone, data)
+        joint = self.make_joint(context, armature, top, pose_bone.bone, data)
         parent = pose_bone.parent
 
         if parent:
@@ -399,7 +399,7 @@ class Update(bpy.types.Operator):
 
             assert data.parent == parent_data.name
 
-            self.make_parent_constraints(context, armature, top, parent, parent_data)
+            self.make_parent_joints(context, armature, top, parent, parent_data)
 
             assert parent_data.constraint is not None
 
@@ -430,7 +430,7 @@ class Update(bpy.types.Operator):
             if is_bone_active(data):
                 remove_passive(data)
 
-                self.make_parent_constraints(context, armature, top, pose_bone, data)
+                self.make_parent_joints(context, armature, top, pose_bone, data)
                 self.make_parent_blank(context, armature, top, pose_bone)
 
                 if not data.active:
@@ -523,10 +523,10 @@ class Update(bpy.types.Operator):
 
         if joint:
             if joint.name in self.exists:
-                update_constraint_active(context, joint, is_active)
+                update_joint_active(context, joint, is_active)
 
             else:
-                remove_constraint(data)
+                remove_joint(data)
 
 
         if is_active:
@@ -534,7 +534,7 @@ class Update(bpy.types.Operator):
 
             constraint = joint.rigid_body_constraint
 
-            update_constraint(constraint, data)
+            update_joint_constraint(constraint, data)
 
             parent = pose_bone.parent
 
@@ -561,7 +561,7 @@ class Update(bpy.types.Operator):
             remove_pose_constraint(pose_bone, data)
 
 
-    def update_constraints(self, context, armature, top):
+    def update_joints(self, context, armature, top):
         if top.enabled:
             for pose_bone in armature.pose.bones:
                 self.update_joint(context, armature, top, pose_bone)
@@ -722,13 +722,13 @@ class Update(bpy.types.Operator):
         for pose_bone in armature.pose.bones:
             self.process_bone(context, armature, top, pose_bone)
 
-        self.update_constraints(context, armature, top)
+        self.update_joints(context, armature, top)
 
         self.update_fcurves(armature, top)
 
         self.remove_orphans(context, armature, top)
 
-        # This must happen after update_constraints
+        # This must happen after update_joints
         if self.is_active:
             with utils.Mode(context, armature, 'EDIT'):
                 self.remove_parents(armature)

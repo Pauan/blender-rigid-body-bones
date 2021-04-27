@@ -33,7 +33,7 @@ def event_rigid_body_constraint(context, dirty, armature, top):
         data = bone.rigid_body_bones
 
         if data.constraint and data.constraint.rigid_body_constraint:
-            bones.update_constraint(data.constraint.rigid_body_constraint, data)
+            bones.update_joint_constraint(data.constraint.rigid_body_constraint, data)
 
 
 @utils.event("align")

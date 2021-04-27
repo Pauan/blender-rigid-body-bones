@@ -1,5 +1,6 @@
 # <pep8 compliant>
 
+# ---- New features
 # TODO support animating settings (https://developer.blender.org/T48975)
 # TODO support convex hull and mesh shapes
 # TODO support cone shape
@@ -8,14 +9,20 @@
 # TODO add in language translation support
 # TODO add in Apply Transformation operator ?
 # TODO Collision support for colliding with soft bodies and clothes ?
+# TODO add in scale for compounds (but be careful of non-uniform scale skewing)
+# TODO add in color coding for the bones (e.g. active, error, passive)
+
+# ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO investigate the todo in clear_mesh
+
+# ---- Breaking changes
+# TODO rename constraint to joint
 # TODO merge active and passive properties together into hitbox property
 
-# TODO auto-hide hitboxes in Object mode ?
-# TODO add in scale for compounds (but be careful of non-uniform scale skewing)
-# TODO rename constraint to joint
+# TODO fix Bake to Keyframes
 
+# ---- Blender bugs
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
 # TODO when setting a min/max limit to 180 or -180 it disables the limit
 # TODO min/max rotate limits are flipped in Blender's UI
