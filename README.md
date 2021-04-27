@@ -95,14 +95,14 @@ You must have Blender 2.91.0 or higher.
 
    All of the rigid body options are available, the less commonly used options are in `Advanced`.
 
+6. When you're done making changes, switch into Object mode and then play the animation.
+
 
 ## Useful tips
 
 * Blender often crashes, so save often! You should especially save right before playing an animation, since that's when most crashes happen.
 
-* Do not put any objects into the `RigidBodyBones` collection, they will be deleted.
-
-   The `RigidBodyBones` collection can only be used by this add-on.
+* Do not put any objects into the `RigidBodyBones` collection, they will be deleted. The `RigidBodyBones` collection can only be used by this add-on.
 
 * The `Rigid.Body.Bones.zip` file contains an `examples` folder which contains example `.blend` files.
 
