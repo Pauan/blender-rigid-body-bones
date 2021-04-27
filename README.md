@@ -136,7 +136,7 @@ You must have Blender 2.91.0 or higher.
 
    ![][usage03]
 
-   * `Calculate Mass` will change the mass of the selected bones based on a material type.
+   * `Calculate Mass` will change the Mass of the selected bones based on their size and material type.
 
    * `Copy from Active` will copy all the rigid body settings from the active bone to the other selected bones.
 
