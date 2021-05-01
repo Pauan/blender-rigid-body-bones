@@ -249,190 +249,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
     )
 
 
-class Bone(bpy.types.PropertyGroup, ShapeProperties):
-    active: bpy.props.PointerProperty(type=bpy.types.Object)
-    passive: bpy.props.PointerProperty(type=bpy.types.Object)
-    origin_empty: bpy.props.PointerProperty(type=bpy.types.Object)
-    blank: bpy.props.PointerProperty(type=bpy.types.Object)
-    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
-
-    error: bpy.props.StringProperty()
-
-    # These properties are used to save/restore the parent
-    # TODO replace with PointerProperty
-    name: bpy.props.StringProperty()
-
-    # TODO replace with PointerProperty
-    parent: bpy.props.StringProperty(
-        name="Parent",
-        description="Parent bone for joint",
-    )
-
-    use_connect: bpy.props.BoolProperty(
-        name="Connected",
-        description="When bone has a parent, bone's head is stuck to the parent's tail",
-    )
-
-    is_hidden: bpy.props.BoolProperty(default=False)
-
-    is_constraints_hidden: bpy.props.BoolProperty(default=False)
-
-
-    compounds: bpy.props.CollectionProperty(type=Compound)
-
-    active_compound_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
-
-
-    enabled: bpy.props.BoolProperty(
-        name="Enable Rigid Body",
-        description="Enable rigid body physics for the bone",
-        default=False,
-        options=set(),
-        update=event_update,
-    )
-
-    type: bpy.props.EnumProperty(
-        name="Type",
-        description="Behavior of the bone physics",
-        default='PASSIVE',
-        options=set(),
-        items=[
-            ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
-            ('ACTIVE', "Active", "Bone automatically moves", 1),
-        ],
-        update=event_update,
-    )
-
-    mass: bpy.props.FloatProperty(
-        name="Mass",
-        description="How much the bone 'weighs' irrespective of gravity",
-        default=1.0,
-        min=0.001,
-        precision=3,
-        step=10,
-        unit='MASS',
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    collision_shape: bpy.props.EnumProperty(
-        name="Collision Shape",
-        description="Collision shape of the hitbox",
-        default='BOX',
-        options=set(),
-        items=[
-            ('BOX', "Box", "", shape_icon('BOX'), 2),
-            ('SPHERE', "Sphere", "", shape_icon('SPHERE'), 0),
-            ('CAPSULE', "Capsule", "", shape_icon('CAPSULE'), 1),
-            ('CYLINDER', "Cylinder", "", shape_icon('CYLINDER'), 3),
-            #('CONE', "Cone", "", shape_icon('CONE'), 4),
-            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", shape_icon('CONVEX_HULL'), 5),
-            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", shape_icon('MESH'), 6),
-            None,
-            ('COMPOUND', "Compound", "Combines multiple hitboxes into one hitbox", shape_icon('COMPOUND'), 7),
-        ],
-        update=event_update,
-    )
-
-    friction: bpy.props.FloatProperty(
-        name="Friction",
-        description="Resistance of the bone to movement",
-        default=0.5,
-        min=0.0,
-        soft_max=1.0,
-        precision=3,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    restitution: bpy.props.FloatProperty(
-        name="Restitution",
-        description="Tendency of the bone to bounce after colliding (0 = stays still, 1 = perfectly elastic)",
-        default=0.0,
-        min=0.0,
-        soft_max=1.0,
-        precision=3,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    linear_damping: bpy.props.FloatProperty(
-        name="Linear Damping",
-        description="Amount of linear velocity that is lost over time",
-        default=0.04,
-        min=0.0,
-        max=1.0,
-        precision=3,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    angular_damping: bpy.props.FloatProperty(
-        name="Angular Damping",
-        description="Amount of angular velocity that is lost over time",
-        default=0.1,
-        min=0.0,
-        max=1.0,
-        precision=3,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    collision_collections: bpy.props.BoolVectorProperty(
-        name="Collision Layers",
-        description="The hitbox will only collide with other objects in the same collision layer",
-        default=(
-            True,  False, False, False, False, False, False, False, False, False,
-            False, False, False, False, False, False, False, False, False, False
-        ),
-        subtype='LAYER_MEMBER',
-        size=20,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    use_deactivation: bpy.props.BoolProperty(
-        name="Enable Deactivation",
-        description="Enable deactivation of non-moving bones (increases performance and stability but can cause glitches)",
-        default=False,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    use_start_deactivated: bpy.props.BoolProperty(
-        name="Start Deactivated",
-        description="Deactivate the bone's physics at the start of the simulation",
-        default=False,
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    deactivate_linear_velocity: bpy.props.FloatProperty(
-        name="Linear Velocity Deactivation Threshold",
-        description="Linear Velocity below which simulation stops simulating the bone's physics",
-        default=0.4,
-        min=0.0,
-        step=10,
-        precision=3,
-        # TODO use subtype ?
-        unit='VELOCITY',
-        options=set(),
-        update=event_rigid_body,
-    )
-
-    deactivate_angular_velocity: bpy.props.FloatProperty(
-        name="Angular Velocity Deactivation Threshold",
-        description="Angular Velocity below which simulation stops simulating the bone's physics",
-        default=0.5,
-        min=0.0,
-        step=10,
-        precision=3,
-        # TODO use subtype ?
-        unit='VELOCITY',
-        options=set(),
-        update=event_rigid_body,
-    )
-
+class JointProperties:
     use_override_solver_iterations: bpy.props.BoolProperty(
         name="Override Solver Iterations",
         description="Override the number of solver iterations for the limits",
@@ -863,6 +680,225 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties):
         subtype='ANGLE',
         unit='ROTATION',
         update=event_rigid_body_constraint,
+    )
+
+
+class Joint(bpy.types.PropertyGroup, JointProperties):
+    # TODO make a Context object for this ?
+    is_updating = False
+
+    def update_name(self, context):
+        if not Joint.is_updating:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            data = bone.rigid_body_bones
+
+            seen = set()
+
+            for joint in data.joints:
+                if joint != self:
+                    seen.add(joint.name)
+
+            if self.name in seen:
+                Joint.is_updating = True
+                self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
+                Joint.is_updating = False
+
+            event_update(None, context)
+
+    name: bpy.props.StringProperty(update=update_name)
+
+    # The original bone name, before the user renames it
+    # TODO replace with PointerProperty
+    saved_name: bpy.props.StringProperty()
+
+    bone_name: bpy.props.StringProperty()
+
+
+class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
+    active: bpy.props.PointerProperty(type=bpy.types.Object)
+    passive: bpy.props.PointerProperty(type=bpy.types.Object)
+    origin_empty: bpy.props.PointerProperty(type=bpy.types.Object)
+    blank: bpy.props.PointerProperty(type=bpy.types.Object)
+    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
+
+    error: bpy.props.StringProperty()
+
+    # These properties are used to save/restore the parent
+    # TODO replace with PointerProperty
+    name: bpy.props.StringProperty()
+
+    # TODO replace with PointerProperty
+    parent: bpy.props.StringProperty(
+        name="Parent",
+        description="Parent bone for joint",
+    )
+
+    use_connect: bpy.props.BoolProperty(
+        name="Connected",
+        description="When bone has a parent, bone's head is stuck to the parent's tail",
+    )
+
+    is_hidden: bpy.props.BoolProperty(default=False)
+
+    is_constraints_hidden: bpy.props.BoolProperty(default=False)
+
+
+    compounds: bpy.props.CollectionProperty(type=Compound)
+    joints: bpy.props.CollectionProperty(type=Joint)
+
+    active_compound_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
+    active_joint_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
+
+
+    enabled: bpy.props.BoolProperty(
+        name="Enable Rigid Body",
+        description="Enable rigid body physics for the bone",
+        default=False,
+        options=set(),
+        update=event_update,
+    )
+
+    type: bpy.props.EnumProperty(
+        name="Type",
+        description="Behavior of the bone physics",
+        default='PASSIVE',
+        options=set(),
+        items=[
+            ('PASSIVE', "Passive", "Bone stays still unless manually moved", 0),
+            ('ACTIVE', "Active", "Bone automatically moves", 1),
+        ],
+        update=event_update,
+    )
+
+    mass: bpy.props.FloatProperty(
+        name="Mass",
+        description="How much the bone 'weighs' irrespective of gravity",
+        default=1.0,
+        min=0.001,
+        precision=3,
+        step=10,
+        unit='MASS',
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    collision_shape: bpy.props.EnumProperty(
+        name="Collision Shape",
+        description="Collision shape of the hitbox",
+        default='BOX',
+        options=set(),
+        items=[
+            ('BOX', "Box", "", shape_icon('BOX'), 2),
+            ('SPHERE', "Sphere", "", shape_icon('SPHERE'), 0),
+            ('CAPSULE', "Capsule", "", shape_icon('CAPSULE'), 1),
+            ('CYLINDER', "Cylinder", "", shape_icon('CYLINDER'), 3),
+            #('CONE', "Cone", "", shape_icon('CONE'), 4),
+            #('CONVEX_HULL', "Convex Hull", "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with fewer vertices)", shape_icon('CONVEX_HULL'), 5),
+            #('MESH', "Mesh", "Mesh consisting of triangles only, allowing for more detailed interactions than convex hulls", shape_icon('MESH'), 6),
+            None,
+            ('COMPOUND', "Compound", "Combines multiple hitboxes into one hitbox", shape_icon('COMPOUND'), 7),
+        ],
+        update=event_update,
+    )
+
+    friction: bpy.props.FloatProperty(
+        name="Friction",
+        description="Resistance of the bone to movement",
+        default=0.5,
+        min=0.0,
+        soft_max=1.0,
+        precision=3,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    restitution: bpy.props.FloatProperty(
+        name="Restitution",
+        description="Tendency of the bone to bounce after colliding (0 = stays still, 1 = perfectly elastic)",
+        default=0.0,
+        min=0.0,
+        soft_max=1.0,
+        precision=3,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    linear_damping: bpy.props.FloatProperty(
+        name="Linear Damping",
+        description="Amount of linear velocity that is lost over time",
+        default=0.04,
+        min=0.0,
+        max=1.0,
+        precision=3,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    angular_damping: bpy.props.FloatProperty(
+        name="Angular Damping",
+        description="Amount of angular velocity that is lost over time",
+        default=0.1,
+        min=0.0,
+        max=1.0,
+        precision=3,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    collision_collections: bpy.props.BoolVectorProperty(
+        name="Collision Layers",
+        description="The hitbox will only collide with other objects in the same collision layer",
+        default=(
+            True,  False, False, False, False, False, False, False, False, False,
+            False, False, False, False, False, False, False, False, False, False
+        ),
+        subtype='LAYER_MEMBER',
+        size=20,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    use_deactivation: bpy.props.BoolProperty(
+        name="Enable Deactivation",
+        description="Enable deactivation of non-moving bones (increases performance and stability but can cause glitches)",
+        default=False,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    use_start_deactivated: bpy.props.BoolProperty(
+        name="Start Deactivated",
+        description="Deactivate the bone's physics at the start of the simulation",
+        default=False,
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    deactivate_linear_velocity: bpy.props.FloatProperty(
+        name="Linear Velocity Deactivation Threshold",
+        description="Linear Velocity below which simulation stops simulating the bone's physics",
+        default=0.4,
+        min=0.0,
+        step=10,
+        precision=3,
+        # TODO use subtype ?
+        unit='VELOCITY',
+        options=set(),
+        update=event_rigid_body,
+    )
+
+    deactivate_angular_velocity: bpy.props.FloatProperty(
+        name="Angular Velocity Deactivation Threshold",
+        description="Angular Velocity below which simulation stops simulating the bone's physics",
+        default=0.5,
+        min=0.0,
+        step=10,
+        precision=3,
+        # TODO use subtype ?
+        unit='VELOCITY',
+        options=set(),
+        update=event_rigid_body,
     )
 
 

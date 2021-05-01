@@ -91,6 +91,17 @@ def mode_switch():
             event_update(None, context)
 
 
+def bone_name_changed():
+    context = bpy.context
+
+    if utils.is_armature(context):
+        armature = context.active_object
+
+        if armature.mode != 'EDIT':
+            for pose_bone in armature.pose.bones:
+                data = pose_bone.data.rigid_body_bones
+
+
 # This is needed to cleanup the rigid body objects when the armature is deleted
 def cleanup_armatures():
     if bpy.ops.rigid_body_bones.cleanup_armatures.poll():
@@ -115,6 +126,15 @@ def register_subscribers():
         owner=owner,
         args=(),
         notify=mode_switch,
+        # TODO does this need PERSISTENT ?
+        options={'PERSISTENT'}
+    )
+
+    bpy.msgbus.subscribe_rna(
+        key=(bpy.types.Bone, "name"),
+        owner=owner,
+        args=(),
+        notify=bone_name_changed,
         # TODO does this need PERSISTENT ?
         options={'PERSISTENT'}
     )

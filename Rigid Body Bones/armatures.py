@@ -857,7 +857,7 @@ class CopyFromActive(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+        return utils.is_pose_mode(context) and utils.has_active_bone(context)
 
     def execute(self, context):
         armature = context.active_object
@@ -977,162 +977,6 @@ class CalculateMass(bpy.types.Operator):
         for data in datas:
             hitbox = get_hitbox(data)
             data.mass = hitbox.rigid_body.mass
-
-        return {'FINISHED'}
-
-
-def add_new_compound(bone):
-    data = bone.rigid_body_bones
-
-    seen = set()
-
-    for compound in data.compounds:
-        seen.add(compound.name)
-
-    data.active_compound_index = len(data.compounds)
-
-    new_compound = data.compounds.add()
-
-    properties.Compound.is_updating = True
-    new_compound.name = utils.make_unique_name("Hitbox", seen)
-    properties.Compound.is_updating = False
-
-
-def delete_compound(bone):
-    data = bone.rigid_body_bones
-
-    old_index = data.active_compound_index
-
-    data.compounds.remove(old_index)
-
-    length = len(data.compounds)
-
-    if old_index >= length:
-        data.active_compound_index = max(length - 1, 0)
-
-
-def move_compound(bone, direction):
-    data = bone.rigid_body_bones
-
-    old_index = data.active_compound_index
-
-    if direction == 'UP':
-        new_index = max(old_index - 1, 0)
-
-    else:
-        new_index = min(old_index + 1, len(data.compounds) - 1)
-
-    if old_index != new_index:
-        data.compounds.move(old_index, new_index)
-        data.active_compound_index = new_index
-
-
-class NewCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.new_compound"
-    bl_label = "Add new hitbox"
-    bl_description = "Adds a new hitbox to the compound shape"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                add_new_compound(bone)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            add_new_compound(bone)
-
-        events.event_update(None, context)
-
-        return {'FINISHED'}
-
-
-class RemoveCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.remove_compound"
-    bl_label = "Remove hitbox"
-    bl_description = "Deletes the selected hitbox"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                delete_compound(bone)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            delete_compound(bone)
-
-        events.event_update(None, context)
-
-        return {'FINISHED'}
-
-
-class MoveCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.move_compound"
-    bl_label = "Move hitbox"
-    bl_description = "Moves the selected hitbox up/down in the list"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    direction: bpy.props.EnumProperty(
-        items=[
-            ('UP', "", ""),
-            ('DOWN', "", ""),
-        ]
-    )
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                move_compound(bone, self.direction)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            move_compound(bone, self.direction)
 
         return {'FINISHED'}
 
@@ -1288,3 +1132,172 @@ class BakeToKeyframes(bpy.types.Operator):
             utils.run_events()
 
         return {'FINISHED'}
+
+
+class ListOperator(bpy.types.Operator):
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'INTERNAL', 'UNDO'}
+
+    is_alt: bpy.props.BoolProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.has_active_bone(context)
+
+    # TODO is there a better way of handling Alt ?
+    def invoke(self, context, event):
+        self.is_alt = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                self.run(bone)
+
+        else:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            self.run(bone)
+
+        events.event_update(None, context)
+
+        return {'FINISHED'}
+
+
+class ListMoveOperator(ListOperator):
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                bone = pose_bone.bone
+                self.move(bone, self.direction)
+
+        else:
+            armature = context.active_object
+            bone = utils.get_active_bone(armature)
+            self.move(bone, self.direction)
+
+        return {'FINISHED'}
+
+
+def list_remove(data, list, active_name):
+    old_index = getattr(data, active_name)
+
+    list.remove(old_index)
+
+    length = len(list)
+
+    if old_index >= length:
+        setattr(data, active_name, max(length - 1, 0))
+
+
+def list_move(data, direction, list, active_name):
+    old_index = getattr(data, active_name)
+
+    if direction == 'UP':
+        new_index = max(old_index - 1, 0)
+
+    else:
+        new_index = min(old_index + 1, len(list) - 1)
+
+    if old_index != new_index:
+        list.move(old_index, new_index)
+        setattr(data, active_name, new_index)
+
+
+class NewCompound(ListOperator):
+    bl_idname = "rigid_body_bones.new_compound"
+    bl_label = "Add new hitbox"
+    bl_description = "Adds a new hitbox to the compound shape"
+
+    def run(self, bone):
+        data = bone.rigid_body_bones
+
+        seen = set()
+
+        for compound in data.compounds:
+            seen.add(compound.name)
+
+        data.active_compound_index = len(data.compounds)
+
+        new_compound = data.compounds.add()
+
+        properties.Compound.is_updating = True
+        new_compound.name = utils.make_unique_name("Hitbox", seen)
+        properties.Compound.is_updating = False
+
+
+class RemoveCompound(ListOperator):
+    bl_idname = "rigid_body_bones.remove_compound"
+    bl_label = "Remove hitbox"
+    bl_description = "Deletes the selected hitbox"
+
+    def run(self, bone):
+        data = bone.rigid_body_bones
+        list_remove(data, data.compounds, "active_compound_index")
+
+
+class MoveCompound(ListMoveOperator):
+    bl_idname = "rigid_body_bones.move_compound"
+    bl_label = "Move hitbox"
+    bl_description = "Moves the selected hitbox up/down in the list"
+
+    direction: bpy.props.EnumProperty(
+        items=[
+            ('UP', "", ""),
+            ('DOWN', "", ""),
+        ]
+    )
+
+    def move(self, bone, direction):
+        data = bone.rigid_body_bones
+        list_move(data, direction, data.compounds, "active_compound_index")
+
+
+class NewJoint(ListOperator):
+    bl_idname = "rigid_body_bones.new_joint"
+    bl_label = "Add new joint"
+    bl_description = "Adds a new joint to the bone"
+
+    def run(self, bone):
+        data = bone.rigid_body_bones
+
+        seen = set()
+
+        for joint in data.joints:
+            seen.add(joint.name)
+
+        data.active_joint_index = len(data.joints)
+
+        new_joint = data.joints.add()
+
+        properties.Joint.is_updating = True
+        new_joint.name = utils.make_unique_name("Joint", seen)
+        properties.Joint.is_updating = False
+
+
+class RemoveJoint(ListOperator):
+    bl_idname = "rigid_body_bones.remove_joint"
+    bl_label = "Remove joint"
+    bl_description = "Deletes the selected joint"
+
+    def run(self, bone):
+        data = bone.rigid_body_bones
+        list_remove(data, data.joints, "active_joint_index")
+
+
+class MoveJoint(ListMoveOperator):
+    bl_idname = "rigid_body_bones.move_joint"
+    bl_label = "Move joint"
+    bl_description = "Moves the selected joint up/down in the list"
+
+    direction: bpy.props.EnumProperty(
+        items=[
+            ('UP', "", ""),
+            ('DOWN', "", ""),
+        ]
+    )
+
+    def move(self, bone, direction):
+        data = bone.rigid_body_bones
+        list_move(data, direction, data.joints, "active_joint_index")

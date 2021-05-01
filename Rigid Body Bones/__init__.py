@@ -12,6 +12,7 @@
 # TODO add in scale for compounds (but be careful of non-uniform scale skewing)
 # TODO add in color coding / custom shapes for the bones (e.g. active, error, passive)
 # TODO add in the ability to have arbitrary joints/constraints for any bone
+# TODO maybe allow for changing the settings even if the armature is disabled
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
@@ -63,16 +64,20 @@ classes = (
     properties.Error,
     properties.Armature,
     properties.Compound,
+    properties.Joint,
     properties.Bone,
 
     armatures.Update,
     armatures.CleanupArmatures,
     armatures.CopyFromActive,
     armatures.CalculateMass,
+    armatures.BakeToKeyframes,
     armatures.NewCompound,
     armatures.RemoveCompound,
     armatures.MoveCompound,
-    armatures.BakeToKeyframes,
+    armatures.NewJoint,
+    armatures.RemoveJoint,
+    armatures.MoveJoint,
 
     panels.RigidBodyMenu,
     panels.ArmaturePanel,
@@ -95,6 +100,8 @@ classes = (
     panels.CollectionsPanel,
     panels.DeactivationPanel,
     panels.OverrideIterationsPanel,
+    panels.JointList,
+    panels.JointsPanel,
 )
 
 def register():

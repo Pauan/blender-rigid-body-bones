@@ -43,7 +43,7 @@ class RigidBodyMenu(bpy.types.Menu):
 
     @classmethod
     def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+        return utils.is_pose_mode(context) and utils.has_active_bone(context)
 
     def draw(self, context):
         self.layout.operator("rigid_body_bones.calculate_mass")
@@ -111,11 +111,13 @@ class ArmatureSettingsPanel(bpy.types.Panel):
         flow.separator()
 
         col = flow.column()
+        col.enabled = data.enabled
         col.prop(data, "hide_active_bones")
 
         flow.separator()
 
         col = flow.column()
+        col.enabled = data.enabled
         col.prop(data, "hide_hitboxes")
         col.prop(data, "hide_hitbox_origins")
 
@@ -127,7 +129,7 @@ class BonePanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
     bl_options = set()
-    bl_order = 1
+    bl_order = 2
 
     @classmethod
     def poll(cls, context):
@@ -140,6 +142,7 @@ class BonePanel(bpy.types.Panel):
         layout.enabled = utils.is_armature_enabled(context)
 
         layout.prop(data, "enabled", text = "")
+        layout.separator(factor=0.1)
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
@@ -818,3 +821,103 @@ class OverrideIterationsPanel(bpy.types.Panel):
         layout.use_property_split = True
 
         layout.prop(data, "solver_iterations", text="Iterations")
+
+
+class JointList(bpy.types.UIList):
+    bl_idname = "DATA_UL_rigid_body_bones_bone_joint"
+
+    def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.prop(item, "name", text="", emboss=False, icon='RIGID_BODY_CONSTRAINT')
+
+        elif self.layout_type == 'GRID':
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon='RIGID_BODY_CONSTRAINT')
+
+class JointsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_joints"
+    bl_label = "Bone Joints"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return utils.has_active_bone(context) and utils.is_pose_mode(context)
+
+    def draw_header(self, context):
+        armature = context.active_object
+        data = utils.get_active_bone(armature).rigid_body_bones
+
+        layout = self.layout
+
+        for joint in data.joints:
+            if joint.bone_name == "":
+                layout.label(text="", icon='ERROR')
+                break
+
+    # TODO code duplication with HitboxesPanel
+    def draw(self, context):
+        armature = context.active_object
+        data = utils.get_active_bone(armature).rigid_body_bones
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+
+        row = layout.row()
+
+        length = len(data.joints)
+        has_items = length > 0
+
+        if has_items:
+            rows = 4
+        else:
+            rows = 2
+
+        row.template_list(
+            "DATA_UL_rigid_body_bones_bone_joint",
+            "",
+            data,
+            "joints",
+            data,
+            "active_joint_index",
+            rows=rows,
+            maxrows=4,
+            item_dyntip_propname="name",
+        )
+
+        col = row.column(align=True)
+        col.operator("rigid_body_bones.new_joint", icon='ADD', text="")
+
+        sub = col.column(align=True)
+        sub.enabled = has_items
+        sub.operator("rigid_body_bones.remove_joint", icon='REMOVE', text="")
+
+        if has_items:
+            index = data.active_joint_index
+
+            col.separator()
+
+            sub = col.column(align=True)
+            sub.enabled = (index != 0)
+            sub.operator("rigid_body_bones.move_joint", icon='TRIA_UP', text="").direction = 'UP'
+
+            sub = col.column(align=True)
+            sub.enabled = (index < length - 1)
+            sub.operator("rigid_body_bones.move_joint", icon='TRIA_DOWN', text="").direction = 'DOWN'
+
+            joint = data.joints[index]
+
+            layout.separator()
+
+            flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=True, align=True)
+            flow.use_property_split = True
+
+            row = flow.row()
+
+            if joint.bone_name == "":
+                row.label(text="", icon='ERROR')
+
+            row.prop_search(joint, "bone_name", armature.data, "bones", text="Connect To")
