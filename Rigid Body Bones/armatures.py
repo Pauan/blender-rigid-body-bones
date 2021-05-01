@@ -27,6 +27,7 @@ def root_collection(context):
     if not collection:
         collection = utils.make_collection("RigidBodyBones", scene.collection)
         collection.hide_render = True
+        collection.color_tag = 'COLOR_01' # Red
         scene.rigid_body_bones.collection = collection
 
     return collection
@@ -41,6 +42,7 @@ def container_collection(context, armature, top):
         parent = root_collection(context)
         collection = utils.make_collection(name, parent)
         collection.hide_render = True
+        collection.color_tag = 'COLOR_01' # Red
         top.container = collection
 
     else:
@@ -53,6 +55,7 @@ def child_collection(context, armature, top, name):
     parent = container_collection(context, armature, top)
     collection = utils.make_collection(name, parent)
     collection.hide_render = True
+    collection.color_tag = 'COLOR_01' # Red
     return collection
 
 

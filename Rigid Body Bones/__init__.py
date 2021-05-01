@@ -11,10 +11,12 @@
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO add in scale for compounds (but be careful of non-uniform scale skewing)
 # TODO add in color coding / custom shapes for the bones (e.g. active, error, passive)
+# TODO add in the ability to have arbitrary joints/constraints for any bone
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO investigate the todo in clear_mesh
+# TODO if the user removes the RigidBodyWorld then a lot of stuff breaks
 
 # ---- Breaking changes
 # TODO rename constraint to joint
