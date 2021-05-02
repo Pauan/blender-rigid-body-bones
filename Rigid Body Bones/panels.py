@@ -3,6 +3,21 @@ from . import utils
 from .bones import is_bone_active, shape_icon
 
 
+def joint_error_message(joint):
+    if joint.bone_name == "":
+        return "Missing connected bone"
+    elif joint.error != "":
+        return "Invalid connected bone"
+    else:
+        return None
+
+def joint_icon(joint):
+    if joint_error_message(joint):
+        return 'ERROR'
+    else:
+        return 'RIGID_BODY_CONSTRAINT'
+
+
 def enabled_icon(enabled):
     if enabled:
         return 'IPO_ELASTIC'
@@ -828,11 +843,12 @@ class JointList(bpy.types.UIList):
 
     def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False, icon='RIGID_BODY_CONSTRAINT')
+            layout.prop(item, "name", text="", emboss=False, icon=joint_icon(item))
 
         elif self.layout_type == 'GRID':
             layout.alignment = 'CENTER'
-            layout.label(text="", icon='RIGID_BODY_CONSTRAINT')
+            layout.label(text="", icon=joint_icon(item))
+
 
 class JointsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_joints"
@@ -854,7 +870,7 @@ class JointsPanel(bpy.types.Panel):
         layout = self.layout
 
         for joint in data.joints:
-            if joint.bone_name == "":
+            if joint_error_message(joint) is not None:
                 layout.label(text="", icon='ERROR')
                 break
 
@@ -915,9 +931,11 @@ class JointsPanel(bpy.types.Panel):
             flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=True, align=True)
             flow.use_property_split = True
 
-            row = flow.row()
+            error = joint_error_message(joint)
 
-            if joint.bone_name == "":
-                row.label(text="", icon='ERROR')
+            if error is not None:
+                col = flow.column()
+                col.label(text=error, icon='ERROR')
 
-            row.prop_search(joint, "bone_name", armature.data, "bones", text="Connect To")
+            col = flow.column()
+            col.prop_search(joint, "bone_name", armature.data, "bones", text="Connect To")

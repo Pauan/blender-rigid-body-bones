@@ -533,6 +533,9 @@ class Update(bpy.types.Operator):
                     constraint.object2 = self.get_hitbox(context, armature, top, pose_bone.bone, bone_data)
 
                 else:
+                    if data.bone_name != "":
+                        data.error = 'INVALID_BONE'
+
                     remove_joint(data)
 
             else:
