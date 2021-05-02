@@ -349,21 +349,37 @@ class Update(bpy.types.Operator):
 
         self.exists.add(blank.name)
 
+        return blank
 
-    def make_joint(self, context, armature, top, bone, data):
+
+    def make_joint(self, context, armature, top, data, name):
         joint = data.constraint
 
         if not joint:
             collection = joints_collection(context, armature, top)
-            joint = make_joint(context, collection, bone)
+            joint = make_joint(context, collection, name)
             data.constraint = joint
 
         else:
-            joint.name = joint_name(bone)
+            joint.name = name
 
         self.exists.add(joint.name)
 
         return joint
+
+
+    def get_hitbox(self, context, armature, top, bone, data):
+        hitbox = get_hitbox(data)
+
+        if hitbox:
+            return hitbox
+
+        elif data.error == "":
+            return self.make_blank(context, armature, top, bone, data)
+
+        # In order to avoid circular dependencies it must not create a Blank for errored bones
+        else:
+            return None
 
 
     def make_compounds(self, context, armature, top, bone, data, parent):
@@ -390,19 +406,14 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
-    def make_parent_joints(self, context, armature, top, pose_bone, data):
-        assert data.is_property_set("name")
-        assert data.is_property_set("parent")
-
-        joint = self.make_joint(context, armature, top, pose_bone.bone, data)
+    def make_parent_joints(self, context, armature, top, pose_bone, data, name):
+        joint = self.make_joint(context, armature, top, data, name)
         parent = pose_bone.parent
 
         if parent:
             parent_data = parent.bone.rigid_body_bones
 
-            assert data.parent == parent_data.name
-
-            self.make_parent_joints(context, armature, top, parent, parent_data)
+            self.make_parent_joints(context, armature, top, parent, parent_data, joint_name(parent.bone))
 
             assert parent_data.constraint is not None
 
@@ -411,21 +422,10 @@ class Update(bpy.types.Operator):
             joint.matrix_basis = parent.matrix.inverted() @ pose_bone.matrix
 
         else:
-            assert data.parent == ""
-
             utils.set_parent(joint, armature)
             joint.matrix_basis = pose_bone.matrix
 
-
-    def make_parent_blank(self, context, armature, top, pose_bone):
-        parent = pose_bone.parent
-
-        if parent:
-            parent_data = parent.bone.rigid_body_bones
-
-            # In order to avoid circular dependencies it must not create a Blank for errored bones
-            if parent_data.error == "" and not is_bone_enabled(parent_data):
-                self.make_blank(context, armature, top, parent.bone, parent_data)
+        return joint
 
 
     def update_bone(self, context, armature, top, pose_bone, bone, data):
@@ -433,8 +433,7 @@ class Update(bpy.types.Operator):
             if is_bone_active(data):
                 remove_passive(data)
 
-                self.make_parent_joints(context, armature, top, pose_bone, data)
-                self.make_parent_blank(context, armature, top, pose_bone)
+                self.make_parent_joints(context, armature, top, pose_bone, data, joint_name(pose_bone.bone))
 
                 if not data.active:
                     collection = actives_collection(context, armature, top)
@@ -498,6 +497,11 @@ class Update(bpy.types.Operator):
         bone = pose_bone.bone
         data = bone.rigid_body_bones
 
+        id = data.id
+
+        if id != "":
+            self.ids[id] = bone
+
         self.update_error(top, bone, data)
 
         self.fix_duplicates(data)
@@ -507,30 +511,46 @@ class Update(bpy.types.Operator):
         self.update_bone(context, armature, top, pose_bone, bone, data)
 
 
-    def update_joint(self, context, armature, top, pose_bone):
-        bone = pose_bone.bone
-        data = bone.rigid_body_bones
-        is_active = is_bone_enabled(data) and is_bone_active(data)
+    def make_joints(self, context, armature, top, pose_bone, bone_data):
+        for data in bone_data.joints:
+            if data.error == "" and data.bone_id != "":
+                connected_bone = self.ids.get(data.bone_id, None)
 
-        assert data.is_property_set("name")
+                if connected_bone:
+                    properties.Joint.is_updating = True
+                    data.bone_name = connected_bone.name
+                    properties.Joint.is_updating = False
 
+                    joint = self.make_parent_joints(context, armature, top, pose_bone, data, joint_name(pose_bone.bone, name=data.name))
 
-        blank = data.blank
+                    update_joint_active(context, joint, True)
 
-        if blank:
-            if not blank.name in self.exists:
-                remove_blank(data)
+                    constraint = joint.rigid_body_constraint
 
+                    update_joint_constraint(constraint, data)
 
-        joint = data.constraint
+                    constraint.object1 = self.get_hitbox(context, armature, top, connected_bone, connected_bone.rigid_body_bones)
+                    constraint.object2 = self.get_hitbox(context, armature, top, pose_bone.bone, bone_data)
 
-        if joint:
-            if joint.name in self.exists:
-                update_joint_active(context, joint, is_active)
+                else:
+                    remove_joint(data)
 
             else:
                 remove_joint(data)
 
+
+    def update_joint(self, context, armature, top, pose_bone):
+        bone = pose_bone.bone
+        data = bone.rigid_body_bones
+
+        self.make_joints(context, armature, top, pose_bone, data)
+
+        is_active = is_bone_enabled(data) and is_bone_active(data)
+
+        joint = data.constraint
+
+        if joint and joint.name in self.exists:
+            update_joint_active(context, joint, is_active)
 
         if is_active:
             create_pose_constraint(armature, pose_bone, data, self.is_active)
@@ -543,17 +563,7 @@ class Update(bpy.types.Operator):
 
             if parent:
                 parent_data = parent.bone.rigid_body_bones
-
-                hitbox = get_hitbox(parent_data)
-
-                if hitbox:
-                    constraint.object1 = hitbox
-
-                else:
-                    # The Blank will be None only if the parent bone has an error
-                    assert parent_data.blank is not None or parent_data.error != ""
-
-                    constraint.object1 = parent_data.blank
+                constraint.object1 = self.get_hitbox(context, armature, top, parent.bone, parent_data)
 
             else:
                 constraint.object1 = self.make_root_body(context, armature, top)
@@ -574,11 +584,9 @@ class Update(bpy.types.Operator):
                 data = pose_bone.bone.rigid_body_bones
 
                 remove_pose_constraint(pose_bone, data)
-                remove_blank(data)
 
-        if top.root_body:
-            if not top.root_body.name in self.exists:
-                remove_root_body(top)
+                for joint in data.joints:
+                    remove_joint(joint)
 
 
     def update_action(self, seen_actions, should_mute, action):
@@ -651,6 +659,22 @@ class Update(bpy.types.Operator):
     # has been deleted.
     def remove_orphans(self, context, armature, top):
         exists = self.exists
+
+        for bone in armature.data.bones:
+            data = bone.rigid_body_bones
+
+            blank = data.blank
+
+            if blank and not blank.name in exists:
+                remove_blank(data)
+
+            joint = data.constraint
+
+            if joint and not joint.name in exists:
+                remove_joint(data)
+
+        if top.root_body and not top.root_body.name in exists:
+            remove_root_body(top)
 
         if top.actives and remove_orphans(top.actives, exists):
             top.property_unset("actives")
@@ -764,6 +788,9 @@ class Update(bpy.types.Operator):
         armature = context.active_object
         top = armature.data.rigid_body_bones
 
+
+        # Fast lookup for bone ID -> bone
+        self.ids = {}
 
         # Fast lookup for stored bone names -> new name
         self.names = {}

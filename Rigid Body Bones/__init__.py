@@ -22,6 +22,7 @@
 # ---- Breaking changes
 # TODO rename constraint to joint
 # TODO merge active and passive properties together into hitbox property
+# TODO replace name with id, and parent with parent_id
 
 # ---- Blender bugs
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash

@@ -23,8 +23,11 @@ def origin_name(bone):
 def blank_name(bone):
     return bone.name + " [Blank]"
 
-def joint_name(bone):
-    return bone.name + " [Head]"
+def joint_name(bone, name=None):
+    if name is None:
+        return bone.name + " [Head]"
+    else:
+        return "{} - {} [Joint]".format(bone.name, name)
 
 # TODO respect the 64 character name limit
 def compound_name(bone, data):
@@ -157,8 +160,8 @@ def make_blank_rigid_body(context, armature, collection, bone, data):
     )
 
 
-def make_joint(context, collection, bone):
-    empty = bpy.data.objects.new(name=joint_name(bone), object_data=None)
+def make_joint(context, collection, name):
+    empty = bpy.data.objects.new(name=name, object_data=None)
     collection.objects.link(empty)
 
     empty.rotation_mode = 'QUATERNION'
@@ -230,6 +233,15 @@ def is_spring(data):
     )
 
 
+# TODO add in FIXED type
+def constraint_type(data):
+    if is_spring(data):
+        return 'GENERIC_SPRING'
+    else:
+        return 'GENERIC'
+
+
+
 def update_joint_active(context, joint, is_active):
     if is_active:
         if not joint.rigid_body_constraint:
@@ -243,10 +255,7 @@ def update_joint_active(context, joint, is_active):
 
 
 def update_joint_constraint(constraint, data):
-    if is_spring(data):
-        constraint.type = 'GENERIC_SPRING'
-    else:
-        constraint.type = 'GENERIC'
+    constraint.type = constraint_type(data)
 
     constraint.disable_collisions = data.disable_collisions
     constraint.use_breaking = data.use_breaking

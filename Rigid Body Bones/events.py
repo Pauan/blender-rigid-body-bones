@@ -91,6 +91,7 @@ def mode_switch():
             event_update(None, context)
 
 
+# TODO make this an event ?
 def bone_name_changed():
     context = bpy.context
 
@@ -98,8 +99,8 @@ def bone_name_changed():
         armature = context.active_object
 
         if armature.mode != 'EDIT':
-            for pose_bone in armature.pose.bones:
-                data = pose_bone.data.rigid_body_bones
+            # TODO maybe this doesn't need a full update, but only a partial name update ?
+            event_update(None, context)
 
 
 # This is needed to cleanup the rigid body objects when the armature is deleted

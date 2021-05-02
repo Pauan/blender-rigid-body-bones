@@ -1,3 +1,4 @@
+import uuid
 import bpy
 from . import utils
 from .bones import shape_icon
@@ -706,13 +707,41 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
 
             event_update(None, context)
 
+
+    def update_bone_name(self, context):
+        if not Joint.is_updating:
+            assert utils.is_armature(context)
+            assert utils.is_pose_mode(context)
+
+            name = self.bone_name
+
+            if name == "":
+                self.property_unset("error")
+                self.property_unset("bone_id")
+
+            else:
+                armature = context.active_object
+
+                bone = armature.data.bones.get(name, None)
+
+                if bone:
+                    self.property_unset("error")
+                    self.bone_id = bone.rigid_body_bones.get_id()
+
+                else:
+                    self.error = 'INVALID_BONE'
+                    self.property_unset("bone_id")
+
+            event_update(None, context)
+
+    constraint: bpy.props.PointerProperty(type=bpy.types.Object)
+
+    error: bpy.props.StringProperty()
+
     name: bpy.props.StringProperty(update=update_name)
 
-    # The original bone name, before the user renames it
-    # TODO replace with PointerProperty
-    saved_name: bpy.props.StringProperty()
-
-    bone_name: bpy.props.StringProperty()
+    bone_id: bpy.props.StringProperty()
+    bone_name: bpy.props.StringProperty(update=update_bone_name)
 
 
 class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
@@ -724,11 +753,16 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
 
     error: bpy.props.StringProperty()
 
+    # Unique unchanging UUID for the bone
+    id: bpy.props.StringProperty()
+
     # These properties are used to save/restore the parent
     # TODO replace with PointerProperty
+    # TODO replace with id
     name: bpy.props.StringProperty()
 
     # TODO replace with PointerProperty
+    # TODO replace with parent_id
     parent: bpy.props.StringProperty(
         name="Parent",
         description="Parent bone for joint",
@@ -900,6 +934,16 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
         options=set(),
         update=event_rigid_body,
     )
+
+
+    def get_id(self):
+        if self.id == "":
+            id = str(uuid.uuid4())
+            self.id = id
+            return id
+
+        else:
+            return self.id
 
 
     @classmethod
