@@ -110,6 +110,7 @@ classes = (
     panels.JointSpringsPanel,
     panels.JointSpringsRotatePanel,
     panels.JointSpringsTranslatePanel,
+    panels.JointOffsetPanel,
     panels.JointAdvancedPanel,
     panels.JointAdvancedPhysicsPanel,
     panels.JointOverrideIterationsPanel,

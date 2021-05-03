@@ -58,7 +58,13 @@ def event_align(context, dirty, armature, top):
             bones.align_hitbox(data.passive, armature, pose_bone, data, False)
 
         if data.origin_empty:
-            bones.align_origin(data.origin_empty, pose_bone, data, False)
+            bones.align_origin(data.origin_empty, pose_bone, data)
+
+        for joint in data.joints:
+            constraint = joint.constraint
+
+            if constraint:
+                bones.align_joint(constraint, pose_bone, joint)
 
 
 @utils.event("hide_hitboxes")

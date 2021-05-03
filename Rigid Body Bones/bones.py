@@ -415,7 +415,7 @@ def update_origin_size(origin, length):
 def update_origin_location(origin, data, shape, length):
     origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * hitbox_scale_y(data, shape))
 
-def align_origin(origin, pose_bone, data, is_active):
+def align_origin(origin, pose_bone, data):
     shape = data.collision_shape
 
     length = bone_length(pose_bone)
@@ -428,6 +428,14 @@ def align_origin(origin, pose_bone, data, is_active):
             origin = compound.origin_empty
             update_origin_size(origin, length)
             update_origin_location(origin, compound, compound.collision_shape, length)
+
+
+def align_joint(joint, pose_bone, data):
+    length = bone_length(pose_bone)
+
+    update_origin_size(joint, length)
+
+    joint.location = Vector((0.0, (length * data.origin), 0.0)) + data.location
 
 
 def update_hitbox_name(hitbox, name):

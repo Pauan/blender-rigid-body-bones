@@ -4,7 +4,7 @@ from . import utils
 from . import events
 from . import properties
 from .bones import (
-    active_name, align_hitbox, blank_name, joint_name,
+    active_name, align_hitbox, blank_name, joint_name, align_joint,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
     make_active_hitbox, make_blank_rigid_body, make_joint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_joint,
@@ -415,14 +415,14 @@ class Update(bpy.types.Operator):
                 remove_compound(compound)
 
 
-    def make_parent_joints(self, context, armature, top, pose_bone, data, name):
-        joint = self.make_joint(context, armature, top, data, name)
+    def make_parent_joints(self, context, armature, top, pose_bone, data):
+        joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone))
         parent = pose_bone.parent
 
         if parent:
             parent_data = parent.bone.rigid_body_bones
 
-            self.make_parent_joints(context, armature, top, parent, parent_data, joint_name(parent.bone))
+            self.make_parent_joints(context, armature, top, parent, parent_data)
 
             assert parent_data.constraint is not None
 
@@ -442,7 +442,7 @@ class Update(bpy.types.Operator):
             if is_bone_active(data):
                 remove_passive(data)
 
-                self.make_parent_joints(context, armature, top, pose_bone, data, joint_name(pose_bone.bone))
+                self.make_parent_joints(context, armature, top, pose_bone, data)
 
                 if not data.active:
                     collection = actives_collection(context, armature, top)
@@ -454,7 +454,7 @@ class Update(bpy.types.Operator):
                 self.make_compounds(context, armature, top, bone, data, data.active)
                 self.make_origin(context, armature, top, data, data.active, origin_name(bone))
 
-                align_origin(data.origin_empty, pose_bone, data, self.is_active)
+                align_origin(data.origin_empty, pose_bone, data)
 
                 align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
@@ -475,7 +475,7 @@ class Update(bpy.types.Operator):
                 self.make_compounds(context, armature, top, bone, data, data.passive)
                 self.make_origin(context, armature, top, data, data.passive, origin_name(bone))
 
-                align_origin(data.origin_empty, pose_bone, data, False)
+                align_origin(data.origin_empty, pose_bone, data)
 
                 align_hitbox(data.passive, armature, pose_bone, data, False)
                 update_hitbox_shape(data.passive, data)
@@ -543,7 +543,12 @@ class Update(bpy.types.Operator):
                     data.bone_name = connected_bone.name
                     properties.Joint.is_updating = False
 
-                    joint = self.make_parent_joints(context, armature, top, pose_bone, data, joint_name(pose_bone.bone, name=data.name))
+                    parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
+                    joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone, name=data.name))
+
+                    align_joint(joint, pose_bone, data)
+
+                    utils.set_parent(joint, parent)
 
                     update_joint_active(context, joint, True)
 

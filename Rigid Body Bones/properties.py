@@ -748,6 +748,30 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
         update=event_rigid_body_constraint,
     )
 
+    location: bpy.props.FloatVectorProperty(
+        name="Location",
+        description="Location of the joint relative to the origin",
+        size=3,
+        default=(0.0, 0.0, 0.0),
+        precision=5,
+        step=1,
+        subtype='XYZ',
+        unit='LENGTH',
+        options=set(),
+        update=event_align,
+    )
+
+    origin: bpy.props.FloatProperty(
+        name="Joint Origin",
+        description="Origin relative to the bone: Head=0, Tail=1",
+        default=0,
+        soft_min=0.0,
+        soft_max=1.0,
+        precision=3,
+        options=set(),
+        update=event_align,
+    )
+
 
 class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
     active: bpy.props.PointerProperty(type=bpy.types.Object)

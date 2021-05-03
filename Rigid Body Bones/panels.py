@@ -1071,12 +1071,42 @@ class JointSpringsTranslatePanel(JointPanel):
         draw_springs_translate(layout, data)
 
 
+class JointOffsetPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_offset"
+    bl_label = "Offset"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 2
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "origin", slider=True, text="Origin")
+
+        flow.separator()
+
+        col = flow.column()
+        col.prop(data, "location")
+
+        flow.separator()
+
+
 class JointAdvancedPanel(JointPanel):
     bl_idname = "DATA_PT_rigid_body_bones_joint_advanced"
     bl_label = "Advanced"
     bl_parent_id = "DATA_PT_rigid_body_bones_joints"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 2
+    bl_order = 3
 
     def draw(self, context):
         pass
