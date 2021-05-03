@@ -18,6 +18,7 @@
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO investigate the todo in clear_mesh
 # TODO if the user removes the RigidBodyWorld then a lot of stuff breaks
+# TODO somehow properly symmetrize bone joints
 
 # ---- Breaking changes
 # TODO rename constraint to joint
@@ -103,6 +104,15 @@ classes = (
     panels.OverrideIterationsPanel,
     panels.JointList,
     panels.JointsPanel,
+    panels.JointLimitsPanel,
+    panels.JointLimitsRotatePanel,
+    panels.JointLimitsTranslatePanel,
+    panels.JointSpringsPanel,
+    panels.JointSpringsRotatePanel,
+    panels.JointSpringsTranslatePanel,
+    panels.JointAdvancedPanel,
+    panels.JointAdvancedPhysicsPanel,
+    panels.JointOverrideIterationsPanel,
 )
 
 def register():

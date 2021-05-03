@@ -270,14 +270,6 @@ class JointProperties:
         update=event_rigid_body_constraint,
     )
 
-    disable_collisions: bpy.props.BoolProperty(
-        name="Disable Parent Collisions",
-        description="Disable collisions with the parent bone",
-        default=True,
-        options=set(),
-        update=event_rigid_body_constraint,
-    )
-
     use_breaking: bpy.props.BoolProperty(
         name="Breakable",
         description="Limits can be broken if it receives an impulse above the threshold",
@@ -741,7 +733,20 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
     name: bpy.props.StringProperty(update=update_name)
 
     bone_id: bpy.props.StringProperty()
-    bone_name: bpy.props.StringProperty(update=update_bone_name)
+
+    bone_name: bpy.props.StringProperty(
+        name="Connected Bone",
+        description="Bone which this joint will be connected to",
+        update=update_bone_name,
+    )
+
+    disable_collisions: bpy.props.BoolProperty(
+        name="Disable Collisions",
+        description="Disable collisions with the connected bone",
+        default=True,
+        options=set(),
+        update=event_rigid_body_constraint,
+    )
 
 
 class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
@@ -933,6 +938,14 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
         unit='VELOCITY',
         options=set(),
         update=event_rigid_body,
+    )
+
+    disable_collisions: bpy.props.BoolProperty(
+        name="Disable Parent Collisions",
+        description="Disable collisions with the parent bone",
+        default=True,
+        options=set(),
+        update=event_rigid_body_constraint,
     )
 
 

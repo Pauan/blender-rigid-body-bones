@@ -369,6 +369,176 @@ class HitboxesAdvancedPanel(bpy.types.Panel):
         flow.separator()
 
 
+def draw_limits_rotate(layout, data):
+    flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+    col = flow.column()
+    col.prop(data, "use_limit_ang_x", text="Limit X")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_ang_x
+    sub.prop(data, "limit_ang_x_lower", text="Min")
+    sub.prop(data, "limit_ang_x_upper", text="Max")
+
+    flow.separator()
+
+    col = flow.column()
+    col.prop(data, "use_limit_ang_y", text="Limit Y")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_ang_y
+    sub.prop(data, "limit_ang_y_lower", text="Min")
+    sub.prop(data, "limit_ang_y_upper", text="Max")
+
+    flow.separator()
+
+    col = flow.column()
+    col.prop(data, "use_limit_ang_z", text="Limit Z")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_ang_z
+    sub.prop(data, "limit_ang_z_lower", text="Min")
+    sub.prop(data, "limit_ang_z_upper", text="Max")
+
+    flow.separator()
+
+
+def draw_limits_translate(layout, data):
+    flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+    col = flow.column()
+    col.prop(data, "use_limit_lin_x", text="Limit X")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_lin_x
+    sub.prop(data, "limit_lin_x_lower", text="Min")
+    sub.prop(data, "limit_lin_x_upper", text="Max")
+
+    flow.separator()
+
+    col = flow.column()
+    col.prop(data, "use_limit_lin_y", text="Limit Y")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_lin_y
+    sub.prop(data, "limit_lin_y_lower", text="Min")
+    sub.prop(data, "limit_lin_y_upper", text="Max")
+
+    flow.separator()
+
+    col = flow.column()
+    col.prop(data, "use_limit_lin_z", text="Limit Z")
+
+    sub = col.column(align=True)
+    sub.enabled = data.use_limit_lin_z
+    sub.prop(data, "limit_lin_z_lower", text="Min")
+    sub.prop(data, "limit_lin_z_upper", text="Max")
+
+    flow.separator()
+
+
+def draw_springs_rotate(layout, data):
+    flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+    col = flow.column(align=True)
+    col.prop(data, "use_spring_ang_x", text="Enable X", icon=enabled_icon(data.use_spring_ang_x))
+    col.prop(data, "use_spring_ang_y", text="Y", icon=enabled_icon(data.use_spring_ang_y))
+    col.prop(data, "use_spring_ang_z", text="Z", icon=enabled_icon(data.use_spring_ang_z))
+
+    flow.separator()
+
+    col = flow.column(align=True)
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_x
+    sub.prop(data, "spring_stiffness_ang_x", text="Stiffness X")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_y
+    sub.prop(data, "spring_stiffness_ang_y", text="Y")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_z
+    sub.prop(data, "spring_stiffness_ang_z", text="Z")
+
+    flow.separator()
+
+    col = flow.column(align=True)
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_x
+    sub.prop(data, "spring_damping_ang_x", text="Damping X")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_y
+    sub.prop(data, "spring_damping_ang_y", text="Y")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_ang_z
+    sub.prop(data, "spring_damping_ang_z", text="Z")
+
+    flow.separator()
+
+
+def draw_springs_translate(layout, data):
+    flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+    col = flow.column(align=True)
+    col.prop(data, "use_spring_x", text="Enable X", icon=enabled_icon(data.use_spring_x))
+    col.prop(data, "use_spring_y", text="Y", icon=enabled_icon(data.use_spring_y))
+    col.prop(data, "use_spring_z", text="Z", icon=enabled_icon(data.use_spring_z))
+
+    flow.separator()
+
+    col = flow.column(align=True)
+
+    sub = col.column()
+    sub.enabled = data.use_spring_x
+    sub.prop(data, "spring_stiffness_x", text="Stiffness X")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_y
+    sub.prop(data, "spring_stiffness_y", text="Y")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_z
+    sub.prop(data, "spring_stiffness_z", text="Z")
+
+    flow.separator()
+
+    col = flow.column(align=True)
+
+    sub = col.column()
+    sub.enabled = data.use_spring_x
+    sub.prop(data, "spring_damping_x", text="Damping X")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_y
+    sub.prop(data, "spring_damping_y", text="Y")
+
+    sub = col.column()
+    sub.enabled = data.use_spring_z
+    sub.prop(data, "spring_damping_z", text="Z")
+
+    flow.separator()
+
+
+def draw_physics_joint(flow, data):
+    col = flow.column()
+    col.prop(data, "disable_collisions")
+
+    flow.separator()
+
+    col = flow.column()
+    col.prop(data, "use_breaking")
+
+    sub = col.column()
+    sub.enabled = data.use_breaking
+    sub.prop(data, "breaking_threshold", text="Threshold")
+
+    flow.separator()
+
+
 class LimitsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_bone_limits"
     bl_label = "Limits"
@@ -405,37 +575,7 @@ class LimitsRotatePanel(bpy.types.Panel):
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
-        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
-
-        col = flow.column()
-        col.prop(data, "use_limit_ang_x", text="Limit X")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_ang_x
-        sub.prop(data, "limit_ang_x_lower", text="Min")
-        sub.prop(data, "limit_ang_x_upper", text="Max")
-
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "use_limit_ang_y", text="Limit Y")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_ang_y
-        sub.prop(data, "limit_ang_y_lower", text="Min")
-        sub.prop(data, "limit_ang_y_upper", text="Max")
-
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "use_limit_ang_z", text="Limit Z")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_ang_z
-        sub.prop(data, "limit_ang_z_lower", text="Min")
-        sub.prop(data, "limit_ang_z_upper", text="Max")
-
-        flow.separator()
+        draw_limits_rotate(layout, data)
 
 
 class LimitsTranslatePanel(bpy.types.Panel):
@@ -455,37 +595,7 @@ class LimitsTranslatePanel(bpy.types.Panel):
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
-        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
-
-        col = flow.column()
-        col.prop(data, "use_limit_lin_x", text="Limit X")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_lin_x
-        sub.prop(data, "limit_lin_x_lower", text="Min")
-        sub.prop(data, "limit_lin_x_upper", text="Max")
-
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "use_limit_lin_y", text="Limit Y")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_lin_y
-        sub.prop(data, "limit_lin_y_lower", text="Min")
-        sub.prop(data, "limit_lin_y_upper", text="Max")
-
-        flow.separator()
-
-        col = flow.column()
-        col.prop(data, "use_limit_lin_z", text="Limit Z")
-
-        sub = col.column(align=True)
-        sub.enabled = data.use_limit_lin_z
-        sub.prop(data, "limit_lin_z_lower", text="Min")
-        sub.prop(data, "limit_lin_z_upper", text="Max")
-
-        flow.separator()
+        draw_limits_translate(layout, data)
 
 
 class SpringsPanel(bpy.types.Panel):
@@ -524,46 +634,7 @@ class SpringsRotatePanel(bpy.types.Panel):
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
-        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
-
-        col = flow.column(align=True)
-        col.prop(data, "use_spring_ang_x", text="Enable X", icon=enabled_icon(data.use_spring_ang_x))
-        col.prop(data, "use_spring_ang_y", text="Y", icon=enabled_icon(data.use_spring_ang_y))
-        col.prop(data, "use_spring_ang_z", text="Z", icon=enabled_icon(data.use_spring_ang_z))
-
-        flow.separator()
-
-        col = flow.column(align=True)
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_x
-        sub.prop(data, "spring_stiffness_ang_x", text="Stiffness X")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_y
-        sub.prop(data, "spring_stiffness_ang_y", text="Y")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_z
-        sub.prop(data, "spring_stiffness_ang_z", text="Z")
-
-        flow.separator()
-
-        col = flow.column(align=True)
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_x
-        sub.prop(data, "spring_damping_ang_x", text="Damping X")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_y
-        sub.prop(data, "spring_damping_ang_y", text="Y")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_ang_z
-        sub.prop(data, "spring_damping_ang_z", text="Z")
-
-        flow.separator()
+        draw_springs_rotate(layout, data)
 
 
 class SpringsTranslatePanel(bpy.types.Panel):
@@ -583,46 +654,7 @@ class SpringsTranslatePanel(bpy.types.Panel):
         layout.enabled = data.enabled and utils.is_armature_enabled(context)
         layout.use_property_split = True
 
-        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
-
-        col = flow.column(align=True)
-        col.prop(data, "use_spring_x", text="Enable X", icon=enabled_icon(data.use_spring_x))
-        col.prop(data, "use_spring_y", text="Y", icon=enabled_icon(data.use_spring_y))
-        col.prop(data, "use_spring_z", text="Z", icon=enabled_icon(data.use_spring_z))
-
-        flow.separator()
-
-        col = flow.column(align=True)
-
-        sub = col.column()
-        sub.enabled = data.use_spring_x
-        sub.prop(data, "spring_stiffness_x", text="Stiffness X")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_y
-        sub.prop(data, "spring_stiffness_y", text="Y")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_z
-        sub.prop(data, "spring_stiffness_z", text="Z")
-
-        flow.separator()
-
-        col = flow.column(align=True)
-
-        sub = col.column()
-        sub.enabled = data.use_spring_x
-        sub.prop(data, "spring_damping_x", text="Damping X")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_y
-        sub.prop(data, "spring_damping_y", text="Y")
-
-        sub = col.column()
-        sub.enabled = data.use_spring_z
-        sub.prop(data, "spring_damping_z", text="Z")
-
-        flow.separator()
+        draw_springs_translate(layout, data)
 
 
 class OffsetPanel(bpy.types.Panel):
@@ -702,19 +734,7 @@ class AdvancedPhysicsPanel(bpy.types.Panel):
         flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
 
         if is_bone_active(data):
-            col = flow.column()
-            col.prop(data, "disable_collisions")
-
-            flow.separator()
-
-            col = flow.column()
-            col.prop(data, "use_breaking")
-
-            sub = col.column()
-            sub.enabled = data.use_breaking
-            sub.prop(data, "breaking_threshold", text="Threshold")
-
-            flow.separator()
+            draw_physics_joint(flow, data)
 
         col = flow.column()
         col.prop(data, "use_margin")
@@ -931,11 +951,179 @@ class JointsPanel(bpy.types.Panel):
             flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=True, align=True)
             flow.use_property_split = True
 
+            col = flow.column()
+
             error = joint_error_message(joint)
 
             if error is not None:
-                col = flow.column()
                 col.label(text=error, icon='ERROR')
+                col.separator()
 
-            col = flow.column()
             col.prop_search(joint, "bone_name", armature.data, "bones", text="Connect To")
+
+
+class JointPanel(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Rigid Body Bones"
+
+    @classmethod
+    def poll(cls, context):
+        if utils.is_armature(context) and utils.is_pose_mode(context):
+            data = utils.get_active_bone(context.active_object).rigid_body_bones
+            return data.active_joint_index < len(data.joints)
+
+        else:
+            return False
+
+
+class JointLimitsPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_limits"
+    bl_label = "Limits"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 0
+
+    def draw(self, context):
+        pass
+
+
+class JointLimitsRotatePanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_limits_rotate"
+    bl_label = "Rotate"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_limits"
+    bl_options = set()
+    bl_order = 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        draw_limits_rotate(layout, data)
+
+
+class JointLimitsTranslatePanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_limits_translate"
+    bl_label = "Translate"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_limits"
+    bl_options = set()
+    bl_order = 1
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        draw_limits_translate(layout, data)
+
+
+class JointSpringsPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_springs"
+    bl_label = "Springs"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 1
+
+    def draw(self, context):
+        pass
+
+
+class JointSpringsRotatePanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_springs_rotate"
+    bl_label = "Rotate"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_springs"
+    bl_options = set()
+    bl_order = 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        draw_springs_rotate(layout, data)
+
+
+class JointSpringsTranslatePanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_springs_translate"
+    bl_label = "Translate"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_springs"
+    bl_options = set()
+    bl_order = 1
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+        layout.use_property_split = True
+
+        draw_springs_translate(layout, data)
+
+
+class JointAdvancedPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_advanced"
+    bl_label = "Advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 2
+
+    def draw(self, context):
+        pass
+
+
+class JointAdvancedPhysicsPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_advanced_physics"
+    bl_label = "Physics"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_advanced"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 0
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.use_property_split = True
+        layout.enabled = utils.is_armature_enabled(context)
+
+        flow = layout.grid_flow(row_major=True, columns=1, even_columns=True, even_rows=False, align=True)
+
+        draw_physics_joint(flow, data)
+
+
+class JointOverrideIterationsPanel(JointPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_joint_override_iterations"
+    bl_label = "Override Iterations"
+    bl_parent_id = "DATA_PT_rigid_body_bones_joint_advanced"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 1
+
+    def draw_header(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context)
+
+        layout.prop(data, "use_override_solver_iterations", text="")
+
+    def draw(self, context):
+        data = utils.get_active_bone(context.active_object).rigid_body_bones
+        data = data.joints[data.active_joint_index]
+        layout = self.layout
+
+        layout.enabled = utils.is_armature_enabled(context) and data.use_override_solver_iterations
+        layout.use_property_split = True
+
+        layout.prop(data, "solver_iterations", text="Iterations")

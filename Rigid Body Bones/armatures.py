@@ -19,6 +19,15 @@ from .bones import (
 DATA_PATH_REGEXP = re.compile(r"""^pose\.bones\["([^"]+)"\]""")
 
 
+def add_error(top, name):
+    for error in top.errors:
+        if error.name == name:
+            return
+
+    error = top.errors.add()
+    error.name = name
+
+
 def root_collection(context):
     scene = context.scene
 
@@ -493,14 +502,23 @@ class Update(bpy.types.Operator):
             delete_parent(data)
 
 
+    def add_id(self, bone, data):
+        id = data.id
+
+        if id != "":
+            # TODO handle duplication better somehow ?
+            if id in self.ids:
+                data.property_unset("id")
+
+            else:
+                self.ids[id] = bone
+
+
     def process_bone(self, context, armature, top, pose_bone):
         bone = pose_bone.bone
         data = bone.rigid_body_bones
 
-        id = data.id
-
-        if id != "":
-            self.ids[id] = bone
+        self.add_id(bone, data)
 
         self.update_error(top, bone, data)
 
@@ -513,7 +531,11 @@ class Update(bpy.types.Operator):
 
     def make_joints(self, context, armature, top, pose_bone, bone_data):
         for data in bone_data.joints:
-            if data.error == "" and data.bone_id != "":
+            if data.bone_name == "" or data.error != "":
+                add_error(top, pose_bone.bone.name)
+                remove_joint(data)
+
+            elif data.bone_id != "":
                 connected_bone = self.ids.get(data.bone_id, None)
 
                 if connected_bone:
@@ -533,12 +555,13 @@ class Update(bpy.types.Operator):
                     constraint.object2 = self.get_hitbox(context, armature, top, pose_bone.bone, bone_data)
 
                 else:
-                    if data.bone_name != "":
-                        data.error = 'INVALID_BONE'
-
+                    data.error = 'INVALID_BONE'
+                    add_error(top, pose_bone.bone.name)
                     remove_joint(data)
 
             else:
+                data.error = 'INVALID_BONE'
+                add_error(top, pose_bone.bone.name)
                 remove_joint(data)
 
 
