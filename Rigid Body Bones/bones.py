@@ -27,7 +27,7 @@ def joint_name(bone, name=None):
     if name is None:
         return bone.name + " [Head]"
     else:
-        return "{} - {} [Joint]".format(bone.name, name)
+        return "{} - {} [Constraint]".format(bone.name, name)
 
 # TODO respect the 64 character name limit
 def compound_name(bone, data):

@@ -87,8 +87,8 @@ class Armature(bpy.types.PropertyGroup):
     )
 
     hide_joint_origins: bpy.props.BoolProperty(
-        name="Hide joint origins",
-        description="Hide origins for joints",
+        name="Hide constraints",
+        description="Hide constraints",
         default=False,
         update=event_hide_hitboxes,
     )
@@ -743,13 +743,13 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
 
     bone_name: bpy.props.StringProperty(
         name="Connected Bone",
-        description="Bone which this joint will be connected to",
+        description="Bone which this constraint will be connected to",
         update=update_bone_name,
     )
 
     disable_collisions: bpy.props.BoolProperty(
         name="Disable Collisions",
-        description="Disable collisions with the connected bone",
+        description="Disable collisions with the target",
         default=True,
         options=set(),
         update=event_rigid_body_constraint,
@@ -757,7 +757,7 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
 
     location: bpy.props.FloatVectorProperty(
         name="Location",
-        description="Location of the joint relative to the origin",
+        description="Location of the constraint relative to the origin",
         size=3,
         default=(0.0, 0.0, 0.0),
         precision=5,
@@ -769,7 +769,7 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
     )
 
     origin: bpy.props.FloatProperty(
-        name="Joint Origin",
+        name="Constraint Origin",
         description="Origin relative to the bone: Head=0, Tail=1",
         default=0,
         soft_min=0.0,

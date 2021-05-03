@@ -873,7 +873,7 @@ class JointList(bpy.types.UIList):
 
 class JointsPanel(bpy.types.Panel):
     bl_idname = "DATA_PT_rigid_body_bones_joints"
-    bl_label = "Bone Joints"
+    bl_label = "Constraints"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"

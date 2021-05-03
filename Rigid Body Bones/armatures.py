@@ -146,7 +146,7 @@ def blanks_collection(context, armature, top):
 def joints_collection(context, armature, top):
     collection = top.constraints
 
-    name = armature.data.name + " [Joints]"
+    name = armature.data.name + " [Constraints]"
 
     if not collection:
         collection = child_collection(context, armature, top, name)
@@ -1323,8 +1323,8 @@ class MoveCompound(ListMoveOperator):
 
 class NewJoint(ListOperator):
     bl_idname = "rigid_body_bones.new_joint"
-    bl_label = "Add new joint"
-    bl_description = "Adds a new joint to the bone"
+    bl_label = "Add new constraint"
+    bl_description = "Adds a new constraint to the bone"
 
     def run(self, bone):
         data = bone.rigid_body_bones
@@ -1339,14 +1339,14 @@ class NewJoint(ListOperator):
         new_joint = data.joints.add()
 
         properties.Joint.is_updating = True
-        new_joint.name = utils.make_unique_name("Joint", seen)
+        new_joint.name = utils.make_unique_name("Constraint", seen)
         properties.Joint.is_updating = False
 
 
 class RemoveJoint(ListOperator):
     bl_idname = "rigid_body_bones.remove_joint"
-    bl_label = "Remove joint"
-    bl_description = "Deletes the selected joint"
+    bl_label = "Remove constraint"
+    bl_description = "Deletes the selected constraint"
 
     def run(self, bone):
         data = bone.rigid_body_bones
@@ -1355,8 +1355,8 @@ class RemoveJoint(ListOperator):
 
 class MoveJoint(ListMoveOperator):
     bl_idname = "rigid_body_bones.move_joint"
-    bl_label = "Move joint"
-    bl_description = "Moves the selected joint up/down in the list"
+    bl_label = "Move constraint"
+    bl_description = "Moves the selected constraint up/down in the list"
 
     direction: bpy.props.EnumProperty(
         items=[
