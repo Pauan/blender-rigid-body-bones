@@ -1101,6 +1101,11 @@ class JointOffsetPanel(JointPanel):
 
         flow.separator()
 
+        col = flow.column()
+        col.prop(data, "rotation")
+
+        flow.separator()
+
 
 class JointAdvancedPanel(JointPanel):
     bl_idname = "DATA_PT_rigid_body_bones_joint_advanced"

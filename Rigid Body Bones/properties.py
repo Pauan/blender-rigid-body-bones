@@ -768,6 +768,19 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
         update=event_align,
     )
 
+    rotation: bpy.props.FloatVectorProperty(
+        name="Rotation",
+        description="Rotation of the constraint relative to the origin",
+        size=3,
+        default=(0.0, 0.0, 0.0),
+        precision=3,
+        step=10,
+        subtype='EULER',
+        unit='ROTATION',
+        options=set(),
+        update=event_align,
+    )
+
     origin: bpy.props.FloatProperty(
         name="Constraint Origin",
         description="Origin relative to the bone: Head=0, Tail=1",

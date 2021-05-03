@@ -447,6 +447,7 @@ def align_joint(joint, pose_bone, data):
 
     joint.empty_display_size = length * 0.20
 
+    joint.rotation_euler = data.rotation
     joint.location = Vector((0.0, (length * data.origin), 0.0)) + data.location
 
 
