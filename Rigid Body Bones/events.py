@@ -64,7 +64,7 @@ def event_align(context, dirty, armature, top):
             constraint = joint.constraint
 
             if constraint:
-                bones.align_joint(constraint, pose_bone, joint)
+                bones.align_joint(constraint, pose_bone, joint, False)
 
 
 @utils.event("hide_hitboxes")

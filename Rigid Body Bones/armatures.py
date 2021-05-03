@@ -555,9 +555,12 @@ class Update(bpy.types.Operator):
                     parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
                     joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone, name=data.name), True)
 
-                    align_joint(joint, pose_bone, data)
+                    align_joint(joint, pose_bone, data, self.is_active)
 
-                    utils.set_parent(joint, parent)
+                    if self.is_active:
+                        utils.set_parent(joint, parent)
+                    else:
+                        utils.set_bone_parent(joint, armature, pose_bone.bone.name)
 
                     update_joint_active(context, joint, True)
 

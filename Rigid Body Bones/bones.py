@@ -442,13 +442,17 @@ def align_origin(origin, pose_bone, data):
             update_origin_location(origin, compound, compound.collision_shape, length)
 
 
-def align_joint(joint, pose_bone, data):
+def align_joint(joint, pose_bone, data, is_active):
     length = bone_length(pose_bone)
 
-    joint.empty_display_size = length * 0.20
+    location = Vector((0.0, (length * data.origin), 0.0)) + data.location
 
+    if not is_active:
+        location.y -= length
+
+    joint.empty_display_size = length * 0.20
     joint.rotation_euler = data.rotation
-    joint.location = Vector((0.0, (length * data.origin), 0.0)) + data.location
+    joint.location = location
 
 
 def update_hitbox_name(hitbox, name):
