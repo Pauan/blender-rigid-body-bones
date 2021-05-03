@@ -109,6 +109,22 @@ class Selectable:
         return False
 
 
+class Viewable:
+    def __init__(self, object):
+        self.object = object
+        self.hidden = None
+
+    def __enter__(self):
+        self.hidden = self.object.hide_viewport
+        self.object.hide_viewport = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.hidden is not None:
+            self.object.hide_viewport = self.hidden
+
+        return False
+
+
 # Temporarily resets the frame to the starting simulation frame
 class AnimationFrame:
     def __init__(self, context):

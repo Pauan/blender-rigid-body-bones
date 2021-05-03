@@ -262,7 +262,8 @@ def update_joint_active(context, joint, is_active):
             if not context.scene.rigidbody_world:
                 bpy.ops.rigidbody.world_add()
 
-            bpy.ops.rigidbody.constraint_add(type='FIXED')
+            with utils.Viewable(joint):
+                bpy.ops.rigidbody.constraint_add(type='FIXED')
 
     else:
         if joint.rigid_body_constraint:
