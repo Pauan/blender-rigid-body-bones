@@ -135,6 +135,7 @@ class ArmatureSettingsPanel(bpy.types.Panel):
         col.enabled = data.enabled
         col.prop(data, "hide_hitboxes")
         col.prop(data, "hide_hitbox_origins")
+        col.prop(data, "hide_joint_origins")
 
 
 class BonePanel(bpy.types.Panel):

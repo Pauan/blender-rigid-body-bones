@@ -339,6 +339,8 @@ class Update(bpy.types.Operator):
         else:
             origin.name = name
 
+        origin.empty_display_type = 'ARROWS'
+
         # TODO only set this if the parent is different ?
         utils.set_parent(origin, parent)
 
@@ -377,7 +379,7 @@ class Update(bpy.types.Operator):
         else:
             joint.name = name
 
-        joint.hide_viewport = True
+        joint.hide_viewport = not is_extra
 
         self.exists.add(joint.name)
 
@@ -814,7 +816,7 @@ class Update(bpy.types.Operator):
             top.blanks.hide_viewport = True
 
         if top.constraints:
-            top.constraints.hide_viewport = True
+            top.constraints.hide_viewport = self.is_active or top.hide_joint_origins
 
 
     @classmethod

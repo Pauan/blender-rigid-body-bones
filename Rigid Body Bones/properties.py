@@ -86,6 +86,13 @@ class Armature(bpy.types.PropertyGroup):
         update=event_hide_hitboxes,
     )
 
+    hide_joint_origins: bpy.props.BoolProperty(
+        name="Hide joint origins",
+        description="Hide origins for joints",
+        default=False,
+        update=event_hide_hitboxes,
+    )
+
 
     @classmethod
     def register(cls):
