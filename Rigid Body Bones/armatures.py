@@ -4,7 +4,7 @@ from . import utils
 from . import events
 from . import properties
 from .bones import (
-    active_name, align_hitbox, blank_name, joint_name, align_joint,
+    active_name, align_hitbox, blank_name, joint_name, align_joint, make_extra_joint,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
     make_active_hitbox, make_blank_rigid_body, make_joint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_joint,
@@ -361,16 +361,23 @@ class Update(bpy.types.Operator):
         return blank
 
 
-    def make_joint(self, context, armature, top, data, name):
+    def make_joint(self, context, armature, top, data, name, is_extra):
         joint = data.constraint
 
         if not joint:
             collection = joints_collection(context, armature, top)
-            joint = make_joint(context, collection, name)
+
+            if is_extra:
+                joint = make_extra_joint(collection, name)
+            else:
+                joint = make_joint(collection, name)
+
             data.constraint = joint
 
         else:
             joint.name = name
+
+        joint.hide_viewport = True
 
         self.exists.add(joint.name)
 
@@ -416,7 +423,7 @@ class Update(bpy.types.Operator):
 
 
     def make_parent_joints(self, context, armature, top, pose_bone, data):
-        joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone))
+        joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone), False)
         parent = pose_bone.parent
 
         if parent:
@@ -544,7 +551,7 @@ class Update(bpy.types.Operator):
                     properties.Joint.is_updating = False
 
                     parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
-                    joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone, name=data.name))
+                    joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone, name=data.name), True)
 
                     align_joint(joint, pose_bone, data)
 

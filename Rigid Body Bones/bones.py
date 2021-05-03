@@ -144,6 +144,8 @@ def make_empty_rigid_body(context, name, collection, parent, parent_bone):
     common_settings(body)
     update_shape(body, type='BOX')
 
+    body.hide_viewport = True
+
     # TODO remove this after the clear_mesh bug is fixed
     utils.clear_mesh(body.data)
 
@@ -160,13 +162,25 @@ def make_blank_rigid_body(context, armature, collection, bone, data):
     )
 
 
-def make_joint(context, collection, name):
+def make_joint(collection, name):
     empty = bpy.data.objects.new(name=name, object_data=None)
     collection.objects.link(empty)
 
     empty.rotation_mode = 'QUATERNION'
     empty.hide_render = True
+    empty.hide_viewport = True
     empty.empty_display_size = 0.0
+
+    return empty
+
+
+def make_extra_joint(collection, name):
+    empty = bpy.data.objects.new(name=name, object_data=None)
+    collection.objects.link(empty)
+
+    common_settings(empty)
+    empty.hide_viewport = True
+    empty.empty_display_type = 'ARROWS'
 
     return empty
 
@@ -433,7 +447,7 @@ def align_origin(origin, pose_bone, data):
 def align_joint(joint, pose_bone, data):
     length = bone_length(pose_bone)
 
-    update_origin_size(joint, length)
+    joint.empty_display_size = length * 0.10
 
     joint.location = Vector((0.0, (length * data.origin), 0.0)) + data.location
 
