@@ -548,33 +548,6 @@ def delete_parent(data):
 
 
 CONSTRAINT_NAME = "RigidBodyBones [Constraint] "
-
-def find_joint_constraint(pose_bone, data):
-    name = data.constraint_name
-
-    if name != "":
-        # TODO can this be replaced with a collection method ?
-        for constraint in pose_bone.constraints:
-            if constraint.name == name:
-                return constraint
-
-
-def create_joint_constraint(pose_bone, data):
-    found = find_joint_constraint(pose_bone, data)
-
-    if found is None:
-        found = pose_bone.constraints.new(type='IK')
-        found.name = CONSTRAINT_NAME + data.name
-        data.constraint_name = found.name
-
-    found.show_expanded = False
-    found.mute = True
-    found.target = None
-    found.subtarget = ""
-
-    return found
-
-
 CHILD_OF_CONSTRAINT_NAME = "RigidBodyBones [Child Of]"
 
 def find_pose_constraint(constraints):

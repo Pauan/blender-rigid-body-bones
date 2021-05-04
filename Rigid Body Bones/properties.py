@@ -1,7 +1,6 @@
-import uuid
 import bpy
 from . import utils
-from .bones import shape_icon
+from .bones import shape_icon, CONSTRAINT_NAME
 from .events import (
     event_update, event_rigid_body, event_rigid_body_constraint, event_align,
     event_hide_hitboxes, event_hide_active_bones,
@@ -687,6 +686,53 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
     # TODO make a Context object for this ?
     is_updating = False
 
+
+    def find_joint_constraint(self, pose_bone):
+        name = self.constraint_name
+
+        if name != "":
+            # TODO can this be replaced with a collection method ?
+            for constraint in pose_bone.constraints:
+                if constraint.name == name:
+                    return constraint
+
+
+    def remove_joint_constraint(self, pose_bone):
+        found = self.find_joint_constraint(pose_bone)
+
+        self.property_unset("constraint_name")
+
+        if found:
+            pose_bone.constraints.remove(found)
+
+
+    def create_joint_constraint(self, pose_bone):
+        found = self.find_joint_constraint(pose_bone)
+
+        should_set = found is None or self.target_changed
+
+        if found is None:
+            found = pose_bone.constraints.new(type='IK')
+            found.name = CONSTRAINT_NAME + self.name
+            self.constraint_name = found.name
+
+        found.show_expanded = False
+        found.mute = True
+        found.target = None
+        found.subtarget = ""
+
+        if should_set:
+            found.pole_target = self.target
+            found.pole_subtarget = self.subtarget
+            self.property_unset("target_changed")
+
+        else:
+            Joint.is_updating = True
+            self.target = found.pole_target
+            self.subtarget = found.pole_subtarget
+            Joint.is_updating = False
+
+
     def update_name(self, context):
         if not Joint.is_updating:
             armature = context.active_object
@@ -707,31 +753,15 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
             event_update(None, context)
 
 
-    def update_bone_name(self, context):
+    def update_target(self, context):
         if not Joint.is_updating:
             assert utils.is_armature(context)
             assert utils.is_pose_mode(context)
 
-            name = self.bone_name
-
-            if name == "":
-                self.property_unset("error")
-                self.property_unset("bone_id")
-
-            else:
-                armature = context.active_object
-
-                bone = armature.data.bones.get(name, None)
-
-                if bone:
-                    self.property_unset("error")
-                    self.bone_id = bone.rigid_body_bones.get_id()
-
-                else:
-                    self.error = 'INVALID_BONE'
-                    self.property_unset("bone_id")
+            self.target_changed = True
 
             event_update(None, context)
+
 
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
 
@@ -741,26 +771,22 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
 
     constraint_name: bpy.props.StringProperty()
 
+    target_changed: bpy.props.BoolProperty(default=False)
+
+
     target: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Target",
         description="Object which this constraint will be connected to",
-        #update=,
+        update=update_target,
     )
 
     subtarget: bpy.props.StringProperty(
         name="Bone",
         description="Bone which this constraint will be connected to",
-        #update=update_bone_name,
+        update=update_target,
     )
 
-    bone_id: bpy.props.StringProperty()
-
-    bone_name: bpy.props.StringProperty(
-        name="Connected Bone",
-        description="Bone which this constraint will be connected to",
-        update=update_bone_name,
-    )
 
     disable_collisions: bpy.props.BoolProperty(
         name="Disable Collisions",
@@ -816,9 +842,6 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
     constraint: bpy.props.PointerProperty(type=bpy.types.Object)
 
     error: bpy.props.StringProperty()
-
-    # Unique unchanging UUID for the bone
-    id: bpy.props.StringProperty()
 
     # These properties are used to save/restore the parent
     # TODO replace with PointerProperty
@@ -1006,16 +1029,6 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
         options=set(),
         update=event_rigid_body_constraint,
     )
-
-
-    def get_id(self):
-        if self.id == "":
-            id = str(uuid.uuid4())
-            self.id = id
-            return id
-
-        else:
-            return self.id
 
 
     @classmethod

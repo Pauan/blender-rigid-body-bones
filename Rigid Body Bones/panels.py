@@ -4,15 +4,32 @@ from .bones import is_bone_active, shape_icon
 
 
 def joint_error_message(joint):
-    if joint.bone_name == "":
+    if joint.target is None:
         return "Missing target"
+
     elif joint.error != "":
-        return "Invalid target bone"
+        # TODO add in support for other armatures
+        if joint.error == 'DIFFERENT_ARMATURE':
+            return "Target cannot be a different armature"
+
+        elif joint.error == 'SAME_BONE':
+            return "Target cannot be the same bone"
+
+        elif joint.error == 'MISSING_BONE':
+            return "Missing target bone"
+
+        elif joint.error == 'INVALID_BONE':
+            return "Invalid target bone"
+
+        else:
+            raise ValueError("Unknown constraint error")
+
     else:
         return None
 
+
 def joint_icon(joint):
-    if joint_error_message(joint):
+    if joint_error_message(joint) is not None:
         return 'ERROR'
     else:
         return 'RIGID_BODY_CONSTRAINT'

@@ -13,7 +13,6 @@ from .bones import (
     copy_properties, make_compound_hitbox, remove_compound, compound_name,
     make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
     create_pose_constraint, update_joint_active, mute_pose_constraint,
-    create_joint_constraint,
 )
 
 
@@ -512,23 +511,9 @@ class Update(bpy.types.Operator):
             delete_parent(data)
 
 
-    def add_id(self, bone, data):
-        id = data.id
-
-        if id != "":
-            # TODO handle duplication better somehow ?
-            if id in self.ids:
-                data.property_unset("id")
-
-            else:
-                self.ids[id] = bone
-
-
     def process_bone(self, context, armature, top, pose_bone):
         bone = pose_bone.bone
         data = bone.rigid_body_bones
-
-        self.add_id(bone, data)
 
         self.update_error(top, bone, data)
 
@@ -540,47 +525,77 @@ class Update(bpy.types.Operator):
 
 
     def make_joints(self, context, armature, top, pose_bone, bone_data):
+        bone = pose_bone.bone
+
         for data in bone_data.joints:
-            if data.bone_name == "" or data.error != "":
-                add_error(top, pose_bone.bone.name)
-                remove_joint(data)
+            data.create_joint_constraint(pose_bone)
 
-            elif data.bone_id != "":
-                connected_bone = self.ids.get(data.bone_id, None)
+            target = data.target
 
-                if connected_bone:
-                    properties.Joint.is_updating = True
-                    data.bone_name = connected_bone.name
-                    properties.Joint.is_updating = False
+            if target is None:
+                data.property_unset("error")
 
-                    parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
-                    joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone, name=data.name), True)
+            elif target.type == 'ARMATURE':
+                # TODO add in support for different armatures
+                if target == armature:
+                    subtarget = data.subtarget
 
-                    align_joint(joint, pose_bone, data, self.is_active)
+                    if subtarget == "":
+                        data.error = 'MISSING_BONE'
+                        target = None
 
-                    if self.is_active:
-                        utils.set_parent(joint, parent)
+                    elif subtarget == bone.name:
+                        data.error = 'SAME_BONE'
+                        target = None
+
                     else:
-                        utils.set_bone_parent(joint, armature, pose_bone.bone.name)
+                        target_bone = target.data.bones.get(subtarget, None)
 
-                    update_joint_active(context, joint, True)
+                        if target_bone:
+                            # TODO this needs to handle things differently
+                            target = self.get_hitbox(context, target, target.data.rigid_body_bones, target_bone, target_bone.rigid_body_bones)
 
-                    constraint = joint.rigid_body_constraint
+                            if target is None:
+                                data.error = 'INVALID_BONE'
 
-                    update_joint_constraint(constraint, data)
+                            else:
+                                data.property_unset("error")
 
-                    constraint.object1 = self.get_hitbox(context, armature, top, connected_bone, connected_bone.rigid_body_bones)
-                    constraint.object2 = self.get_hitbox(context, armature, top, pose_bone.bone, bone_data)
+                        else:
+                            data.error = 'INVALID_BONE'
+                            target = None
 
                 else:
-                    data.error = 'INVALID_BONE'
-                    add_error(top, pose_bone.bone.name)
-                    remove_joint(data)
+                    data.error = 'DIFFERENT_ARMATURE'
+                    target = None
 
             else:
-                data.error = 'INVALID_BONE'
-                add_error(top, pose_bone.bone.name)
+                data.property_unset("error")
+
+
+            if target is None:
+                add_error(top, bone.name)
                 remove_joint(data)
+
+            else:
+                parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
+                joint = self.make_joint(context, armature, top, data, joint_name(bone, name=data.name), True)
+
+                align_joint(joint, pose_bone, data, self.is_active)
+
+                if self.is_active:
+                    utils.set_parent(joint, parent)
+                else:
+                    utils.set_bone_parent(joint, armature, bone.name)
+
+                update_joint_active(context, joint, True)
+
+                constraint = joint.rigid_body_constraint
+
+                update_joint_constraint(constraint, data)
+
+                constraint.object1 = target
+                constraint.object2 = self.get_hitbox(context, armature, top, bone, bone_data)
 
 
     def update_joint(self, context, armature, top, pose_bone):
@@ -832,9 +847,6 @@ class Update(bpy.types.Operator):
         armature = context.active_object
         top = armature.data.rigid_body_bones
 
-
-        # Fast lookup for bone ID -> bone
-        self.ids = {}
 
         # Fast lookup for stored bone names -> new name
         self.names = {}
@@ -1350,6 +1362,7 @@ class RemoveJoint(ListOperator):
 
     def run(self, pose_bone):
         data = pose_bone.bone.rigid_body_bones
+        data.joints[data.active_joint_index].remove_joint_constraint(pose_bone)
         list_remove(data, data.joints, "active_joint_index")
 
 

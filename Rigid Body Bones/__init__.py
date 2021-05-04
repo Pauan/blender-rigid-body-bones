@@ -14,6 +14,7 @@
 # TODO add in the ability to have arbitrary joints/constraints for any bone
 # TODO maybe allow for changing the settings even if the armature is disabled
 # TODO only show the origin/joint for the selected/active bones
+# TODO add in support for different armatures for constraints
 
 # TODO allow for creating joints for arbitrary objects/other armatures
 # TODO rename Connect To to Target
