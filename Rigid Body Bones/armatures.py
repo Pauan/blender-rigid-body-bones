@@ -528,8 +528,8 @@ class Update(bpy.types.Operator):
     def make_joints(self, context, armature, top, pose_bone, bone_data):
         bone = pose_bone.bone
 
-        if len(bone_data.joints) > 0:
-            for data in bone_data.joints:
+        if len(bone_data.constraints) > 0:
+            for data in bone_data.constraints:
                 data.create_joint_constraint(pose_bone)
 
                 target = data.target
@@ -648,7 +648,7 @@ class Update(bpy.types.Operator):
 
                 remove_pose_constraint(pose_bone, data)
 
-                for joint in data.joints:
+                for joint in data.constraints:
                     remove_joint(joint)
 
 
@@ -775,7 +775,7 @@ class Update(bpy.types.Operator):
 
                 self.fix_parents(armature, top, bone, data)
 
-                for joint in data.joints:
+                for joint in data.constraints:
                     joint.create_joint_constraint(pose_bone)
 
         self.restore_parents(armature)
@@ -1341,8 +1341,8 @@ class MoveCompound(ListMoveOperator):
         list_move(data, direction, data.compounds, "active_compound_index")
 
 
-class NewJoint(ListOperator):
-    bl_idname = "rigid_body_bones.new_joint"
+class NewConstraint(ListOperator):
+    bl_idname = "rigid_body_bones.new_constraint"
     bl_label = "Add new constraint"
     bl_description = "Adds a new constraint to the bone"
 
@@ -1351,31 +1351,31 @@ class NewJoint(ListOperator):
 
         seen = set()
 
-        for joint in data.joints:
+        for joint in data.constraints:
             seen.add(joint.name)
 
-        data.active_joint_index = len(data.joints)
+        data.active_constraint_index = len(data.constraints)
 
-        new_joint = data.joints.add()
+        new_joint = data.constraints.add()
 
-        properties.Joint.is_updating = True
+        properties.Constraint.is_updating = True
         new_joint.name = utils.make_unique_name("Constraint", seen)
-        properties.Joint.is_updating = False
+        properties.Constraint.is_updating = False
 
 
-class RemoveJoint(ListOperator):
-    bl_idname = "rigid_body_bones.remove_joint"
+class RemoveConstraint(ListOperator):
+    bl_idname = "rigid_body_bones.remove_constraint"
     bl_label = "Remove constraint"
     bl_description = "Deletes the selected constraint"
 
     def run(self, pose_bone):
         data = pose_bone.bone.rigid_body_bones
-        data.joints[data.active_joint_index].remove_joint_constraint(pose_bone)
-        list_remove(data, data.joints, "active_joint_index")
+        data.constraints[data.active_constraint_index].remove_joint_constraint(pose_bone)
+        list_remove(data, data.constraints, "active_constraint_index")
 
 
-class MoveJoint(ListMoveOperator):
-    bl_idname = "rigid_body_bones.move_joint"
+class MoveConstraint(ListMoveOperator):
+    bl_idname = "rigid_body_bones.move_constraint"
     bl_label = "Move constraint"
     bl_description = "Moves the selected constraint up/down in the list"
 
@@ -1388,4 +1388,4 @@ class MoveJoint(ListMoveOperator):
 
     def move(self, pose_bone, direction):
         data = pose_bone.bone.rigid_body_bones
-        list_move(data, direction, data.joints, "active_joint_index")
+        list_move(data, direction, data.constraints, "active_constraint_index")

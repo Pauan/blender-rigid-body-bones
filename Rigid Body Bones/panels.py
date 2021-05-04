@@ -876,8 +876,8 @@ class OverrideIterationsPanel(bpy.types.Panel):
         layout.prop(data, "solver_iterations", text="Iterations")
 
 
-class JointList(bpy.types.UIList):
-    bl_idname = "DATA_UL_rigid_body_bones_bone_joint"
+class ConstraintList(bpy.types.UIList):
+    bl_idname = "DATA_UL_rigid_body_bones_bone_constraint"
 
     def draw_item(self, _context, layout, _data, item, icon, _active_data_, _active_propname, _index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -888,8 +888,8 @@ class JointList(bpy.types.UIList):
             layout.label(text="", icon=joint_icon(item))
 
 
-class JointsPanel(bpy.types.Panel):
-    bl_idname = "DATA_PT_rigid_body_bones_joints"
+class ConstraintsPanel(bpy.types.Panel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraints"
     bl_label = "Constraints"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -907,7 +907,7 @@ class JointsPanel(bpy.types.Panel):
 
         layout = self.layout
 
-        for joint in data.joints:
+        for joint in data.constraints:
             if joint_error_message(joint) is not None:
                 layout.label(text="", icon='ERROR')
                 break
@@ -922,7 +922,7 @@ class JointsPanel(bpy.types.Panel):
 
         row = layout.row()
 
-        length = len(data.joints)
+        length = len(data.constraints)
         has_items = length > 0
 
         if has_items:
@@ -931,38 +931,38 @@ class JointsPanel(bpy.types.Panel):
             rows = 2
 
         row.template_list(
-            "DATA_UL_rigid_body_bones_bone_joint",
+            "DATA_UL_rigid_body_bones_bone_constraint",
             "",
             data,
-            "joints",
+            "constraints",
             data,
-            "active_joint_index",
+            "active_constraint_index",
             rows=rows,
             maxrows=4,
             item_dyntip_propname="name",
         )
 
         col = row.column(align=True)
-        col.operator("rigid_body_bones.new_joint", icon='ADD', text="")
+        col.operator("rigid_body_bones.new_constraint", icon='ADD', text="")
 
         sub = col.column(align=True)
         sub.enabled = has_items
-        sub.operator("rigid_body_bones.remove_joint", icon='REMOVE', text="")
+        sub.operator("rigid_body_bones.remove_constraint", icon='REMOVE', text="")
 
         if has_items:
-            index = data.active_joint_index
+            index = data.active_constraint_index
 
             col.separator()
 
             sub = col.column(align=True)
             sub.enabled = (index != 0)
-            sub.operator("rigid_body_bones.move_joint", icon='TRIA_UP', text="").direction = 'UP'
+            sub.operator("rigid_body_bones.move_constraint", icon='TRIA_UP', text="").direction = 'UP'
 
             sub = col.column(align=True)
             sub.enabled = (index < length - 1)
-            sub.operator("rigid_body_bones.move_joint", icon='TRIA_DOWN', text="").direction = 'DOWN'
+            sub.operator("rigid_body_bones.move_constraint", icon='TRIA_DOWN', text="").direction = 'DOWN'
 
-            joint = data.joints[index]
+            joint = data.constraints[index]
 
             layout.separator()
 
@@ -983,7 +983,7 @@ class JointsPanel(bpy.types.Panel):
                 col.prop_search(joint, "subtarget", joint.target.data, "bones", text="Bone")
 
 
-class JointPanel(bpy.types.Panel):
+class ConstraintPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Rigid Body Bones"
@@ -992,16 +992,16 @@ class JointPanel(bpy.types.Panel):
     def poll(cls, context):
         if utils.is_armature(context) and utils.is_pose_mode(context):
             data = utils.get_active_bone(context.active_object).rigid_body_bones
-            return data.active_joint_index < len(data.joints)
+            return data.active_constraint_index < len(data.constraints)
 
         else:
             return False
 
 
-class JointLimitsPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_limits"
+class ConstraintLimitsPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_limits"
     bl_label = "Limits"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraints"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 0
 
@@ -1009,16 +1009,16 @@ class JointLimitsPanel(JointPanel):
         pass
 
 
-class JointLimitsRotatePanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_limits_rotate"
+class ConstraintLimitsRotatePanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_limits_rotate"
     bl_label = "Rotate"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_limits"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_limits"
     bl_options = set()
     bl_order = 0
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1027,16 +1027,16 @@ class JointLimitsRotatePanel(JointPanel):
         draw_limits_rotate(layout, data)
 
 
-class JointLimitsTranslatePanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_limits_translate"
+class ConstraintLimitsTranslatePanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_limits_translate"
     bl_label = "Translate"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_limits"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_limits"
     bl_options = set()
     bl_order = 1
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1045,10 +1045,10 @@ class JointLimitsTranslatePanel(JointPanel):
         draw_limits_translate(layout, data)
 
 
-class JointSpringsPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_springs"
+class ConstraintSpringsPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_springs"
     bl_label = "Springs"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraints"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 1
 
@@ -1056,16 +1056,16 @@ class JointSpringsPanel(JointPanel):
         pass
 
 
-class JointSpringsRotatePanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_springs_rotate"
+class ConstraintSpringsRotatePanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_springs_rotate"
     bl_label = "Rotate"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_springs"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_springs"
     bl_options = set()
     bl_order = 0
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1074,16 +1074,16 @@ class JointSpringsRotatePanel(JointPanel):
         draw_springs_rotate(layout, data)
 
 
-class JointSpringsTranslatePanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_springs_translate"
+class ConstraintSpringsTranslatePanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_springs_translate"
     bl_label = "Translate"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_springs"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_springs"
     bl_options = set()
     bl_order = 1
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1092,16 +1092,16 @@ class JointSpringsTranslatePanel(JointPanel):
         draw_springs_translate(layout, data)
 
 
-class JointOffsetPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_offset"
+class ConstraintOffsetPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_offset"
     bl_label = "Offset"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraints"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 2
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1127,10 +1127,10 @@ class JointOffsetPanel(JointPanel):
         flow.separator()
 
 
-class JointAdvancedPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_advanced"
+class ConstraintAdvancedPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_advanced"
     bl_label = "Advanced"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joints"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraints"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 3
 
@@ -1138,16 +1138,16 @@ class JointAdvancedPanel(JointPanel):
         pass
 
 
-class JointAdvancedPhysicsPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_advanced_physics"
+class ConstraintAdvancedPhysicsPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_advanced_physics"
     bl_label = "Physics"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 0
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.use_property_split = True
@@ -1158,16 +1158,16 @@ class JointAdvancedPhysicsPanel(JointPanel):
         draw_physics_joint(flow, data)
 
 
-class JointOverrideIterationsPanel(JointPanel):
-    bl_idname = "DATA_PT_rigid_body_bones_joint_override_iterations"
+class ConstraintOverrideIterationsPanel(ConstraintPanel):
+    bl_idname = "DATA_PT_rigid_body_bones_constraint_override_iterations"
     bl_label = "Override Iterations"
-    bl_parent_id = "DATA_PT_rigid_body_bones_joint_advanced"
+    bl_parent_id = "DATA_PT_rigid_body_bones_constraint_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 1
 
     def draw_header(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context)
@@ -1176,7 +1176,7 @@ class JointOverrideIterationsPanel(JointPanel):
 
     def draw(self, context):
         data = utils.get_active_bone(context.active_object).rigid_body_bones
-        data = data.joints[data.active_joint_index]
+        data = data.constraints[data.active_constraint_index]
         layout = self.layout
 
         layout.enabled = utils.is_armature_enabled(context) and data.use_override_solver_iterations

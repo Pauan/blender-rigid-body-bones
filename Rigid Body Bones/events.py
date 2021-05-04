@@ -37,7 +37,7 @@ def event_rigid_body_constraint(context, dirty, armature, top):
         if constraint and constraint.rigid_body_constraint:
             bones.update_joint_constraint(constraint.rigid_body_constraint, data)
 
-        for joint in data.joints:
+        for joint in data.constraints:
             constraint = joint.constraint
 
             if constraint and constraint.rigid_body_constraint:
@@ -60,7 +60,7 @@ def event_align(context, dirty, armature, top):
         if data.origin_empty:
             bones.align_origin(data.origin_empty, pose_bone, data)
 
-        for joint in data.joints:
+        for joint in data.constraints:
             constraint = joint.constraint
 
             if constraint:

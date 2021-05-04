@@ -258,7 +258,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
     )
 
 
-class JointProperties:
+class ConstraintProperties:
     use_override_solver_iterations: bpy.props.BoolProperty(
         name="Override Solver Iterations",
         description="Override the number of solver iterations for the limits",
@@ -684,7 +684,7 @@ class JointProperties:
     )
 
 
-class Joint(bpy.types.PropertyGroup, JointProperties):
+class Constraint(bpy.types.PropertyGroup, ConstraintProperties):
     # TODO make a Context object for this ?
     is_updating = False
 
@@ -729,36 +729,36 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
             self.property_unset("target_changed")
 
         else:
-            Joint.is_updating = True
+            Constraint.is_updating = True
             self.target = found.pole_target
             self.subtarget = found.pole_subtarget
-            Joint.is_updating = False
+            Constraint.is_updating = False
 
 
     # TODO make this work with Alt
     def update_name(self, context):
-        if not Joint.is_updating:
+        if not Constraint.is_updating:
             armature = context.active_object
             bone = utils.get_active_bone(armature)
             data = bone.rigid_body_bones
 
             seen = set()
 
-            for joint in data.joints:
+            for joint in data.constraints:
                 if joint != self:
                     seen.add(joint.name)
 
             if self.name in seen:
-                Joint.is_updating = True
+                Constraint.is_updating = True
                 self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
-                Joint.is_updating = False
+                Constraint.is_updating = False
 
             # TODO maybe this can do a partial update rather than a full update ?
             event_update(None, context)
 
 
     def update_target(self, context):
-        if not Joint.is_updating:
+        if not Constraint.is_updating:
             assert utils.is_armature(context)
             assert utils.is_pose_mode(context)
 
@@ -838,7 +838,7 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
     )
 
 
-class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
+class Bone(bpy.types.PropertyGroup, ShapeProperties, ConstraintProperties):
     active: bpy.props.PointerProperty(type=bpy.types.Object)
     passive: bpy.props.PointerProperty(type=bpy.types.Object)
     origin_empty: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -870,10 +870,10 @@ class Bone(bpy.types.PropertyGroup, ShapeProperties, JointProperties):
 
 
     compounds: bpy.props.CollectionProperty(type=Compound)
-    joints: bpy.props.CollectionProperty(type=Joint)
+    constraints: bpy.props.CollectionProperty(type=Constraint)
 
     active_compound_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
-    active_joint_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
+    active_constraint_index: bpy.props.IntProperty(name="", description="", default=0, min=0, subtype='UNSIGNED')
 
 
     enabled: bpy.props.BoolProperty(
