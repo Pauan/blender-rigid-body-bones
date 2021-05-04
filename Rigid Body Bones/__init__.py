@@ -11,14 +11,21 @@
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO add in scale for compounds (but be careful of non-uniform scale skewing)
 # TODO add in color coding / custom shapes for the bones (e.g. active, error, passive)
+# TODO maybe allow for changing the settings even if the armature is disabled
+# TODO only show the origin/joint for the selected/active bones
+# TODO add in support for different armatures for constraints
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO investigate the todo in clear_mesh
+# TODO if the user removes the RigidBodyWorld then a lot of stuff breaks
+# TODO if a constraint is added to a different armature, and that other armature is changed, it doesn't mark the first armature as dirty
+# TODO test whether it works properly when multiple armatures share the same bones
 
 # ---- Breaking changes
-# TODO rename constraint to joint
+# TODO rename constraint to joint ?
 # TODO merge active and passive properties together into hitbox property
+# TODO replace name with id, and parent with parent_id ?
 
 # ---- Blender bugs
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash
@@ -61,16 +68,20 @@ classes = (
     properties.Error,
     properties.Armature,
     properties.Compound,
+    properties.Constraint,
     properties.Bone,
 
     armatures.Update,
     armatures.CleanupArmatures,
     armatures.CopyFromActive,
     armatures.CalculateMass,
+    armatures.BakeToKeyframes,
     armatures.NewCompound,
     armatures.RemoveCompound,
     armatures.MoveCompound,
-    armatures.BakeToKeyframes,
+    armatures.NewConstraint,
+    armatures.RemoveConstraint,
+    armatures.MoveConstraint,
 
     panels.RigidBodyMenu,
     panels.ArmaturePanel,
@@ -93,6 +104,18 @@ classes = (
     panels.CollectionsPanel,
     panels.DeactivationPanel,
     panels.OverrideIterationsPanel,
+    panels.ConstraintList,
+    panels.ConstraintsPanel,
+    panels.ConstraintLimitsPanel,
+    panels.ConstraintLimitsRotatePanel,
+    panels.ConstraintLimitsTranslatePanel,
+    panels.ConstraintSpringsPanel,
+    panels.ConstraintSpringsRotatePanel,
+    panels.ConstraintSpringsTranslatePanel,
+    panels.ConstraintOffsetPanel,
+    panels.ConstraintAdvancedPanel,
+    panels.ConstraintAdvancedPhysicsPanel,
+    panels.ConstraintOverrideIterationsPanel,
 )
 
 def register():

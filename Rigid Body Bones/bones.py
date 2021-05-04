@@ -23,8 +23,11 @@ def origin_name(bone):
 def blank_name(bone):
     return bone.name + " [Blank]"
 
-def joint_name(bone):
-    return bone.name + " [Head]"
+def joint_name(bone, name=None):
+    if name is None:
+        return bone.name + " [Head]"
+    else:
+        return "{} - {} [Constraint]".format(bone.name, name)
 
 # TODO respect the 64 character name limit
 def compound_name(bone, data):
@@ -115,7 +118,6 @@ def make_origin(collection, name):
     origin.rotation_euler = (radians(-90.0), 0.0, 0.0)
 
     common_settings(origin)
-    origin.empty_display_type = 'CIRCLE'
 
     return origin
 
@@ -141,6 +143,8 @@ def make_empty_rigid_body(context, name, collection, parent, parent_bone):
     common_settings(body)
     update_shape(body, type='BOX')
 
+    body.hide_viewport = True
+
     # TODO remove this after the clear_mesh bug is fixed
     utils.clear_mesh(body.data)
 
@@ -157,13 +161,24 @@ def make_blank_rigid_body(context, armature, collection, bone, data):
     )
 
 
-def make_joint(context, collection, bone):
-    empty = bpy.data.objects.new(name=joint_name(bone), object_data=None)
+def make_joint(collection, name):
+    empty = bpy.data.objects.new(name=name, object_data=None)
     collection.objects.link(empty)
 
     empty.rotation_mode = 'QUATERNION'
     empty.hide_render = True
+    empty.hide_viewport = True
     empty.empty_display_size = 0.0
+
+    return empty
+
+
+def make_extra_joint(collection, name):
+    empty = bpy.data.objects.new(name=name, object_data=None)
+    collection.objects.link(empty)
+
+    common_settings(empty)
+    empty.empty_display_type = 'ARROWS'
 
     return empty
 
@@ -230,23 +245,36 @@ def is_spring(data):
     )
 
 
+# TODO add in FIXED type
+def constraint_type(data):
+    if is_spring(data):
+        return 'GENERIC_SPRING'
+    else:
+        return 'GENERIC'
+
+
+
 def update_joint_active(context, joint, is_active):
     if is_active:
         if not joint.rigid_body_constraint:
             utils.select_active(context, joint)
-            bpy.ops.rigidbody.constraint_add(type='FIXED')
+
+            if not context.scene.rigidbody_world:
+                bpy.ops.rigidbody.world_add()
+
+            with utils.Viewable(joint):
+                bpy.ops.rigidbody.constraint_add(type='FIXED')
 
     else:
         if joint.rigid_body_constraint:
             utils.select_active(context, joint)
-            bpy.ops.rigidbody.constraint_remove()
+
+            with utils.Viewable(joint):
+                bpy.ops.rigidbody.constraint_remove()
 
 
 def update_joint_constraint(constraint, data):
-    if is_spring(data):
-        constraint.type = 'GENERIC_SPRING'
-    else:
-        constraint.type = 'GENERIC'
+    constraint.type = constraint_type(data)
 
     constraint.disable_collisions = data.disable_collisions
     constraint.use_breaking = data.use_breaking
@@ -402,7 +430,7 @@ def update_origin_size(origin, length):
 def update_origin_location(origin, data, shape, length):
     origin.location = (0.0, 0.0, (length * (0.5 - data.origin)) * hitbox_scale_y(data, shape))
 
-def align_origin(origin, pose_bone, data, is_active):
+def align_origin(origin, pose_bone, data):
     shape = data.collision_shape
 
     length = bone_length(pose_bone)
@@ -415,6 +443,19 @@ def align_origin(origin, pose_bone, data, is_active):
             origin = compound.origin_empty
             update_origin_size(origin, length)
             update_origin_location(origin, compound, compound.collision_shape, length)
+
+
+def align_joint(joint, pose_bone, data, is_active):
+    length = bone_length(pose_bone)
+
+    location = Vector((0.0, (length * data.origin), 0.0)) + data.location
+
+    if not is_active:
+        location.y -= length
+
+    joint.empty_display_size = length * 0.20
+    joint.rotation_euler = data.rotation
+    joint.location = location
 
 
 def update_hitbox_name(hitbox, name):
@@ -481,10 +522,6 @@ def hide_active_bone(bone, data, should_hide):
 
 
 def store_parent(bone, data):
-    assert not data.is_property_set("name")
-    assert not data.is_property_set("parent")
-    assert not data.is_property_set("use_connect")
-
     data.name = bone.name
 
     parent = bone.parent
@@ -499,16 +536,28 @@ def store_parent(bone, data):
 
 
 def delete_parent(data):
-    assert data.is_property_set("name")
-    assert data.is_property_set("parent")
-    assert data.is_property_set("use_connect")
-
     data.property_unset("name")
     data.property_unset("parent")
     data.property_unset("use_connect")
 
 
+CONSTRAINT_NAME = "RigidBodyBones [Constraint] "
 CHILD_OF_CONSTRAINT_NAME = "RigidBodyBones [Child Of]"
+
+
+def sort_constraints(pose_bone):
+    constraints = pose_bone.constraints
+    index = None
+
+    for i, constraint in enumerate(constraints):
+        if constraint.name == CHILD_OF_CONSTRAINT_NAME or constraint.name.startswith(CONSTRAINT_NAME):
+            if index is None:
+                index = i
+
+        elif index is not None:
+            constraints.move(i, index)
+            index += 1
+
 
 def find_pose_constraint(constraints):
     index = None
@@ -563,8 +612,11 @@ def unmute_constraints(constraints, data):
 
         for constraint in constraints:
             if constraint.name != CHILD_OF_CONSTRAINT_NAME:
-                # Unfortunately we cannot save the old muting, so we can't restore it
-                constraint.mute = False
+                if constraint.name.startswith(CONSTRAINT_NAME):
+                    constraint.mute = True
+                else:
+                    # Unfortunately we cannot save the old muting, so we can't restore it
+                    constraint.mute = False
 
 
 def create_pose_constraint(armature, pose_bone, data, is_active):

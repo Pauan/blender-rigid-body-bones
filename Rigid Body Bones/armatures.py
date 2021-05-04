@@ -4,7 +4,7 @@ from . import utils
 from . import events
 from . import properties
 from .bones import (
-    active_name, align_hitbox, blank_name, joint_name,
+    active_name, align_hitbox, blank_name, joint_name, align_joint, make_extra_joint,
     delete_parent, get_hitbox, hide_active_bone, is_bone_active, is_bone_enabled,
     make_active_hitbox, make_blank_rigid_body, make_joint, make_empty_rigid_body,
     make_passive_hitbox, remove_active, remove_blank, remove_joint,
@@ -13,10 +13,20 @@ from .bones import (
     copy_properties, make_compound_hitbox, remove_compound, compound_name,
     make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
     create_pose_constraint, update_joint_active, mute_pose_constraint,
+    sort_constraints,
 )
 
 
 DATA_PATH_REGEXP = re.compile(r"""^pose\.bones\["([^"]+)"\]""")
+
+
+def add_error(top, name):
+    for error in top.errors:
+        if error.name == name:
+            return
+
+    error = top.errors.add()
+    error.name = name
 
 
 def root_collection(context):
@@ -27,6 +37,7 @@ def root_collection(context):
     if not collection:
         collection = utils.make_collection("RigidBodyBones", scene.collection)
         collection.hide_render = True
+        collection.color_tag = 'COLOR_01' # Red
         scene.rigid_body_bones.collection = collection
 
     return collection
@@ -41,6 +52,7 @@ def container_collection(context, armature, top):
         parent = root_collection(context)
         collection = utils.make_collection(name, parent)
         collection.hide_render = True
+        collection.color_tag = 'COLOR_01' # Red
         top.container = collection
 
     else:
@@ -53,6 +65,7 @@ def child_collection(context, armature, top, name):
     parent = container_collection(context, armature, top)
     collection = utils.make_collection(name, parent)
     collection.hide_render = True
+    collection.color_tag = 'COLOR_01' # Red
     return collection
 
 
@@ -327,6 +340,8 @@ class Update(bpy.types.Operator):
         else:
             origin.name = name
 
+        origin.empty_display_type = 'ARROWS'
+
         # TODO only set this if the parent is different ?
         utils.set_parent(origin, parent)
 
@@ -346,21 +361,44 @@ class Update(bpy.types.Operator):
 
         self.exists.add(blank.name)
 
+        return blank
 
-    def make_joint(self, context, armature, top, bone, data):
+
+    def make_joint(self, context, armature, top, data, name, is_extra):
         joint = data.constraint
 
         if not joint:
             collection = joints_collection(context, armature, top)
-            joint = make_joint(context, collection, bone)
+
+            if is_extra:
+                joint = make_extra_joint(collection, name)
+            else:
+                joint = make_joint(collection, name)
+
             data.constraint = joint
 
         else:
-            joint.name = joint_name(bone)
+            joint.name = name
+
+        joint.hide_viewport = not is_extra
 
         self.exists.add(joint.name)
 
         return joint
+
+
+    def get_hitbox(self, context, armature, top, bone, data):
+        hitbox = get_hitbox(data)
+
+        if hitbox:
+            return hitbox
+
+        elif data.error == "":
+            return self.make_blank(context, armature, top, bone, data)
+
+        # In order to avoid circular dependencies it must not create a Blank for errored bones
+        else:
+            return None
 
 
     def make_compounds(self, context, armature, top, bone, data, parent):
@@ -388,16 +426,11 @@ class Update(bpy.types.Operator):
 
 
     def make_parent_joints(self, context, armature, top, pose_bone, data):
-        assert data.is_property_set("name")
-        assert data.is_property_set("parent")
-
-        joint = self.make_joint(context, armature, top, pose_bone.bone, data)
+        joint = self.make_joint(context, armature, top, data, joint_name(pose_bone.bone), False)
         parent = pose_bone.parent
 
         if parent:
             parent_data = parent.bone.rigid_body_bones
-
-            assert data.parent == parent_data.name
 
             self.make_parent_joints(context, armature, top, parent, parent_data)
 
@@ -408,21 +441,10 @@ class Update(bpy.types.Operator):
             joint.matrix_basis = parent.matrix.inverted() @ pose_bone.matrix
 
         else:
-            assert data.parent == ""
-
             utils.set_parent(joint, armature)
             joint.matrix_basis = pose_bone.matrix
 
-
-    def make_parent_blank(self, context, armature, top, pose_bone):
-        parent = pose_bone.parent
-
-        if parent:
-            parent_data = parent.bone.rigid_body_bones
-
-            # In order to avoid circular dependencies it must not create a Blank for errored bones
-            if parent_data.error == "" and not is_bone_enabled(parent_data):
-                self.make_blank(context, armature, top, parent.bone, parent_data)
+        return joint
 
 
     def update_bone(self, context, armature, top, pose_bone, bone, data):
@@ -431,7 +453,6 @@ class Update(bpy.types.Operator):
                 remove_passive(data)
 
                 self.make_parent_joints(context, armature, top, pose_bone, data)
-                self.make_parent_blank(context, armature, top, pose_bone)
 
                 if not data.active:
                     collection = actives_collection(context, armature, top)
@@ -443,7 +464,7 @@ class Update(bpy.types.Operator):
                 self.make_compounds(context, armature, top, bone, data, data.active)
                 self.make_origin(context, armature, top, data, data.active, origin_name(bone))
 
-                align_origin(data.origin_empty, pose_bone, data, self.is_active)
+                align_origin(data.origin_empty, pose_bone, data)
 
                 align_hitbox(data.active, armature, pose_bone, data, self.is_active)
                 update_hitbox_shape(data.active, data)
@@ -464,7 +485,7 @@ class Update(bpy.types.Operator):
                 self.make_compounds(context, armature, top, bone, data, data.passive)
                 self.make_origin(context, armature, top, data, data.passive, origin_name(bone))
 
-                align_origin(data.origin_empty, pose_bone, data, False)
+                align_origin(data.origin_empty, pose_bone, data)
 
                 align_hitbox(data.passive, armature, pose_bone, data, False)
                 update_hitbox_shape(data.passive, data)
@@ -504,30 +525,95 @@ class Update(bpy.types.Operator):
         self.update_bone(context, armature, top, pose_bone, bone, data)
 
 
+    def make_joints(self, context, armature, top, pose_bone, bone_data):
+        bone = pose_bone.bone
+
+        if len(bone_data.constraints) > 0:
+            for data in bone_data.constraints:
+                data.create_joint_constraint(pose_bone)
+
+                target = data.target
+
+                if target is None:
+                    data.property_unset("error")
+
+                elif target.type == 'ARMATURE':
+                    # TODO add in support for different armatures
+                    if target == armature:
+                        subtarget = data.subtarget
+
+                        if subtarget == "":
+                            data.error = 'MISSING_BONE'
+                            target = None
+
+                        elif subtarget == bone.name:
+                            data.error = 'SAME_BONE'
+                            target = None
+
+                        else:
+                            target_bone = target.data.bones.get(subtarget, None)
+
+                            if target_bone:
+                                # TODO this is wrong if the armature is different
+                                target = self.get_hitbox(context, target, target.data.rigid_body_bones, target_bone, target_bone.rigid_body_bones)
+
+                                if target is None:
+                                    data.error = 'INVALID_BONE'
+
+                                else:
+                                    data.property_unset("error")
+
+                            else:
+                                data.error = 'INVALID_BONE'
+                                target = None
+
+                    else:
+                        data.error = 'DIFFERENT_ARMATURE'
+                        target = None
+
+                else:
+                    data.property_unset("error")
+
+
+                if target is None:
+                    add_error(top, bone.name)
+                    remove_joint(data)
+
+                else:
+                    parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
+                    joint = self.make_joint(context, armature, top, data, joint_name(bone, name=data.name), True)
+
+                    align_joint(joint, pose_bone, data, self.is_active)
+
+                    if self.is_active:
+                        utils.set_parent(joint, parent)
+                    else:
+                        utils.set_bone_parent(joint, armature, bone.name)
+
+                    update_joint_active(context, joint, True)
+
+                    constraint = joint.rigid_body_constraint
+
+                    update_joint_constraint(constraint, data)
+
+                    constraint.object1 = target
+                    constraint.object2 = self.get_hitbox(context, armature, top, bone, bone_data)
+
+            sort_constraints(pose_bone)
+
+
     def update_joint(self, context, armature, top, pose_bone):
         bone = pose_bone.bone
         data = bone.rigid_body_bones
+
+        self.make_joints(context, armature, top, pose_bone, data)
+
         is_active = is_bone_enabled(data) and is_bone_active(data)
-
-        assert data.is_property_set("name")
-
-
-        blank = data.blank
-
-        if blank:
-            if not blank.name in self.exists:
-                remove_blank(data)
-
 
         joint = data.constraint
 
-        if joint:
-            if joint.name in self.exists:
-                update_joint_active(context, joint, is_active)
-
-            else:
-                remove_joint(data)
-
+        if joint and joint.name in self.exists:
+            update_joint_active(context, joint, is_active)
 
         if is_active:
             create_pose_constraint(armature, pose_bone, data, self.is_active)
@@ -540,17 +626,7 @@ class Update(bpy.types.Operator):
 
             if parent:
                 parent_data = parent.bone.rigid_body_bones
-
-                hitbox = get_hitbox(parent_data)
-
-                if hitbox:
-                    constraint.object1 = hitbox
-
-                else:
-                    # The Blank will be None only if the parent bone has an error
-                    assert parent_data.blank is not None or parent_data.error != ""
-
-                    constraint.object1 = parent_data.blank
+                constraint.object1 = self.get_hitbox(context, armature, top, parent.bone, parent_data)
 
             else:
                 constraint.object1 = self.make_root_body(context, armature, top)
@@ -571,15 +647,13 @@ class Update(bpy.types.Operator):
                 data = pose_bone.bone.rigid_body_bones
 
                 remove_pose_constraint(pose_bone, data)
-                remove_blank(data)
 
-        if top.root_body:
-            if not top.root_body.name in self.exists:
-                remove_root_body(top)
+                for joint in data.constraints:
+                    remove_joint(joint)
 
 
     def update_action(self, seen_actions, should_mute, action):
-        if not action.name in seen_actions:
+        if action and not action.name in seen_actions:
             seen_actions.add(action.name)
 
             for fcurve in action.fcurves:
@@ -649,6 +723,22 @@ class Update(bpy.types.Operator):
     def remove_orphans(self, context, armature, top):
         exists = self.exists
 
+        for bone in armature.data.bones:
+            data = bone.rigid_body_bones
+
+            blank = data.blank
+
+            if blank and not blank.name in exists:
+                remove_blank(data)
+
+            joint = data.constraint
+
+            if joint and not joint.name in exists:
+                remove_joint(data)
+
+        if top.root_body and not top.root_body.name in exists:
+            remove_root_body(top)
+
         if top.actives and remove_orphans(top.actives, exists):
             top.property_unset("actives")
 
@@ -679,10 +769,14 @@ class Update(bpy.types.Operator):
 
     def process_edit(self, context, armature, top):
         with utils.Mode(context, armature, 'POSE'):
-            for bone in armature.data.bones:
+            for pose_bone in armature.pose.bones:
+                bone = pose_bone.bone
                 data = bone.rigid_body_bones
 
                 self.fix_parents(armature, top, bone, data)
+
+                for joint in data.constraints:
+                    joint.create_joint_constraint(pose_bone)
 
         self.restore_parents(armature)
 
@@ -749,7 +843,7 @@ class Update(bpy.types.Operator):
             top.blanks.hide_viewport = True
 
         if top.constraints:
-            top.constraints.hide_viewport = True
+            top.constraints.hide_viewport = self.is_active or top.hide_constraints
 
 
     @classmethod
@@ -854,7 +948,7 @@ class CopyFromActive(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
+        return utils.is_pose_mode(context) and utils.has_active_bone(context)
 
     def execute(self, context):
         armature = context.active_object
@@ -974,162 +1068,6 @@ class CalculateMass(bpy.types.Operator):
         for data in datas:
             hitbox = get_hitbox(data)
             data.mass = hitbox.rigid_body.mass
-
-        return {'FINISHED'}
-
-
-def add_new_compound(bone):
-    data = bone.rigid_body_bones
-
-    seen = set()
-
-    for compound in data.compounds:
-        seen.add(compound.name)
-
-    data.active_compound_index = len(data.compounds)
-
-    new_compound = data.compounds.add()
-
-    properties.Compound.is_updating = True
-    new_compound.name = utils.make_unique_name("Hitbox", seen)
-    properties.Compound.is_updating = False
-
-
-def delete_compound(bone):
-    data = bone.rigid_body_bones
-
-    old_index = data.active_compound_index
-
-    data.compounds.remove(old_index)
-
-    length = len(data.compounds)
-
-    if old_index >= length:
-        data.active_compound_index = max(length - 1, 0)
-
-
-def move_compound(bone, direction):
-    data = bone.rigid_body_bones
-
-    old_index = data.active_compound_index
-
-    if direction == 'UP':
-        new_index = max(old_index - 1, 0)
-
-    else:
-        new_index = min(old_index + 1, len(data.compounds) - 1)
-
-    if old_index != new_index:
-        data.compounds.move(old_index, new_index)
-        data.active_compound_index = new_index
-
-
-class NewCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.new_compound"
-    bl_label = "Add new hitbox"
-    bl_description = "Adds a new hitbox to the compound shape"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                add_new_compound(bone)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            add_new_compound(bone)
-
-        events.event_update(None, context)
-
-        return {'FINISHED'}
-
-
-class RemoveCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.remove_compound"
-    bl_label = "Remove hitbox"
-    bl_description = "Deletes the selected hitbox"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                delete_compound(bone)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            delete_compound(bone)
-
-        events.event_update(None, context)
-
-        return {'FINISHED'}
-
-
-class MoveCompound(bpy.types.Operator):
-    bl_idname = "rigid_body_bones.move_compound"
-    bl_label = "Move hitbox"
-    bl_description = "Moves the selected hitbox up/down in the list"
-    # TODO use UNDO_GROUPED ?
-    bl_options = {'INTERNAL', 'UNDO'}
-
-    is_alt: bpy.props.BoolProperty()
-
-    direction: bpy.props.EnumProperty(
-        items=[
-            ('UP', "", ""),
-            ('DOWN', "", ""),
-        ]
-    )
-
-    # TODO test for COMPOUND shape ?
-    @classmethod
-    def poll(cls, context):
-        return utils.is_pose_mode(context) and utils.is_armature(context) and utils.has_active_bone(context)
-
-    # TODO is there a better way of handling Alt ?
-    def invoke(self, context, event):
-        self.is_alt = event.alt
-        return self.execute(context)
-
-    def execute(self, context):
-        if self.is_alt:
-            for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                move_compound(bone, self.direction)
-
-        else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            move_compound(bone, self.direction)
 
         return {'FINISHED'}
 
@@ -1285,3 +1223,169 @@ class BakeToKeyframes(bpy.types.Operator):
             utils.run_events()
 
         return {'FINISHED'}
+
+
+class ListOperator(bpy.types.Operator):
+    # TODO use UNDO_GROUPED ?
+    bl_options = {'INTERNAL', 'UNDO'}
+
+    is_alt: bpy.props.BoolProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return utils.is_pose_mode(context) and utils.has_active_bone(context)
+
+    # TODO is there a better way of handling Alt ?
+    def invoke(self, context, event):
+        self.is_alt = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                self.run(pose_bone)
+
+        else:
+            pose_bone = utils.get_active_pose_bone(context)
+            self.run(pose_bone)
+
+        events.event_update(None, context)
+
+        return {'FINISHED'}
+
+
+class ListMoveOperator(ListOperator):
+    def execute(self, context):
+        if self.is_alt:
+            for pose_bone in context.selected_pose_bones_from_active_object:
+                self.move(pose_bone, self.direction)
+
+        else:
+            pose_bone = utils.get_active_pose_bone(context)
+            self.move(pose_bone, self.direction)
+
+        return {'FINISHED'}
+
+
+def list_remove(data, list, active_name):
+    old_index = getattr(data, active_name)
+
+    list.remove(old_index)
+
+    length = len(list)
+
+    if old_index >= length:
+        setattr(data, active_name, max(length - 1, 0))
+
+
+def list_move(data, direction, list, active_name):
+    old_index = getattr(data, active_name)
+
+    if direction == 'UP':
+        new_index = max(old_index - 1, 0)
+
+    else:
+        new_index = min(old_index + 1, len(list) - 1)
+
+    if old_index != new_index:
+        list.move(old_index, new_index)
+        setattr(data, active_name, new_index)
+
+
+class NewCompound(ListOperator):
+    bl_idname = "rigid_body_bones.new_compound"
+    bl_label = "Add new hitbox"
+    bl_description = "Adds a new hitbox to the compound shape"
+
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
+
+        seen = set()
+
+        for compound in data.compounds:
+            seen.add(compound.name)
+
+        data.active_compound_index = len(data.compounds)
+
+        new_compound = data.compounds.add()
+
+        properties.Compound.is_updating = True
+        new_compound.name = utils.make_unique_name("Hitbox", seen)
+        properties.Compound.is_updating = False
+
+
+class RemoveCompound(ListOperator):
+    bl_idname = "rigid_body_bones.remove_compound"
+    bl_label = "Remove hitbox"
+    bl_description = "Deletes the selected hitbox"
+
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
+        list_remove(data, data.compounds, "active_compound_index")
+
+
+class MoveCompound(ListMoveOperator):
+    bl_idname = "rigid_body_bones.move_compound"
+    bl_label = "Move hitbox"
+    bl_description = "Moves the selected hitbox up/down in the list"
+
+    direction: bpy.props.EnumProperty(
+        items=[
+            ('UP', "", ""),
+            ('DOWN', "", ""),
+        ]
+    )
+
+    def move(self, pose_bone, direction):
+        data = pose_bone.bone.rigid_body_bones
+        list_move(data, direction, data.compounds, "active_compound_index")
+
+
+class NewConstraint(ListOperator):
+    bl_idname = "rigid_body_bones.new_constraint"
+    bl_label = "Add new constraint"
+    bl_description = "Adds a new constraint to the bone"
+
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
+
+        seen = set()
+
+        for joint in data.constraints:
+            seen.add(joint.name)
+
+        data.active_constraint_index = len(data.constraints)
+
+        new_joint = data.constraints.add()
+
+        properties.Constraint.is_updating = True
+        new_joint.name = utils.make_unique_name("Constraint", seen)
+        properties.Constraint.is_updating = False
+
+
+class RemoveConstraint(ListOperator):
+    bl_idname = "rigid_body_bones.remove_constraint"
+    bl_label = "Remove constraint"
+    bl_description = "Deletes the selected constraint"
+
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
+        data.constraints[data.active_constraint_index].remove_joint_constraint(pose_bone)
+        list_remove(data, data.constraints, "active_constraint_index")
+
+
+class MoveConstraint(ListMoveOperator):
+    bl_idname = "rigid_body_bones.move_constraint"
+    bl_label = "Move constraint"
+    bl_description = "Moves the selected constraint up/down in the list"
+
+    direction: bpy.props.EnumProperty(
+        items=[
+            ('UP', "", ""),
+            ('DOWN', "", ""),
+        ]
+    )
+
+    def move(self, pose_bone, direction):
+        data = pose_bone.bone.rigid_body_bones
+        list_move(data, direction, data.constraints, "active_constraint_index")

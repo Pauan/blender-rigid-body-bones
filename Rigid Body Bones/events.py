@@ -32,8 +32,16 @@ def event_rigid_body_constraint(context, dirty, armature, top):
     for bone in armature.data.bones:
         data = bone.rigid_body_bones
 
-        if data.constraint and data.constraint.rigid_body_constraint:
-            bones.update_joint_constraint(data.constraint.rigid_body_constraint, data)
+        constraint = data.constraint
+
+        if constraint and constraint.rigid_body_constraint:
+            bones.update_joint_constraint(constraint.rigid_body_constraint, data)
+
+        for joint in data.constraints:
+            constraint = joint.constraint
+
+            if constraint and constraint.rigid_body_constraint:
+                bones.update_joint_constraint(constraint.rigid_body_constraint, joint)
 
 
 @utils.event("align")
@@ -50,7 +58,13 @@ def event_align(context, dirty, armature, top):
             bones.align_hitbox(data.passive, armature, pose_bone, data, False)
 
         if data.origin_empty:
-            bones.align_origin(data.origin_empty, pose_bone, data, False)
+            bones.align_origin(data.origin_empty, pose_bone, data)
+
+        for joint in data.constraints:
+            constraint = joint.constraint
+
+            if constraint:
+                bones.align_joint(constraint, pose_bone, joint, False)
 
 
 @utils.event("hide_hitboxes")
@@ -67,6 +81,9 @@ def event_hide_hitboxes(context, dirty, armature, top):
 
     if top.origins:
         top.origins.hide_viewport = top.hide_hitbox_origins
+
+    if top.constraints:
+        top.constraints.hide_viewport = top.hide_constraints
 
 
 @utils.event("hide_active_bones")
@@ -88,6 +105,18 @@ def mode_switch():
         # TODO handle this better, such as a "do not update mode" flag
         if top.mode != mode:
             top.mode = mode
+            event_update(None, context)
+
+
+# TODO make this an event ?
+def bone_name_changed():
+    context = bpy.context
+
+    if utils.is_armature(context):
+        armature = context.active_object
+
+        if armature.mode != 'EDIT':
+            # TODO maybe this doesn't need a full update, but only a partial name update ?
             event_update(None, context)
 
 
@@ -115,6 +144,15 @@ def register_subscribers():
         owner=owner,
         args=(),
         notify=mode_switch,
+        # TODO does this need PERSISTENT ?
+        options={'PERSISTENT'}
+    )
+
+    bpy.msgbus.subscribe_rna(
+        key=(bpy.types.Bone, "name"),
+        owner=owner,
+        args=(),
+        notify=bone_name_changed,
         # TODO does this need PERSISTENT ?
         options={'PERSISTENT'}
     )
