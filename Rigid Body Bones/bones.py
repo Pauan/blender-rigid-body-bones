@@ -550,6 +550,21 @@ def delete_parent(data):
 CONSTRAINT_NAME = "RigidBodyBones [Constraint] "
 CHILD_OF_CONSTRAINT_NAME = "RigidBodyBones [Child Of]"
 
+
+def sort_constraints(pose_bone):
+    constraints = pose_bone.constraints
+    index = None
+
+    for i, constraint in enumerate(constraints):
+        if constraint.name == CHILD_OF_CONSTRAINT_NAME or constraint.name.startswith(CONSTRAINT_NAME):
+            if index is None:
+                index = i
+
+        elif index is not None:
+            constraints.move(i, index)
+            index += 1
+
+
 def find_pose_constraint(constraints):
     index = None
     found = None
@@ -602,9 +617,12 @@ def unmute_constraints(constraints, data):
         data.property_unset("is_constraints_hidden")
 
         for constraint in constraints:
-            if constraint.name != CHILD_OF_CONSTRAINT_NAME: # and not constraint.name.startswith(CONSTRAINT_NAME):
-                # Unfortunately we cannot save the old muting, so we can't restore it
-                constraint.mute = False
+            if constraint.name != CHILD_OF_CONSTRAINT_NAME:
+                if constraint.name.startswith(CONSTRAINT_NAME):
+                    constraint.mute = True
+                else:
+                    # Unfortunately we cannot save the old muting, so we can't restore it
+                    constraint.mute = False
 
 
 def create_pose_constraint(armature, pose_bone, data, is_active):

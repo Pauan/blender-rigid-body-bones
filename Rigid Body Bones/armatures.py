@@ -13,6 +13,7 @@ from .bones import (
     copy_properties, make_compound_hitbox, remove_compound, compound_name,
     make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
     create_pose_constraint, update_joint_active, mute_pose_constraint,
+    sort_constraints,
 )
 
 
@@ -527,75 +528,78 @@ class Update(bpy.types.Operator):
     def make_joints(self, context, armature, top, pose_bone, bone_data):
         bone = pose_bone.bone
 
-        for data in bone_data.joints:
-            data.create_joint_constraint(pose_bone)
+        if len(bone_data.joints) > 0:
+            for data in bone_data.joints:
+                data.create_joint_constraint(pose_bone)
 
-            target = data.target
+                target = data.target
 
-            if target is None:
-                data.property_unset("error")
+                if target is None:
+                    data.property_unset("error")
 
-            elif target.type == 'ARMATURE':
-                # TODO add in support for different armatures
-                if target == armature:
-                    subtarget = data.subtarget
+                elif target.type == 'ARMATURE':
+                    # TODO add in support for different armatures
+                    if target == armature:
+                        subtarget = data.subtarget
 
-                    if subtarget == "":
-                        data.error = 'MISSING_BONE'
-                        target = None
-
-                    elif subtarget == bone.name:
-                        data.error = 'SAME_BONE'
-                        target = None
-
-                    else:
-                        target_bone = target.data.bones.get(subtarget, None)
-
-                        if target_bone:
-                            # TODO this needs to handle things differently
-                            target = self.get_hitbox(context, target, target.data.rigid_body_bones, target_bone, target_bone.rigid_body_bones)
-
-                            if target is None:
-                                data.error = 'INVALID_BONE'
-
-                            else:
-                                data.property_unset("error")
-
-                        else:
-                            data.error = 'INVALID_BONE'
+                        if subtarget == "":
+                            data.error = 'MISSING_BONE'
                             target = None
 
+                        elif subtarget == bone.name:
+                            data.error = 'SAME_BONE'
+                            target = None
+
+                        else:
+                            target_bone = target.data.bones.get(subtarget, None)
+
+                            if target_bone:
+                                # TODO this needs to handle things differently
+                                target = self.get_hitbox(context, target, target.data.rigid_body_bones, target_bone, target_bone.rigid_body_bones)
+
+                                if target is None:
+                                    data.error = 'INVALID_BONE'
+
+                                else:
+                                    data.property_unset("error")
+
+                            else:
+                                data.error = 'INVALID_BONE'
+                                target = None
+
+                    else:
+                        data.error = 'DIFFERENT_ARMATURE'
+                        target = None
+
                 else:
-                    data.error = 'DIFFERENT_ARMATURE'
-                    target = None
-
-            else:
-                data.property_unset("error")
+                    data.property_unset("error")
 
 
-            if target is None:
-                add_error(top, bone.name)
-                remove_joint(data)
+                if target is None:
+                    add_error(top, bone.name)
+                    remove_joint(data)
 
-            else:
-                parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
-                joint = self.make_joint(context, armature, top, data, joint_name(bone, name=data.name), True)
-
-                align_joint(joint, pose_bone, data, self.is_active)
-
-                if self.is_active:
-                    utils.set_parent(joint, parent)
                 else:
-                    utils.set_bone_parent(joint, armature, bone.name)
+                    parent = self.make_parent_joints(context, armature, top, pose_bone, bone_data)
+                    joint = self.make_joint(context, armature, top, data, joint_name(bone, name=data.name), True)
 
-                update_joint_active(context, joint, True)
+                    align_joint(joint, pose_bone, data, self.is_active)
 
-                constraint = joint.rigid_body_constraint
+                    if self.is_active:
+                        utils.set_parent(joint, parent)
+                    else:
+                        utils.set_bone_parent(joint, armature, bone.name)
 
-                update_joint_constraint(constraint, data)
+                    update_joint_active(context, joint, True)
 
-                constraint.object1 = target
-                constraint.object2 = self.get_hitbox(context, armature, top, bone, bone_data)
+                    constraint = joint.rigid_body_constraint
+
+                    update_joint_constraint(constraint, data)
+
+                    constraint.object1 = target
+                    constraint.object2 = self.get_hitbox(context, armature, top, bone, bone_data)
+
+            sort_constraints(pose_bone)
 
 
     def update_joint(self, context, armature, top, pose_bone):
