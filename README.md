@@ -2,10 +2,13 @@
 
 ![][simplegif]
 
+![][marionettegif]
+
 ![][kizunagif]
 
 [simplegif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Simple.gif
 [kizunagif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Kizuna%20AI.gif
+[marionettegif]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Marionette.gif
 
 3D engines have support for bone physics, this can be used for a wide variety of things:
 
@@ -142,12 +145,19 @@ You must have Blender 2.91.0 or higher.
 
    * `Bake to Keyframes` will bake the selected bones into keyframes, so they can be used in other engines.
 
+* There is a `Constraints` panel which allows you to create joints between a bone and another rigid body (or another bone):
+
+   ![][usage07]
+
+   This can be used for advanced features like IK, or circular dependencies. See the `Constraints.blend`, `IK.blend`, and `Marionette.blend` examples.
+
 [usage01]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2001.PNG
 [usage02]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2002.PNG
 [usage03]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2003.PNG
 [usage04]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2004.PNG
 [usage05]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2005.PNG
 [usage06]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2006.PNG
+[usage07]: https://raw.githubusercontent.com/Pauan/blender-rigid-body-bones/master/Usage%2007.PNG
 
 
 ## For programmers
