@@ -653,7 +653,7 @@ class Update(bpy.types.Operator):
 
 
     def update_action(self, seen_actions, should_mute, action):
-        if not action.name in seen_actions:
+        if action and not action.name in seen_actions:
             seen_actions.add(action.name)
 
             for fcurve in action.fcurves:

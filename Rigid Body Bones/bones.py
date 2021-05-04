@@ -520,10 +520,6 @@ def hide_active_bone(bone, data, should_hide):
 
 
 def store_parent(bone, data):
-    assert not data.is_property_set("name")
-    assert not data.is_property_set("parent")
-    assert not data.is_property_set("use_connect")
-
     data.name = bone.name
 
     parent = bone.parent
@@ -538,10 +534,6 @@ def store_parent(bone, data):
 
 
 def delete_parent(data):
-    assert data.is_property_set("name")
-    assert data.is_property_set("parent")
-    assert data.is_property_set("use_connect")
-
     data.property_unset("name")
     data.property_unset("parent")
     data.property_unset("use_connect")
