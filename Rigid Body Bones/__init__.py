@@ -11,27 +11,21 @@
 # TODO Collision support for colliding with soft bodies and clothes ?
 # TODO add in scale for compounds (but be careful of non-uniform scale skewing)
 # TODO add in color coding / custom shapes for the bones (e.g. active, error, passive)
-# TODO add in the ability to have arbitrary joints/constraints for any bone
 # TODO maybe allow for changing the settings even if the armature is disabled
 # TODO only show the origin/joint for the selected/active bones
 # TODO add in support for different armatures for constraints
-
-# TODO allow for creating joints for arbitrary objects/other armatures
-# TODO rename Connect To to Target
-# TODO rename Bone Joints to Constraints ?
-# TODO add in rotation for joints (test whether it affects translation)
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
 # TODO investigate the todo in clear_mesh
 # TODO if the user removes the RigidBodyWorld then a lot of stuff breaks
-# TODO somehow properly symmetrize bone joints
 # TODO if a constraint is added to a different armature, and that other armature is changed, it doesn't mark the first armature as dirty
+# TODO test whether it works properly when multiple armatures share the same bones
 
 # ---- Breaking changes
-# TODO rename constraint to joint
+# TODO rename constraint to joint ?
 # TODO merge active and passive properties together into hitbox property
-# TODO replace name with id, and parent with parent_id
+# TODO replace name with id, and parent with parent_id ?
 
 # ---- Blender bugs
 # TODO enabling/disabling bone (or changing type) and then undoing causes a hard crash

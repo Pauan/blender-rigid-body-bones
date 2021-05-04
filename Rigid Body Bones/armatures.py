@@ -146,7 +146,7 @@ def blanks_collection(context, armature, top):
 def joints_collection(context, armature, top):
     collection = top.constraints
 
-    name = armature.data.name + " [Constraints]"
+    name = armature.data.name + " [Joints]"
 
     if not collection:
         collection = child_collection(context, armature, top, name)
@@ -765,10 +765,14 @@ class Update(bpy.types.Operator):
 
     def process_edit(self, context, armature, top):
         with utils.Mode(context, armature, 'POSE'):
-            for bone in armature.data.bones:
+            for pose_bone in armature.pose.bones:
+                bone = pose_bone.bone
                 data = bone.rigid_body_bones
 
                 self.fix_parents(armature, top, bone, data)
+
+                for joint in data.joints:
+                    joint.create_joint_constraint(pose_bone)
 
         self.restore_parents(armature)
 
