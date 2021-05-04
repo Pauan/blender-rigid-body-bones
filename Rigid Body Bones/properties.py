@@ -739,6 +739,21 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
 
     name: bpy.props.StringProperty(update=update_name)
 
+    constraint_name: bpy.props.StringProperty()
+
+    target: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Target",
+        description="Object which this constraint will be connected to",
+        #update=,
+    )
+
+    subtarget: bpy.props.StringProperty(
+        name="Bone",
+        description="Bone which this constraint will be connected to",
+        #update=update_bone_name,
+    )
+
     bone_id: bpy.props.StringProperty()
 
     bone_name: bpy.props.StringProperty(

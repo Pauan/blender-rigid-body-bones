@@ -25,6 +25,7 @@
 # TODO investigate the todo in clear_mesh
 # TODO if the user removes the RigidBodyWorld then a lot of stuff breaks
 # TODO somehow properly symmetrize bone joints
+# TODO if a constraint is added to a different armature, and that other armature is changed, it doesn't mark the first armature as dirty
 
 # ---- Breaking changes
 # TODO rename constraint to joint

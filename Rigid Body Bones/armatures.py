@@ -13,6 +13,7 @@ from .bones import (
     copy_properties, make_compound_hitbox, remove_compound, compound_name,
     make_origin, origin_name, align_origin, remove_origin, compound_origin_name,
     create_pose_constraint, update_joint_active, mute_pose_constraint,
+    create_joint_constraint,
 )
 
 
@@ -1222,13 +1223,11 @@ class ListOperator(bpy.types.Operator):
     def execute(self, context):
         if self.is_alt:
             for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                self.run(bone)
+                self.run(pose_bone)
 
         else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            self.run(bone)
+            pose_bone = utils.get_active_pose_bone(context)
+            self.run(pose_bone)
 
         events.event_update(None, context)
 
@@ -1239,13 +1238,11 @@ class ListMoveOperator(ListOperator):
     def execute(self, context):
         if self.is_alt:
             for pose_bone in context.selected_pose_bones_from_active_object:
-                bone = pose_bone.bone
-                self.move(bone, self.direction)
+                self.move(pose_bone, self.direction)
 
         else:
-            armature = context.active_object
-            bone = utils.get_active_bone(armature)
-            self.move(bone, self.direction)
+            pose_bone = utils.get_active_pose_bone(context)
+            self.move(pose_bone, self.direction)
 
         return {'FINISHED'}
 
@@ -1280,8 +1277,8 @@ class NewCompound(ListOperator):
     bl_label = "Add new hitbox"
     bl_description = "Adds a new hitbox to the compound shape"
 
-    def run(self, bone):
-        data = bone.rigid_body_bones
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
 
         seen = set()
 
@@ -1302,8 +1299,8 @@ class RemoveCompound(ListOperator):
     bl_label = "Remove hitbox"
     bl_description = "Deletes the selected hitbox"
 
-    def run(self, bone):
-        data = bone.rigid_body_bones
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
         list_remove(data, data.compounds, "active_compound_index")
 
 
@@ -1319,8 +1316,8 @@ class MoveCompound(ListMoveOperator):
         ]
     )
 
-    def move(self, bone, direction):
-        data = bone.rigid_body_bones
+    def move(self, pose_bone, direction):
+        data = pose_bone.bone.rigid_body_bones
         list_move(data, direction, data.compounds, "active_compound_index")
 
 
@@ -1329,8 +1326,8 @@ class NewJoint(ListOperator):
     bl_label = "Add new constraint"
     bl_description = "Adds a new constraint to the bone"
 
-    def run(self, bone):
-        data = bone.rigid_body_bones
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
 
         seen = set()
 
@@ -1351,8 +1348,8 @@ class RemoveJoint(ListOperator):
     bl_label = "Remove constraint"
     bl_description = "Deletes the selected constraint"
 
-    def run(self, bone):
-        data = bone.rigid_body_bones
+    def run(self, pose_bone):
+        data = pose_bone.bone.rigid_body_bones
         list_remove(data, data.joints, "active_joint_index")
 
 
@@ -1368,6 +1365,6 @@ class MoveJoint(ListMoveOperator):
         ]
     )
 
-    def move(self, bone, direction):
-        data = bone.rigid_body_bones
+    def move(self, pose_bone, direction):
+        data = pose_bone.bone.rigid_body_bones
         list_move(data, direction, data.joints, "active_joint_index")

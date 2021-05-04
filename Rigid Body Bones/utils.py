@@ -145,6 +145,9 @@ class AnimationFrame:
         return False
 
 
+def get_active_pose_bone(context):
+    return context.active_pose_bone
+
 def get_active_bone(armature):
     return armature.data.bones.active
 

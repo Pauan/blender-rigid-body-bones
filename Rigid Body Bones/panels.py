@@ -5,9 +5,9 @@ from .bones import is_bone_active, shape_icon
 
 def joint_error_message(joint):
     if joint.bone_name == "":
-        return "Missing connected bone"
+        return "Missing target"
     elif joint.error != "":
-        return "Invalid connected bone"
+        return "Invalid target bone"
     else:
         return None
 
@@ -960,7 +960,10 @@ class JointsPanel(bpy.types.Panel):
                 col.label(text=error, icon='ERROR')
                 col.separator()
 
-            col.prop_search(joint, "bone_name", armature.data, "bones", text="Connect To")
+            col.prop(joint, "target")
+
+            if joint.target and joint.target.type == 'ARMATURE':
+                col.prop_search(joint, "subtarget", joint.target.data, "bones", text="Bone")
 
 
 class JointPanel(bpy.types.Panel):
