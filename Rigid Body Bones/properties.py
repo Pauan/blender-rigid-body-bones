@@ -85,7 +85,7 @@ class Armature(bpy.types.PropertyGroup):
         update=event_hide_hitboxes,
     )
 
-    hide_joint_origins: bpy.props.BoolProperty(
+    hide_constraints: bpy.props.BoolProperty(
         name="Hide constraints",
         description="Hide constraints",
         default=False,
@@ -212,6 +212,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
     # TODO make a Context object for this ?
     is_updating = False
 
+    # TODO make this work with Alt
     def update_name(self, context):
         if not Compound.is_updating:
             armature = context.active_object
@@ -229,6 +230,7 @@ class Compound(bpy.types.PropertyGroup, ShapeProperties):
                 self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
                 Compound.is_updating = False
 
+            # TODO maybe this can do a partial update rather than a full update ?
             event_update(None, context)
 
     hitbox: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -733,6 +735,7 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
             Joint.is_updating = False
 
 
+    # TODO make this work with Alt
     def update_name(self, context):
         if not Joint.is_updating:
             armature = context.active_object
@@ -750,6 +753,7 @@ class Joint(bpy.types.PropertyGroup, JointProperties):
                 self.name = utils.make_unique_name(utils.strip_name_suffix(self.name), seen)
                 Joint.is_updating = False
 
+            # TODO maybe this can do a partial update rather than a full update ?
             event_update(None, context)
 
 

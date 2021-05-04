@@ -83,7 +83,7 @@ def event_hide_hitboxes(context, dirty, armature, top):
         top.origins.hide_viewport = top.hide_hitbox_origins
 
     if top.constraints:
-        top.constraints.hide_viewport = top.hide_joint_origins
+        top.constraints.hide_viewport = top.hide_constraints
 
 
 @utils.event("hide_active_bones")

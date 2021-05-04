@@ -554,7 +554,7 @@ class Update(bpy.types.Operator):
                             target_bone = target.data.bones.get(subtarget, None)
 
                             if target_bone:
-                                # TODO this needs to handle things differently
+                                # TODO this is wrong if the armature is different
                                 target = self.get_hitbox(context, target, target.data.rigid_body_bones, target_bone, target_bone.rigid_body_bones)
 
                                 if target is None:
@@ -843,7 +843,7 @@ class Update(bpy.types.Operator):
             top.blanks.hide_viewport = True
 
         if top.constraints:
-            top.constraints.hide_viewport = self.is_active or top.hide_joint_origins
+            top.constraints.hide_viewport = self.is_active or top.hide_constraints
 
 
     @classmethod
