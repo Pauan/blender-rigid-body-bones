@@ -268,7 +268,9 @@ def update_joint_active(context, joint, is_active):
     else:
         if joint.rigid_body_constraint:
             utils.select_active(context, joint)
-            bpy.ops.rigidbody.constraint_remove()
+
+            with utils.Viewable(joint):
+                bpy.ops.rigidbody.constraint_remove()
 
 
 def update_joint_constraint(constraint, data):
