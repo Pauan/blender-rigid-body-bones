@@ -64,6 +64,13 @@ class Armature(bpy.types.PropertyGroup):
         update=event_update,
     )
 
+    run_simulation: bpy.props.BoolProperty(
+        name="Pose mode simulation",
+        description="Runs the rigid body simulation in Pose mode",
+        default=False,
+        update=event_update,
+    )
+
     hide_active_bones: bpy.props.BoolProperty(
         name="Hide active bones",
         description="Hide bones which have an Active rigid body",

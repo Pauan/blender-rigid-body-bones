@@ -830,22 +830,22 @@ class Update(bpy.types.Operator):
                 self.remove_parents(armature)
 
         if top.actives:
-            top.actives.hide_viewport = self.is_active or top.hide_hitboxes
+            top.actives.hide_viewport = self.is_object_mode or top.hide_hitboxes
 
         if top.passives:
-            top.passives.hide_viewport = self.is_active or top.hide_hitboxes
+            top.passives.hide_viewport = self.is_object_mode or top.hide_hitboxes
 
         if top.compounds:
-            top.compounds.hide_viewport = self.is_active or top.hide_hitboxes
+            top.compounds.hide_viewport = self.is_object_mode or top.hide_hitboxes
 
         if top.origins:
-            top.origins.hide_viewport = self.is_active or top.hide_hitbox_origins
+            top.origins.hide_viewport = self.is_object_mode or top.hide_hitbox_origins
 
         if top.blanks:
             top.blanks.hide_viewport = True
 
         if top.constraints:
-            top.constraints.hide_viewport = self.is_active or top.hide_constraints
+            top.constraints.hide_viewport = self.is_object_mode or top.hide_constraints
 
 
     @classmethod
@@ -873,8 +873,10 @@ class Update(bpy.types.Operator):
 
         is_edit_mode = (armature.mode == 'EDIT')
 
+        self.is_object_mode = (armature.mode == 'OBJECT')
+
         # Whether the rigid body simulation should be active
-        self.is_active = (armature.mode == 'OBJECT')
+        self.is_active = self.is_object_mode or (armature.mode == 'POSE' and top.run_simulation)
 
 
         if is_edit_mode or not top.enabled:

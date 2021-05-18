@@ -140,6 +140,10 @@ class ArmatureSettingsPanel(bpy.types.Panel):
         col = flow.column()
         col.prop(data, "enabled")
 
+        col = flow.column()
+        col.enabled = data.enabled
+        col.prop(data, "run_simulation")
+
         flow.separator()
 
         col = flow.column()
