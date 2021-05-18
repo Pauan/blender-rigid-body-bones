@@ -1,5 +1,6 @@
 import re
 import bpy
+from mathutils import Matrix
 from . import utils
 from . import events
 from . import properties
@@ -437,12 +438,13 @@ class Update(bpy.types.Operator):
             assert parent_data.constraint is not None
 
             utils.set_parent(joint, parent_data.constraint)
-            # This transforms the matrix from armature space to local space
-            joint.matrix_basis = parent.matrix.inverted() @ pose_bone.matrix
+            joint.matrix_basis = pose_bone.matrix
+            joint.matrix_parent_inverse = parent.matrix.inverted()
 
         else:
             utils.set_parent(joint, armature)
             joint.matrix_basis = pose_bone.matrix
+            joint.matrix_parent_inverse = Matrix.Identity(4)
 
         return joint
 

@@ -14,6 +14,8 @@
 # TODO maybe allow for changing the settings even if the armature is disabled
 # TODO only show the origin/joint for the selected/active bones
 # TODO add in support for different armatures for constraints
+# TODO add in automatic support for IK (without needing to manually setup constraints)
+# TODO add in option to toggle simulation on/off for Pose mode (or maybe auto-simulate when playing an animation?)
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
@@ -36,6 +38,9 @@
 # TODO even if a Child Of constraint is placed at the bottom of the stack, it does not override the previous constraints
 # TODO even if a Child Of constraint exists, it can still be overridden by manual keyframes
 # TODO pose bone matrix is wrong when enabling rigid body physics in Object mode
+# TODO missing show_expanded for collections
+# TODO skewed bones break the matrix calculations (see Test.blend)
+# TODO there is a difference between using matrix_parent_inverse and manually calculating the parent's inverse
 bl_info = {
     "name": "Rigid Body Bones",
     "author": "Pauan",
