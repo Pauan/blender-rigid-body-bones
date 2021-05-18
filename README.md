@@ -109,6 +109,10 @@ You must have Blender 2.91.0 or higher.
 
 * The `Rigid.Body.Bones.zip` file contains an `examples` folder which contains example `.blend` files.
 
+* If a bone is `Active`, its child bones must also be `Active`, this is a limitation in Blender. So if the child is not `Active`, you must either make the child `Active`, or you must change it to a non-`Active` parent.
+
+   However, you can use `Constraints` to create joints between any bones (even if they aren't in a parent-child relationship). This works with both `Active` and non-`Active` bones.
+
 * If you select multiple bones, you can hold down `Alt` when changing a setting and it will apply the setting to all the selected bones.
 
 * It is sometimes useful to change the `Advanced -> Physics -> Damping Translation` and `Damping Rotation` settings.
