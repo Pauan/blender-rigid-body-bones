@@ -15,6 +15,8 @@
 # TODO only show the origin/joint for the selected/active bones
 # TODO add in support for different armatures for constraints
 # TODO add in automatic support for IK (without needing to manually setup constraints)
+# TODO display the error symbol on the Rigid Body header if there is an error
+# TODO if an error happens, disable all of the bones
 
 # ---- Bugs
 # TODO if dimensions are 0 (in any axis) then only create 0/2/4 vertices for the hitbox
