@@ -681,9 +681,6 @@ class Update(bpy.types.Operator):
             data = bone.rigid_body_bones
             should_mute[bone.name] = is_active and is_bone_enabled(data) and is_bone_active(data)
 
-        if armature.pose_library:
-            self.update_action(seen_actions, should_mute, armature.pose_library)
-
         if armature.animation_data:
             self.update_action(seen_actions, should_mute, armature.animation_data.action)
 
